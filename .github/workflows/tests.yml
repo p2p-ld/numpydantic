@@ -1,0 +1,38 @@
+name: Tests
+
+on:
+  push:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        python-version: [3.11]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -e .[tests]
+
+      - name: Run Tests
+        run: pytest
+
+      - name: Report coverage
+        run: "coveralls --service=github"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: psf/black@stable

@@ -1,0 +1,106 @@
+[tool.poetry]
+name = "numpydantic"
+version = "0.0.0"
+description = "Type and shape validation and serialization for numpy arrays in pydantic models"
+authors = ["sneakers-the-rat <sneakers-the-rat@protonmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = ">=2.3.0"
+nptyping = ">=2.5.0"
+blosc2 = "^2.5.1"
+dask = { version = "^2024.1.1" }
+h5py = { version = "^3.10.0" }
+pytest = { version=">=7.4.0", optional = true}
+pytest-depends = {version="^1.0.1", optional = true}
+coverage = {version = ">=6.1.1", optional = true}
+pytest-cov = {version = "^4.1.0", optional = true}
+coveralls = {version = "^3.3.1", optional = true}
+sphinx = {version = "^7.2.6", optional = true}
+furo = {version = ">=2024.1.29", optional = true}
+myst-parser = {version = "^2.0.0", optional = true}
+autodoc-pydantic = {version = "^2.0.1", optional = true}
+sphinx-autobuild = {version = ">=2021.3.14", optional = true}
+sphinx-design = {version = "^0.5.0", optional = true}
+black = {version = "^24.1.1", optional = true}
+ruff = {version = "^0.2.0", optional = true}
+linkml = {version = "^1.6.10", optional = true}
+linkml-runtime = {version = "^1.6.3", optional = true}
+
+[tool.poetry.extras]
+proxy = [
+    "dask", "h5py"
+]
+linkml = [
+    "linkml", "linkml-runtime"
+]
+tests = [
+    "pytest", "pytest-depends", "coverage", "pytest-cov", "coveralls"
+]
+docs = [
+    "sphinx", "furo", "myst-parser", "autodoc-pydantic", "sphinx-design"
+]
+dev = [
+    "sphinx-autobuild", "black", "ruff",
+    # proxy
+    "dask", "h5py",
+    # linkml
+    "linkml", "linkml-runtime",
+    # tests
+    "pytest", "pytest-depends", "coverage", "pytest-cov", "coveralls",
+    # docs
+    "sphinx", "furo", "myst-parser", "autodoc-pydantic", "sphinx-design"
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=numpydantic",
+    "--cov-append",
+]
+testpaths = [
+    "tests"
+]
+
+[tool.ruff]
+target-version = "py311"
+include = ["numpydantic/**/*.py", "pyproject.toml"]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # annotations
+    "ANN",
+    ## ----------
+    # pydocstyle
+    # undocumented public objects
+    "D100", "D101", "D102", "D103", "D104", "D106", "D107",
+    # indentation
+    "D207", "D208",
+    # whitespace
+    "D210", "D211",
+    # emptiness
+    "D419"
+
+]
+ignore = [
+    "ANN101", "ANN102"
+]
+
+fixable = ["ALL"]
