@@ -70,6 +70,7 @@ testpaths = [
 [tool.ruff]
 target-version = "py311"
 include = ["numpydantic/**/*.py", "pyproject.toml"]
+exclude = ["tests"]
 
 [tool.ruff.lint]
 select = [

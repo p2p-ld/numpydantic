@@ -7,17 +7,14 @@ import base64
 import sys
 from collections.abc import Callable
 from copy import copy
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Union
 
 import blosc2
-import h5py
 import nptyping.structure
 import numpy as np
 
-# TODO: conditional import
+# TODO: conditional import of dask, remove from required dependencies
 from dask.array.core import Array as DaskArray
-from nptyping import NDArray as _NDArray
 from nptyping import Shape
 from nptyping.ndarray import NDArrayMeta as _NDArrayMeta
 from nptyping.nptyping_type import NPTypingType
@@ -27,14 +24,19 @@ from pydantic_core.core_schema import ListSchema
 
 from numpydantic.maps import np_to_python
 
+if TYPE_CHECKING:
+    from numpydantic.proxy import NDArrayProxy
+
 COMPRESSION_THRESHOLD = 16 * 1024
 """
 Arrays larger than this size (in bytes) will be compressed and b64 encoded when 
 serializing to JSON.
 """
 
+ARRAY_TYPES = Union[np.ndarray, DaskArray, "NDArrayProxy"]
 
-def list_of_lists_schema(shape: Shape, array_type_handler) -> ListSchema:
+
+def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:
     """Make a pydantic JSON schema for an array as a list of lists."""
     shape_parts = shape.__args__[0].split(",")
     split_parts = [
@@ -66,7 +68,7 @@ def list_of_lists_schema(shape: Shape, array_type_handler) -> ListSchema:
     return list_schema
 
 
-def jsonize_array(array: np.ndarray | DaskArray) -> list | dict:
+def jsonize_array(array: ARRAY_TYPES) -> list | dict:
     """
     Render an array to base python types that can be serialized to JSON
 
@@ -166,7 +168,7 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
 
         # get pydantic core schema for the given specified type
         if isinstance(dtype, nptyping.structure.StructureMeta):
-            raise NotImplementedError("Jonny finish this")
+            raise NotImplementedError("Finish handling structured dtypes!")
             # functools.reduce(operator.or_, [int, float, str])
         else:
             array_type_handler = _handler.generate_schema(np_to_python[dtype])
@@ -201,48 +203,3 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
                 jsonize_array, when_used="json"
             ),
         )
-
-
-class NDArrayProxy:
-    """
-    Thin proxy to numpy arrays stored within hdf5 files,
-    only read into memory when accessed, but otherwise
-    passthrough all attempts to access attributes.
-    """
-
-    def __init__(self, h5f_file: Path | str, path: str):
-        """
-        Args:
-            h5f_file (:class:`pathlib.Path`): Path to source HDF5 file
-            path (str): Location within HDF5 file where this array is located
-        """
-        self.h5f_file = Path(h5f_file)
-        self.path = path
-
-    def __getattr__(self, item) -> Any:
-        with h5py.File(self.h5f_file, "r") as h5f:
-            obj = h5f.get(self.path)
-            return getattr(obj, item)
-
-    def __getitem__(self, slice: slice) -> np.ndarray:
-        with h5py.File(self.h5f_file, "r") as h5f:
-            obj = h5f.get(self.path)
-            return obj[slice]
-
-    def __setitem__(self, slice, value) -> None:
-        raise NotImplementedError("Cant write into an arrayproxy yet!")
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls,
-        _source_type: _NDArray,
-        _handler: Callable[[Any], core_schema.CoreSchema],
-    ) -> core_schema.CoreSchema:
-        # return core_schema.no_info_after_validator_function(
-        #     serialization=core_schema.plain_serializer_function_ser_schema(
-        #         lambda array: array.tolist(),
-        #         when_used='json'
-        #     )
-        # )
-
-        return NDArray_.__get_pydantic_core_schema__(cls, _source_type, _handler)
