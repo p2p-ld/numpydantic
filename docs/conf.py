@@ -6,48 +6,53 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'numpydantic'
-copyright = '2024, Jonny Saunders'
-author = 'Jonny Saunders'
-release = 'v0.0.0'
+project = "numpydantic"
+copyright = "2024, Jonny Saunders"
+author = "Jonny Saunders"
+release = "v0.0.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.napoleon',
-    'sphinx.ext.autodoc',
-    'sphinxcontrib.autodoc_pydantic',
-    'sphinx.ext.intersphinx',
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
+    "sphinxcontrib.autodoc_pydantic",
+    "sphinx.ext.intersphinx",
     "sphinx_design",
-    'myst_parser',
-    'sphinx.ext.todo'
+    "myst_parser",
+    "sphinx.ext.todo",
 ]
 
-templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
-    'pydantic': ('https://docs.pydantic.dev/latest/', None),
-    'linkml': ('https://linkml.io/linkml/', None),
-    'linkml_runtime': ('https://linkml.io/linkml/', None),
-    'linkml-runtime': ('https://linkml.io/linkml/', None)
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "pydantic": ("https://docs.pydantic.dev/latest/", None),
+    "linkml": ("https://linkml.io/linkml/", None),
+    "linkml_runtime": ("https://linkml.io/linkml/", None),
+    "linkml-runtime": ("https://linkml.io/linkml/", None),
 }
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'furo'
-html_static_path = ['_static']
+html_theme = "furo"
+html_static_path = ["_static"]
 
 # autodoc
-autodoc_pydantic_model_show_json_error_strategy = 'coerce'
+autodoc_pydantic_model_show_json_error_strategy = "coerce"
 autodoc_pydantic_model_show_json = False
-autodoc_mock_imports = []
+autodoc_mock_imports = [
+    "dask",
+    "h5py",
+    "linkml",
+    "linkml-runtime",
+]
 autoclass_content = "both"
-autodoc_member_order='bysource'
+autodoc_member_order = "bysource"
 add_module_names = False
 
 # Napoleon settings
