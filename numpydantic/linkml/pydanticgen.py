@@ -1,30 +1,16 @@
 """
-Subclass of :class:`linkml.generators.PydanticGenerator`
+Patched subclass of :class:`linkml.generators.PydanticGenerator` to generate NDArrays
+swiped from ``nwb-linkml``.
 
-The pydantic generator is a subclass of
-- :class:`linkml.utils.generator.Generator`
-- :class:`linkml.generators.oocodegen.OOCodeGenerator`
+Since this is an override of the full generator originally intended for a specific format,
+this is a bit more involved than the isolated ndarray type generator. The most relevant
+parts here are:
+- The :class:`.ArrayCheck` class, which is used to determine when an array needs to be generated -
+  Use this to hook into nonstandard array formats that don't match the usual ``implements`` pattern
 
-The default `__main__` method
-- Instantiates the class
-- Calls :meth:`~linkml.generators.PydanticGenerator.serialize`
-
-The `serialize` method:
-
-- Accepts an optional jinja-style template, otherwise it uses the default template
-- Uses :class:`linkml_runtime.utils.schemaview.SchemaView` to interact with the schema
-- Generates linkML Classes
-    - `generate_enums` runs first
-
-.. note::
-
-    This module is heinous. We will be tidying this up and trying to pull changes upstream,
-    but for now this is just our hacky little secret.
 
 """
-import inspect
 import sys
-import warnings
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
@@ -51,6 +37,9 @@ from linkml_runtime.utils.schemaview import SchemaView
 
 # from nwb_linkml.maps import flat_to_nptyping
 from pydantic import BaseModel
+
+from numpydantic.linkml.ndarraygen import ArrayFormat
+from numpydantic.linkml.template import default_template
 
 
 def module_case(name: str) -> str:
@@ -81,184 +70,20 @@ class LinkML_Meta(BaseModel):
     tree_root: bool = False
 
 
-def default_template(
-    pydantic_ver: str = "2", extra_classes: list[type[BaseModel]] | None = None
-) -> str:
-    """Constructs a default template for pydantic classes based on the version of pydantic"""
-    ### HEADER ###
-    template = """
-{#-
-
-  Jinja2 Template for a pydantic classes
--#}
-from __future__ import annotations
-from datetime import datetime, date
-from enum import Enum
-from typing import Dict, Optional, Any, Union, ClassVar, Annotated, TypeVar, List, TYPE_CHECKING
-from pydantic import BaseModel as BaseModel, Field"""
-    if pydantic_ver == "2":
-        template += """
-from pydantic import ConfigDict, BeforeValidator
-        """
-    template += """
-from nptyping import Shape, Float, Float32, Double, Float64, LongLong, Int64, Int, Int32, Int16, Short, Int8, UInt, UInt32, UInt16, UInt8, UInt64, Number, String, Unicode, Unicode, Unicode, String, Bool, Datetime64
-from nwb_linkml.types import NDArray
-import sys
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
-if TYPE_CHECKING:
-    import numpy as np
-
-{% for import_module, import_classes in imports.items() %}
-from {{ import_module }} import (
-    {{ import_classes | join(',\n    ') }}
-)
-{% endfor %}
-
-metamodel_version = "{{metamodel_version}}"
-version = "{{version if version else None}}"
-"""
-    ### BASE MODEL ###
-    if pydantic_ver == "1":  # pragma: no cover
-        template += """
-List = BaseList
-
-class WeakRefShimBaseModel(BaseModel):
-   __slots__ = '__weakref__'
-
-class ConfiguredBaseModel(WeakRefShimBaseModel,
-                validate_assignment = False,
-                validate_all = True,
-                underscore_attrs_are_private = True,
-                extra = {% if allow_extra %}'allow'{% else %}'forbid'{% endif %},
-                arbitrary_types_allowed = True,
-                use_enum_values = True):
-"""
-    else:
-        template += """
-class ConfiguredBaseModel(BaseModel):
-    model_config = ConfigDict(
-        validate_assignment = True,
-        validate_default = True,
-        extra = {% if allow_extra %}'allow'{% else %}'forbid'{% endif %},
-        arbitrary_types_allowed = True,
-        use_enum_values = True
+def linkml_classvar(cls: ClassDefinition) -> SlotDefinition:
+    """A class variable that holds additional linkml attrs"""
+    slot = SlotDefinition(name="linkml_meta")
+    slot.annotations["python_range"] = Annotation(
+        "python_range", "ClassVar[LinkML_Meta]"
     )
-"""
-    ### Injected Fields
-    template += """
-{%- if injected_fields != None -%}
-    {% for field in injected_fields %}
-    {{ field }}
-    {% endfor %}
-{%- else -%}
-    pass
-{%- endif -%}
-    """
-    ### Getitem
-    template += """
-
-    def __getitem__(self, i: slice|int) -> 'np.ndarray':
-        if hasattr(self, 'array'):
-            return self.array[i]
-        else:
-            return super().__getitem__(i)
-
-    def __setitem__(self, i: slice|int, value: Any):
-        if hasattr(self, 'array'):
-            self.array[i] = value
-        else:
-            super().__setitem__(i, value)
-    """
-
-    ### Extra classes
-    if extra_classes is not None:
-        template += """{{ '\n\n' }}"""
-        for cls in extra_classes:
-            template += inspect.getsource(cls) + "\n\n"
-    ### ENUMS ###
-    template += """
-{% for e in enums.values() %}
-class {{ e.name }}(str, Enum):
-    {% if e.description -%}
-    \"\"\"
-    {{ e.description }}
-    \"\"\"
-    {%- endif %}
-    {% for _, pv in e['values'].items() -%}
-    {% if pv.description -%}
-    # {{pv.description}}
-    {%- endif %}
-    {{pv.label}} = "{{pv.value}}"
-    {% endfor %}
-    {% if not e['values'] -%}
-    dummy = "dummy"
-    {% endif %}
-{% endfor %}
-"""
-    ### CLASSES ###
-    template += """
-{%- for c in schema.classes.values() %}
-class {{ c.name }}
-    {%- if class_isa_plus_mixins[c.name] -%}
-        ({{class_isa_plus_mixins[c.name]|join(', ')}})
-    {%- else -%}
-        (ConfiguredBaseModel)
-    {%- endif -%}
-                  :
-    {% if c.description -%}
-    \"\"\"
-    {{ c.description }}
-    \"\"\"
-    {%- endif %}
-    {% for attr in c.attributes.values() if c.attributes -%}
-    {{attr.name}}:{{ ' ' }}{%- if attr.equals_string -%}
-        Literal[{{ predefined_slot_values[c.name][attr.name] }}]
-        {%- else -%}
-        {{ attr.annotations['python_range'].value }}
-        {%- endif -%}
-        {%- if attr.annotations['fixed_field'] -%}
-        {{ ' ' }}= {{ attr.annotations['fixed_field'].value }}
-        {%- else -%}
-        {{ ' ' }}= Field(
-    {%- if predefined_slot_values[c.name][attr.name] is string -%}
-        {{ predefined_slot_values[c.name][attr.name] }}
-    {%- elif attr.required -%}
-        ...
-    {%- else -%}
-        None
-    {%- endif -%}
-    {%- if attr.title != None %}, title="{{attr.title}}"{% endif -%}
-    {%- if attr.description %}, description=\"\"\"{{attr.description}}\"\"\"{% endif -%}
-    {%- if attr.minimum_value != None %}, ge={{attr.minimum_value}}{% endif -%}
-    {%- if attr.maximum_value != None %}, le={{attr.maximum_value}}{% endif -%}
+    meta_fields = {k: getattr(cls, k, None) for k in LinkML_Meta.model_fields}
+    meta_field_strings = [f"{k}={v}" for k, v in meta_fields.items() if v is not None]
+    meta_field_string = ", ".join(meta_field_strings)
+    slot.annotations["fixed_field"] = Annotation(
+        "fixed_field", f"Field(LinkML_Meta({meta_field_string}), frozen=True)"
     )
-    {%- endif %}
-    {% else -%}
-    None
-    {% endfor %}
-{% endfor %}
-"""
-    ### FWD REFS / REBUILD MODEL ###
-    if pydantic_ver == "1":  # pragma: no cover
-        template += """
-# Update forward refs
-# see https://pydantic-docs.helpmanual.io/usage/postponed_annotations/
-{% for c in schema.classes.values() -%}
-{{ c.name }}.update_forward_refs()
-{% endfor %}
-"""
-    else:
-        template += """
-# Model rebuild
-# see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
-{% for c in schema.classes.values() -%}
-{{ c.name }}.model_rebuild()
-{% endfor %}    
-"""
-    return template
+
+    return slot
 
 
 @dataclass
@@ -380,7 +205,7 @@ class PydanticGenerator(BasePydanticGenerator):
         if not self.split:
             # we are compiling this whole thing in one big file so we don't import anything
             return {}
-        if "is_namespace" in sv.schema.annotations.keys() and sv.schema.annotations[
+        if "is_namespace" in sv.schema.annotations and sv.schema.annotations[
             "is_namespace"
         ]["value"] in ("True", True):
             return self._get_namespace_imports(sv)
@@ -447,7 +272,7 @@ class PydanticGenerator(BasePydanticGenerator):
 
     def _check_anyof(
         self, s: SlotDefinition, sn: SlotDefinitionName, sv: SchemaView
-    ):  # pragma: no cover
+    ) -> None:  # pragma: no cover
         # Confirm that the original slot range (ignoring the default that comes in from
         # induced_slot) isn't in addition to setting any_of
         if len(s.any_of) > 0 and sv.get_slot(sn).range is not None:
@@ -458,94 +283,6 @@ class PydanticGenerator(BasePydanticGenerator):
                 base_range_subsumes_any_of = True
             if not base_range_subsumes_any_of:
                 raise ValueError("Slot cannot have both range and any_of defined")
-
-    def _make_npytyping_range(self, attrs: dict[str, SlotDefinition]) -> str:
-        # slot always starts with...
-        prefix = "NDArray["
-
-        # and then we specify the shape:
-        shape_prefix = 'Shape["'
-
-        # using the cardinality from the attributes
-        dim_pieces = []
-        for attr in attrs.values():
-            if attr.maximum_cardinality:
-                shape_part = str(attr.maximum_cardinality)
-            else:
-                shape_part = "*"
-
-            # do this with the most heinous chain of string replacements rather than regex
-            # because i am still figuring out what needs to be subbed lol
-            name_part = (
-                attr.name.replace(",", "_")
-                .replace(" ", "_")
-                .replace("__", "_")
-                .replace("|", "_")
-                .replace("-", "_")
-                .replace("+", "plus")
-            )
-
-            dim_pieces.append(" ".join([shape_part, name_part]))
-
-        dimension = ", ".join(dim_pieces)
-
-        shape_suffix = '"], '
-
-        # all dimensions should be the same dtype
-        try:
-            dtype = flat_to_nptyping[list(attrs.values())[0].range]
-        except KeyError as e:  # pragma: no cover
-            warnings.warn(str(e))
-            range = list(attrs.values())[0].range
-            return f"List[{range}] | {range}"
-        suffix = "]"
-
-        slot = "".join([prefix, shape_prefix, dimension, shape_suffix, dtype, suffix])
-        return slot
-
-    def _get_numpy_slot_range(self, cls: ClassDefinition) -> str:
-        # if none of the dimensions are optional, we just have one possible array shape
-        if all([s.required for s in cls.attributes.values()]):  # pragma: no cover
-            return self._make_npytyping_range(cls.attributes)
-        # otherwise we need to make permutations
-        # but not all permutations, because we typically just want to be able to exlude the last possible dimensions
-        # the array classes should always be well-defined where the optional dimensions are at the end, so
-        requireds = {k: v for k, v in cls.attributes.items() if v.required}
-        optionals = [(k, v) for k, v in cls.attributes.items() if not v.required]
-
-        annotations = []
-        if len(requireds) > 0:
-            # first the base case
-            annotations.append(self._make_npytyping_range(requireds))
-        # then add back each optional dimension
-        for i in range(len(optionals)):
-            attrs = {**requireds, **{k: v for k, v in optionals[0 : i + 1]}}
-            annotations.append(self._make_npytyping_range(attrs))
-
-        # now combine with a union:
-        union = "Union[\n" + " " * 8
-        union += (",\n" + " " * 8).join(annotations)
-        union += "\n" + " " * 4 + "]"
-        return union
-
-    def _get_linkml_classvar(self, cls: ClassDefinition) -> SlotDefinition:
-        """A class variable that holds additional linkml attrs"""
-        slot = SlotDefinition(name="linkml_meta")
-        slot.annotations["python_range"] = Annotation(
-            "python_range", "ClassVar[LinkML_Meta]"
-        )
-        meta_fields = {
-            k: getattr(cls, k, None) for k in LinkML_Meta.model_fields.keys()
-        }
-        meta_field_strings = [
-            f"{k}={v}" for k, v in meta_fields.items() if v is not None
-        ]
-        meta_field_string = ", ".join(meta_field_strings)
-        slot.annotations["fixed_field"] = Annotation(
-            "fixed_field", f"Field(LinkML_Meta({meta_field_string}), frozen=True)"
-        )
-
-        return slot
 
     def sort_classes(
         self, clist: list[ClassDefinition], imports: dict[str, list[str]]
@@ -564,7 +301,7 @@ class PydanticGenerator(BasePydanticGenerator):
 
         clist = list(clist)
         clist = [c for c in clist if c.name not in self.SKIP_CLASSES]
-        slist = []  # type: List[ClassDefinition]
+        slist = []  # type: list[ClassDefinition]
         while len(clist) > 0:
             can_add = False
             for i in range(len(clist)):
@@ -604,8 +341,8 @@ class PydanticGenerator(BasePydanticGenerator):
         """
         sv = self.schemaview
         range_cls = sv.get_class(slot_range)
-        if range_cls.is_a == "Arraylike":
-            return self._get_numpy_slot_range(range_cls)
+        if ArrayFormat.is_array(range_cls):
+            return ArrayFormat.get(range_cls).make(range_cls)
         else:
             return self._get_class_slot_range_origin(
                 slot_range, inlined, inlined_as_list
@@ -619,7 +356,7 @@ class PydanticGenerator(BasePydanticGenerator):
 
         Overriding to not use strings in the type hint when a class has an identifier value
 
-        Not testing this method except for what we changes
+        Not testing this method except for what we changed
         """
         sv = self.schemaview
         range_cls = sv.get_class(slot_range)
@@ -732,6 +469,7 @@ class PydanticGenerator(BasePydanticGenerator):
         return slot_value
 
     def serialize(self) -> str:
+        """Generate LinkML models from schema!"""
         predefined_slot_values = {}
         """splitting up parent class :meth:`.get_predefined_slot_values`"""
 
@@ -787,7 +525,7 @@ class PydanticGenerator(BasePydanticGenerator):
                 del class_def.attributes[attribute]
 
             # make class attr that stores extra linkml attrs
-            class_def.attributes["linkml_meta"] = self._get_linkml_classvar(class_def)
+            class_def.attributes["linkml_meta"] = linkml_classvar(class_def)
 
             class_name = class_original.name
             predefined_slot_values[camelcase(class_name)] = {}

@@ -43,11 +43,6 @@ class NDArrayProxy:
         _source_type: _NDArray,
         _handler: Callable[[Any], core_schema.CoreSchema],
     ) -> core_schema.CoreSchema:
-        # return core_schema.no_info_after_validator_function(
-        #     serialization=core_schema.plain_serializer_function_ser_schema(
-        #         lambda array: array.tolist(),
-        #         when_used='json'
-        #     )
-        # )
+        from numpydantic import NDArray
 
-        return NDArray_.__get_pydantic_core_schema__(cls, _source_type, _handler)
+        return NDArray.__get_pydantic_core_schema__(cls, _source_type, _handler)

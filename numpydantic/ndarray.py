@@ -24,8 +24,7 @@ from pydantic_core.core_schema import ListSchema
 
 from numpydantic.maps import np_to_python
 
-if TYPE_CHECKING:
-    from numpydantic.proxy import NDArrayProxy
+from numpydantic.proxy import NDArrayProxy
 
 COMPRESSION_THRESHOLD = 16 * 1024
 """
@@ -33,7 +32,7 @@ Arrays larger than this size (in bytes) will be compressed and b64 encoded when
 serializing to JSON.
 """
 
-ARRAY_TYPES = Union[np.ndarray, DaskArray, "NDArrayProxy"]
+ARRAY_TYPES = np.ndarray | DaskArray | NDArrayProxy
 
 
 def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:
@@ -153,7 +152,17 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
 
 class NDArray(NPTypingType, metaclass=NDArrayMeta):
     """
-    Following the example here: https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
+    Constrained array type allowing npytyping syntax for dtype and shape validation and serialization.
+
+    Integrates with pydantic such that
+    - JSON schema for list of list encoding
+    - Serialized as LoL, with automatic compression for large arrays
+    - Automatic coercion from lists on instantiation
+
+    Also supports validation on :class:`.NDArrayProxy` types for lazy loading.
+
+    References:
+        - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
     """
 
     __args__ = (Any, Any)
