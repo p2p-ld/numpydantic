@@ -147,7 +147,8 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
     """
     Kept here to allow for hooking into metaclass, which has
     been necessary on and off as we work this class into a stable
-    state"""
+    state
+    """
 
 
 class NDArray(NPTypingType, metaclass=NDArrayMeta):
