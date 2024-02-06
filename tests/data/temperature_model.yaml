@@ -1,0 +1,118 @@
+id: https://example.org/arrays
+name: arrays-temperature-example
+title: Array Temperature Example
+description: |-
+  from https://github.com/linkml/linkml-arrays/blob/ee2a063dbc6302c67506a2227ea9a5cc048f7584/tests/input/temperature_dataset.yaml
+license: MIT
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  wgs84: http://www.w3.org/2003/01/geo/wgs84_pos#
+  example: https://example.org/
+
+default_prefix: example
+
+imports:
+  - linkml:types
+
+classes:
+
+  TemperatureDataset:
+    tree_root: true
+    implements:
+      - linkml:DataArray
+    attributes:
+      name:
+        identifier: true
+        range: string
+      latitude_in_deg:
+        implements:
+          - linkml:axis
+        range: LatitudeSeries
+        required: true
+        annotations:
+          axis_index: 0
+      longitude_in_deg:
+        implements:
+          - linkml:axis
+        range: LongitudeSeries
+        required: true
+        annotations:
+          axis_index: 1
+      time_in_d:
+        implements:
+          - linkml:axis
+        range: DaySeries
+        required: true
+        annotations:
+          axis_index: 2
+      temperatures_in_K:
+        implements:
+          - linkml:array
+        range: TemperatureMatrix
+        required: true
+
+  TemperatureMatrix:
+    description: A 3D array of temperatures
+    implements:
+      - linkml:NDArray
+      - linkml:RowOrderedArray
+    attributes:
+      values:
+        range: float
+        multivalued: true
+        implements:
+          - linkml:elements
+        required: true
+        unit:
+          ucum_code: K
+    annotations:
+      dimensions: 3
+
+  LatitudeSeries:
+    description: A series whose values represent latitude
+    implements:
+      - linkml:NDArray
+    attributes:
+      values:
+        range: float
+        multivalued: true
+        implements:
+          - linkml:elements
+        required: true
+        unit:
+          ucum_code: deg
+    annotations:
+      dimensions: 1
+
+  LongitudeSeries:
+    description: A series whose values represent longitude
+    implements:
+      - linkml:NDArray
+    attributes:
+      values:
+        range: float
+        multivalued: true
+        implements:
+          - linkml:elements
+        required: true
+        unit:
+          ucum_code: deg
+    annotations:
+      dimensions: 1
+
+  DaySeries:
+    description: A series whose values represent the days since the start of the measurement period
+    implements:
+      - linkml:NDArray
+    attributes:
+      values:
+        range: float
+        multivalued: true
+        implements:
+          - linkml:elements
+        required: true
+        unit:
+          ucum_code: d
+    annotations:
+      dimensions: 1

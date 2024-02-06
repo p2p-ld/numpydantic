@@ -4,10 +4,19 @@ Isolated generator for array classes
 
 import warnings
 from abc import ABC, abstractmethod
+from typing import Literal
 
 from linkml_runtime.linkml_model import ClassDefinition, SlotDefinition
 
 from numpydantic.maps import flat_to_nptyping
+
+SourceType = ClassDefinition | SlotDefinition
+
+ArrayDefinitionType = Literal[
+    "SLOT",  # defined by independent slots
+    "CLASS_SLOT",  # defined by a class used as a slot's range
+    "CLASS",  # defined by a whole class
+]
 
 
 class ArrayFormat(ABC):
@@ -15,13 +24,15 @@ class ArrayFormat(ABC):
     Metaclass for different LinkML array source formats
     """
 
+    DEFINITION_TYPE: ArrayDefinitionType = None
+
     @classmethod
-    def is_array(cls, cls_: ClassDefinition) -> bool:
+    def is_array(cls, cls_: SourceType) -> bool:
         """Check whether a given class matches one of our subclasses definitions"""
         return any([subcls.check(cls_) for subcls in cls.__subclasses__()])
 
     @classmethod
-    def get(cls, cls_: ClassDefinition) -> type["ArrayFormat"]:
+    def get(cls, cls_: SourceType) -> type["ArrayFormat"]:
         """Get matching ArrayFormat subclass"""
         for subcls in cls.__subclasses__():
             if subcls.check(cls_):
@@ -29,12 +40,12 @@ class ArrayFormat(ABC):
 
     @classmethod
     @abstractmethod
-    def check(cls, cls_: ClassDefinition) -> bool:
+    def check(cls, cls_: SourceType) -> bool:
         """Method for array format subclasses to check if they match a given source class"""
 
     @classmethod
     @abstractmethod
-    def make(cls, cls_: ClassDefinition) -> str:
+    def make(cls, cls_: SourceType) -> str:
         """
         Make an annotation string from a given array format source class
         """
@@ -43,15 +54,40 @@ class ArrayFormat(ABC):
 class LinkMLNDArray(ArrayFormat):
     """
     Tentative linkml-arrays style NDArray
+
+    Examples:
+
+        .. code-block:: yaml
+
+            TemperatureMatrix:
+              description: A 3D array of temperatures
+              implements:
+                - linkml:NDArray
+                - linkml:RowOrderedArray
+              attributes:
+                values:
+                  range: float
+                  multivalued: true
+                  implements:
+                    - linkml:elements
+                  required: true
+                  unit:
+                    ucum_code: K
+              annotations:
+                dimensions: 3
+
+
+    References:
+        - https://github.com/linkml/linkml-model/blob/main/tests/input/examples/schema_definition-array-2.yaml
     """
 
     @classmethod
-    def check(cls, cls_: ClassDefinition) -> bool:
+    def check(cls, cls_: SourceType) -> bool:
         """Check if linkml:NDArray in implements"""
         return "linkml:NDArray" in cls_.implements
 
     @classmethod
-    def make(cls, cls_: ClassDefinition) -> str:
+    def make(cls, cls_: SourceType) -> str:
         """Make NDArray"""
         raise NotImplementedError("Havent implemented NDArrays yet!")
 
@@ -62,12 +98,12 @@ class LinkMLDataArray(ArrayFormat):
     """
 
     @classmethod
-    def check(cls, cls_: ClassDefinition) -> bool:
+    def check(cls, cls_: SourceType) -> bool:
         """Check if linkml:DataArray in implements"""
         return "linkml:DataArray" in cls_.implements
 
     @classmethod
-    def make(cls, cls_: ClassDefinition) -> str:
+    def make(cls, cls_: SourceType) -> str:
         """Make DataArray"""
         raise NotImplementedError("Havent generated DataArray types yet!")
 

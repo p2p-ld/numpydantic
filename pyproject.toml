@@ -101,7 +101,7 @@ select = [
 
 ]
 ignore = [
-    "ANN101", "ANN102"
+    "ANN101", "ANN102", "UP007"
 ]
 
 fixable = ["ALL"]

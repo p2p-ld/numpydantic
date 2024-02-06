@@ -32,7 +32,7 @@ Arrays larger than this size (in bytes) will be compressed and b64 encoded when
 serializing to JSON.
 """
 
-ARRAY_TYPES = np.ndarray | DaskArray | NDArrayProxy
+ARRAY_TYPES = Union[np.ndarray, DaskArray, NDArrayProxy]
 
 
 def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:

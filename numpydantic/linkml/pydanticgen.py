@@ -468,6 +468,19 @@ class PydanticGenerator(BasePydanticGenerator):
 
         return slot_value
 
+    def generate_python_range(
+        self, slot_range, slot_def: SlotDefinition, class_def: ClassDefinition
+    ) -> str:
+        """
+        Overridden to handle generating slot-only arrays
+        """
+        if (
+            ArrayFormat.is_array(slot_def)
+            and ArrayFormat.get(slot_def).DEFINITION_TYPE == "SLOT"
+        ):
+            return ArrayFormat.get(slot_def).make(slot_def)
+        return super().generate_python_range(slot_range, slot_def, class_def)
+
     def serialize(self) -> str:
         """Generate LinkML models from schema!"""
         predefined_slot_values = {}
@@ -603,7 +616,7 @@ class PydanticGenerator(BasePydanticGenerator):
             underscore=underscore,
             enums=enums,
             predefined_slot_values=predefined_slot_values,
-            allow_extra=self.allow_extra,
+            # allow_extra=self.allow_extra,
             metamodel_version=self.schema.metamodel_version,
             version=self.schema.version,
             class_isa_plus_mixins=self.get_class_isa_plus_mixins(sorted_classes),

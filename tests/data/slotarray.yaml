@@ -1,0 +1,206 @@
+id: https://example.org/arrays
+name: arrays-temperature-example
+title: Array Temperature Example
+description: |-
+  Example implementation of a slot-only NDArray
+license: MIT
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  wgs84: http://www.w3.org/2003/01/geo/wgs84_pos#
+  example: https://example.org/
+
+default_prefix: example
+
+imports:
+  - linkml:types
+
+classes:
+  ExactDimension:
+    description: exact anonymous dimensions
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          dimensions: 3
+
+  ExactNamedDimension:
+    description: Exact named dimensions
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          axes:
+            x:
+              rank: 0
+              alias: latitude
+            y:
+              rank: 1
+              alias: longitude
+            t:
+              rank: 2
+              alias: time
+
+  MinDimensions:
+    description: Minimum anonymous dimensions
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          dimensions:
+            min: 3
+
+  MaxDimensions:
+    description: Maximum anonymous dimensions
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          dimensions:
+            max: 3
+
+  RangeDimensions:
+    description: Range of anonymous dimensions
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          dimensions:
+            min: 2
+            max: 5
+
+  MixedNamedUnnamed:
+    description: One specified, named dimension, and any number of other dimensions
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          dimensions:
+            min: 1
+            # optionally, to be explicit:
+            max: null
+          axes:
+            x:
+              rank: 0
+              alias: latitude_in_deg
+
+  ExactCardinality:
+    description: An axis with a specified cardinality
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          axes:
+            x:
+              rank: 0
+              cardinality: 3
+
+  MinCardinality:
+    description: An axis with a minimum cardinality
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          axes:
+            x:
+              rank: 0
+              cardinality:
+                min: 3
+
+  MaxCardinality:
+    description: An axis with a maximum cardinality
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          axes:
+            x:
+              rank: 0
+              cardinality:
+                max: 3
+
+  RangeCardinality:
+    description: An axis with a min and maximum cardinality
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          axes:
+            x:
+              rank: 0
+              cardinality:
+                min: 2
+                max: 4
+
+  OptionalAxes:
+    description: Two optional axes that can be present in any combination
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          axes:
+            x:
+              rank: 0
+            y:
+              rank: 1
+            z:
+              cardinality: 3
+              required: false
+            theta:
+              cardinality: 4
+              required: false
+
+  ExclusiveAxes:
+    description: Two mutually exclusive definitions of an axis that define its different forms
+    attributes:
+      temp:
+        range: float
+        required: true
+        unit:
+          ucum_code: K
+        array:
+          axes:
+            x:
+              rank: 0
+            y:
+              rank: 1
+            rgb:
+              rank: 2
+              cardinality: 3
+            rgba:
+              rank: 2
+              cardinality: 4
+

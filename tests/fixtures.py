@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 from linkml_runtime.linkml_model import ClassDefinition, SlotDefinition
 
+DATA_DIR = Path(__file__).parent / "data"
+
 
 @pytest.fixture(scope="session")
 def tmp_output_dir() -> Path:
@@ -72,3 +74,29 @@ def nwb_linkml_array() -> tuple[ClassDefinition, str]:
         NDArray[Shape["* x, * y, 3 z, 4 a"], Number]
     ]"""
     return classdef, generated
+
+
+@pytest.fixture(scope="module")
+def patch_slotarray():
+    import sys
+
+    # modname = "linkml_runtime.linkml_model.meta"
+    # if modname in sys.modules:
+    #     del sys.modules[modname]
+
+    from numpydantic.linkml.slotarray import patch_linkml
+    import linkml_runtime
+    from linkml_runtime.linkml_model.meta import SlotDefinition
+
+    original_slot = SlotDefinition
+
+    yield patch_linkml()
+
+    linkml_runtime.linkml_model.SlotDefinition = original_slot
+
+
+@pytest.fixture()
+def slotarray_schemaview(patch_slotarray):
+    from linkml_runtime.utils.schemaview import SchemaView
+
+    return SchemaView(DATA_DIR / "slotarray.yaml")
