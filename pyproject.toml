@@ -11,8 +11,8 @@ python = "^3.11"
 pydantic = ">=2.3.0"
 nptyping = ">=2.5.0"
 blosc2 = "^2.5.1"
-dask = "^2024.1.1"
-h5py = "^3.10.0"
+dask = { version=">=2024.1.1", extras=["array"]}
+h5py = ">=3.10.0"
 pytest = { version=">=7.4.0", optional = true}
 pytest-depends = {version="^1.0.1", optional = true}
 coverage = {version = ">=6.1.1", optional = true}
@@ -30,9 +30,9 @@ linkml = {version = "^1.6.10", optional = true}
 linkml-runtime = {version = "^1.6.3", optional = true}
 
 [tool.poetry.extras]
-proxy = [
-    "dask", "h5py"
-]
+#proxy = [
+#    "dask", "h5py"
+#]
 linkml = [
     "linkml", "linkml-runtime"
 ]
@@ -45,7 +45,7 @@ docs = [
 dev = [
     "sphinx-autobuild", "black", "ruff",
     # proxy
-    "dask", "h5py",
+    # "dask", "h5py",
     # linkml
     "linkml", "linkml-runtime",
     # tests
