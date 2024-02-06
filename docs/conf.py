@@ -49,7 +49,7 @@ autodoc_mock_imports = [
     "dask",
     "h5py",
     "linkml",
-    "linkml-runtime",
+    "linkml_runtime",
 ]
 autoclass_content = "both"
 autodoc_member_order = "bysource"
