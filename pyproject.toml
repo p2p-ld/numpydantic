@@ -1,62 +1,59 @@
-[tool.poetry]
+[project]
 name = "numpydantic"
 version = "0.0.0"
 description = "Type and shape validation and serialization for numpy arrays in pydantic models"
-authors = ["sneakers-the-rat <sneakers-the-rat@protonmail.com>"]
-license = "MIT"
+authors = [
+    {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
+]
+dependencies = [
+    "pydantic>=2.3.0",
+    "nptyping>=2.5.0",
+    "blosc2<3.0.0,>=2.5.1",
+]
+requires-python = "<4.0,>=3.9"
 readme = "README.md"
+license = {text = "MIT"}
 
-[tool.poetry.dependencies]
-python = "^3.11"
-pydantic = ">=2.3.0"
-nptyping = ">=2.5.0"
-blosc2 = "^2.5.1"
-dask = { version=">=2024.1.1", extras=["array"]}
-h5py = ">=3.10.0"
-pytest = { version=">=7.4.0", optional = true}
-pytest-depends = {version="^1.0.1", optional = true}
-coverage = {version = ">=6.1.1", optional = true}
-pytest-cov = {version = "^4.1.0", optional = true}
-coveralls = {version = "^3.3.1", optional = true}
-sphinx = {version = "^7.2.6", optional = true}
-furo = {version = ">=2024.1.29", optional = true}
-myst-parser = {version = "^2.0.0", optional = true}
-autodoc-pydantic = {version = "^2.0.1", optional = true}
-sphinx-autobuild = {version = ">=2021.3.14", optional = true}
-sphinx-design = {version = "^0.5.0", optional = true}
-black = {version = "^24.1.1", optional = true}
-ruff = {version = "^0.2.0", optional = true}
-linkml = {version = ">=1.7.0", optional = true}
-linkml-runtime = {version = ">=1.7.0", optional = true}
 
-[tool.poetry.extras]
-#proxy = [
-#    "dask", "h5py"
-#]
-linkml = [
-    "linkml", "linkml-runtime"
+[project.optional-dependencies]
+dask = [
+    "dask[array]>=2024.1.1"
+]
+hdf5 = [
+    "h5py>=3.10.0"
+]
+arrays = [
+    "numpydantic[dask,hdf5]"
 ]
 tests = [
-    "pytest", "pytest-depends", "coverage", "pytest-cov", "coveralls"
+    "numpydantic[arrays]",
+    "pytest>=7.4.0",
+    "pytest-depends<2.0.0,>=1.0.1",
+    "coverage>=6.1.1",
+    "pytest-cov<5.0.0,>=4.1.0",
+    "coveralls<4.0.0,>=3.3.1"
 ]
 docs = [
-    "sphinx", "furo", "myst-parser", "autodoc-pydantic", "sphinx-design"
-]
+    "sphinx<8.0.0,>=7.2.6",
+    "furo>=2024.1.29",
+    "myst-parser<3.0.0,>=2.0.0",
+    "autodoc-pydantic<3.0.0,>=2.0.1",
+    "sphinx-design<1.0.0,>=0.5.0"]
 dev = [
-    "sphinx-autobuild", "black", "ruff",
-    # proxy
-    # "dask", "h5py",
-    # linkml
-    "linkml", "linkml-runtime",
-    # tests
-    "pytest", "pytest-depends", "coverage", "pytest-cov", "coveralls",
-    # docs
-    "sphinx", "furo", "myst-parser", "autodoc-pydantic", "sphinx-design"
+    "numpydantic[tests,docs]",
+    "sphinx-autobuild>=2021.3.14",
+    "black<25.0.0,>=24.1.1",
+    "ruff<1.0.0,>=0.2.0"
 ]
 
+[tool.pdm]
+distribution = true
+
+[tool.pdm.build]
+includes = []
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 [tool.pytest.ini_options]
 addopts = [
