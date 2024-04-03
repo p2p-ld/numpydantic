@@ -3,11 +3,12 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 
 * Order to store data in (row first)
 """
+
 import base64
 import sys
 from collections.abc import Callable
 from copy import copy
-from typing import TYPE_CHECKING, Any, Union
+from typing import Any
 
 import blosc2
 import nptyping.structure

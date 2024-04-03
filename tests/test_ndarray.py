@@ -7,7 +7,7 @@ import numpy as np
 from pydantic import BaseModel, ValidationError, Field
 from nptyping import Shape, Number
 
-from numpydantic.ndarray import NDArray
+from numpydantic import NDArray
 from numpydantic.proxy import NDArrayProxy
 
 

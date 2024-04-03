@@ -21,7 +21,8 @@ so any array syntax is valid there. (see [TODO](todo) for caveats)
 ```python
 from typing import Union
 from pydantic import BaseModel
-from numpydantic import NDArray, Shape, UInt8, Float, Int
+from src.numpydantic import NDArray, Shape, UInt8, Float, Int
+
 
 class Image(BaseModel):
     """
