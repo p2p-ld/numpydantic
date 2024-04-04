@@ -94,11 +94,16 @@ select = [
     # whitespace
     "D210", "D211",
     # emptiness
-    "D419"
+    "D419",
+
 
 ]
 ignore = [
-    "ANN101", "ANN102"
+    "ANN101", "ANN102", "ANN401",
+    # builtin type annotations
+    "UP006", "UP035",
+    # docstrings for __init__
+    "D107",
 ]
 
 fixable = ["ALL"]

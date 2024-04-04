@@ -8,14 +8,11 @@ import base64
 import sys
 from collections.abc import Callable
 from copy import copy
-from typing import Any
+from typing import Any, Tuple, TypeVar, cast, Union
 
 import blosc2
 import nptyping.structure
 import numpy as np
-
-# TODO: conditional import of dask, remove from required dependencies
-from dask.array.core import Array as DaskArray
 from nptyping import Shape
 from nptyping.ndarray import NDArrayMeta as _NDArrayMeta
 from nptyping.nptyping_type import NPTypingType
@@ -23,17 +20,17 @@ from nptyping.shape_expression import check_shape
 from pydantic_core import core_schema
 from pydantic_core.core_schema import ListSchema
 
+from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
 
-from numpydantic.proxy import NDArrayProxy
+# from numpydantic.proxy import NDArrayProxy
+from numpydantic.types import DtypeType, NDArrayType, ShapeType
 
 COMPRESSION_THRESHOLD = 16 * 1024
 """
 Arrays larger than this size (in bytes) will be compressed and b64 encoded when 
 serializing to JSON.
 """
-
-ARRAY_TYPES = np.ndarray | DaskArray | NDArrayProxy
 
 
 def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:
@@ -68,7 +65,7 @@ def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:
     return list_schema
 
 
-def jsonize_array(array: ARRAY_TYPES) -> list | dict:
+def jsonize_array(array: NDArrayType) -> list | dict:
     """
     Render an array to base python types that can be serialized to JSON
 
@@ -80,12 +77,13 @@ def jsonize_array(array: ARRAY_TYPES) -> list | dict:
     Args:
         array (:class:`np.ndarray`, :class:`dask.DaskArray`): Array to render as a list!
     """
-    if isinstance(array, DaskArray):
-        arr = array.__array__()
-    elif isinstance(array, NDArrayProxy):
-        arr = array[:]
-    else:
-        arr = array
+    # if isinstance(array, DaskArray):
+    #    arr = array.__array__()
+    # elif isinstance(array, NDArrayProxy):
+    #    arr = array[:]
+    # else:
+    #    arr = array
+    arr = array
 
     # If we're larger than 16kB then compress array!
     if sys.getsizeof(arr) > COMPRESSION_THRESHOLD:
@@ -117,21 +115,18 @@ def get_validate_shape(shape: Shape) -> Callable:
     return validate_shape
 
 
-def get_validate_dtype(dtype: np.dtype) -> Callable:
+def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
     """
-    Get a closure around a dtype validation function that includes the dtype definition
+    Validate using a matching :class:`.Interface` class using its :meth:`.Interface.validate` method
     """
 
-    def validate_dtype(value: np.ndarray) -> np.ndarray:
-        if dtype is Any:
-            return value
-
-        assert (
-            value.dtype == dtype
-        ), f"Invalid dtype! expected {dtype}, got {value.dtype}"
+    def validate_interface(value: Any, info) -> NDArrayType:
+        interface_cls = Interface.match(value)
+        interface = interface_cls(shape, dtype)
+        value = interface.validate(value)
         return value
 
-    return validate_dtype
+    return validate_interface
 
 
 def coerce_list(value: Any) -> np.ndarray:
@@ -152,6 +147,9 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
     """
 
 
+T = TypeVar("T")
+
+
 class NDArray(NPTypingType, metaclass=NDArrayMeta):
     """
     Constrained array type allowing npytyping syntax for dtype and shape validation and serialization.
@@ -167,7 +165,10 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
         - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
     """
 
-    __args__ = (Any, Any)
+    def __init__(self: T):
+        pass
+
+    __args__: Tuple[ShapeType, DtypeType] = (Any, Any)
 
     @classmethod
     def __get_pydantic_core_schema__(
@@ -176,6 +177,8 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
         _handler: Callable[[Any], core_schema.CoreSchema],
     ) -> core_schema.CoreSchema:
         shape, dtype = _source_type.__args__
+        shape: ShapeType
+        dtype: DtypeType
 
         # get pydantic core schema for the given specified type
         if isinstance(dtype, nptyping.structure.StructureMeta):
@@ -195,18 +198,8 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
             python_schema=core_schema.chain_schema(
                 [
                     core_schema.no_info_plain_validator_function(coerce_list),
-                    core_schema.union_schema(
-                        [
-                            core_schema.is_instance_schema(cls=np.ndarray),
-                            core_schema.is_instance_schema(cls=DaskArray),
-                            core_schema.is_instance_schema(cls=NDArrayProxy),
-                        ]
-                    ),
-                    core_schema.no_info_plain_validator_function(
-                        get_validate_dtype(dtype)
-                    ),
-                    core_schema.no_info_plain_validator_function(
-                        get_validate_shape(shape)
+                    core_schema.with_info_plain_validator_function(
+                        get_validate_interface(shape, dtype)
                     ),
                 ]
             ),
@@ -214,3 +207,7 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
                 jsonize_array, when_used="json"
             ),
         )
+
+
+NDArray = cast(Union[np.ndarray, list[int]], NDArray)
+# NDArray = cast(Union[Interface.array_types()], NDArray)

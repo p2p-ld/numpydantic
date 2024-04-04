@@ -8,7 +8,7 @@ from pydantic import BaseModel, ValidationError, Field
 from nptyping import Shape, Number
 
 from numpydantic import NDArray
-from numpydantic.proxy import NDArrayProxy
+from numpydantic.exceptions import ShapeError, DtypeError
 
 
 # from .fixtures import tmp_output_dir_func
@@ -33,7 +33,7 @@ def test_ndarray_type():
     with pytest.raises(ValidationError):
         instance = Model(array=np.zeros((4, 6)))
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(DtypeError):
         instance = Model(array=np.ones((2, 3), dtype=bool))
 
     instance = Model(array=np.zeros((2, 3)), array_any=np.ones((3, 4, 5)))
@@ -77,7 +77,7 @@ def test_ndarray_coercion():
 
     amod = Model(array=[1, 2, 3, 4.5])
     assert np.allclose(amod.array, np.array([1, 2, 3, 4.5]))
-    with pytest.raises(ValidationError):
+    with pytest.raises(DtypeError):
         amod = Model(array=["a", "b", "c"])
 
 
