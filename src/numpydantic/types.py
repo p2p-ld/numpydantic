@@ -4,11 +4,10 @@ Types for numpydantic
 Note that these are types as in python typing types, not classes.
 """
 
-from typing import Any, Protocol, Tuple, TypeVar, Union, runtime_checkable
+from typing import Any, Protocol, Tuple, runtime_checkable
 
 import numpy as np
 from nptyping import DType
-
 
 ShapeType = Tuple[int, ...] | Any
 DtypeType = np.dtype | str | type | Any | DType

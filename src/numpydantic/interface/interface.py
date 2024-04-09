@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from operator import attrgetter
-from typing import Any, Generic, List, Type, TypeVar, Tuple
+from typing import Any, Generic, Tuple, Type, TypeVar
 
 from nptyping.shape_expression import check_shape
 
@@ -15,6 +15,7 @@ class Interface(ABC, Generic[T]):
     Abstract parent class for interfaces to different array formats
     """
 
+    input_types: Tuple[Any, ...]
     return_type: Type[T]
     priority: int = 0
 
@@ -108,6 +109,18 @@ class Interface(ABC, Generic[T]):
     def array_types(cls) -> Tuple[NDArrayType, ...]:
         """Return types for all enabled interfaces"""
         return tuple([i.return_type for i in cls.interfaces()])
+
+    @classmethod
+    def input_types(cls) -> Tuple[Any, ...]:
+        """Input types for all enabled interfaces"""
+        in_types = []
+        for iface in cls.interfaces():
+            if isinstance(iface.input_types, tuple | list):
+                in_types.extend(iface.input_types)
+            else:
+                in_types.append(iface.input_types)
+
+        return tuple(in_types)
 
     @classmethod
     def match(cls, array: Any) -> Type["Interface"]:

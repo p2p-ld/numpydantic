@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.3.0",
     "nptyping>=2.5.0",
     "blosc2<3.0.0,>=2.5.1",
+    "numpy>=1.24.0",
 ]
 requires-python = "<4.0,>=3.9"
 readme = "README.md"
@@ -17,7 +18,7 @@ license = {text = "MIT"}
 
 [project.optional-dependencies]
 dask = [
-    "dask[array]>=2024.1.1"
+    "dask>=2024.4.0",
 ]
 hdf5 = [
     "h5py>=3.10.0"
@@ -99,9 +100,11 @@ select = [
 
 ]
 ignore = [
-    "ANN101", "ANN102", "ANN401",
+    "ANN101", "ANN102", "ANN401", "ANN204",
     # builtin type annotations
     "UP006", "UP035",
+    # | for Union types (only supported >=3.10
+    "UP007", "UP038",
     # docstrings for __init__
     "D107",
 ]

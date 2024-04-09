@@ -34,6 +34,8 @@ intersphinx_mapping = {
     "linkml": ("https://linkml.io/linkml/", None),
     "linkml_runtime": ("https://linkml.io/linkml/", None),
     "linkml-runtime": ("https://linkml.io/linkml/", None),
+    "dask": ("https://docs.dask.org/en/stable/", None),
+    "h5py": ("https://docs.h5py.org/en/stable/", None),
 }
 
 # -- Options for HTML output -------------------------------------------------

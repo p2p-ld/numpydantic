@@ -3,8 +3,11 @@ Metaprogramming functions for numpydantic to modify itself :)
 """
 
 from pathlib import Path
+from warnings import warn
 
 from numpydantic.interface import Interface
+
+_BUILTIN_IMPORTS = ("import typing", "import pathlib")
 
 
 def generate_ndarray_stub() -> str:
@@ -14,11 +17,16 @@ def generate_ndarray_stub() -> str:
 
     import_strings = [
         f"from {arr.__module__} import {arr.__name__}"
-        for arr in Interface.array_types()
+        for arr in Interface.input_types()
+        if arr.__module__ != "builtins"
     ]
+    import_strings.extend(_BUILTIN_IMPORTS)
     import_string = "\n".join(import_strings)
 
-    class_names = [arr.__name__ for arr in Interface.array_types()]
+    class_names = [
+        arr.__name__ if arr.__module__ != "typing" else str(arr)
+        for arr in Interface.input_types()
+    ]
     class_union = " | ".join(class_names)
     ndarray_type = "NDArray = " + class_union
 
@@ -32,8 +40,11 @@ def update_ndarray_stub() -> None:
     """
     from numpydantic import ndarray
 
-    stub_string = generate_ndarray_stub()
+    try:
+        stub_string = generate_ndarray_stub()
 
-    pyi_file = Path(ndarray.__file__).with_suffix(".pyi")
-    with open(pyi_file, "w") as pyi:
-        pyi.write(stub_string)
+        pyi_file = Path(ndarray.__file__).with_suffix(".pyi")
+        with open(pyi_file, "w") as pyi:
+            pyi.write(stub_string)
+    except Exception as e:
+        warn(f"ndarray.pyi stub file could not be generated: {e}", stacklevel=1)

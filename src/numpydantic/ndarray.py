@@ -165,9 +165,6 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
         - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
     """
 
-    def __init__(self: T):
-        pass
-
     __args__: Tuple[ShapeType, DtypeType] = (Any, Any)
 
     @classmethod

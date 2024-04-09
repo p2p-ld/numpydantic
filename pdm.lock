@@ -5,7 +5,7 @@
 groups = ["default", "arrays", "dask", "dev", "docs", "hdf5", "tests"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:761d4dccd4e594b9e441dddefdb5677d22a4a94c129183e0bb8c88d9acbea1b9"
+content_hash = "sha256:37b2b742a3addd598fce4747623d941ce0b7b2f18b0c33e2a9a2015196239902"
 
 [[package]]
 name = "alabaster"
@@ -371,7 +371,7 @@ files = [
 
 [[package]]
 name = "dask"
-version = "2024.4.0"
+version = "2024.4.1"
 requires_python = ">=3.9"
 summary = "Parallel PyData with Task Scheduling"
 groups = ["arrays", "dask", "dev", "tests"]
@@ -386,24 +386,8 @@ dependencies = [
     "toolz>=0.10.0",
 ]
 files = [
-    {file = "dask-2024.4.0-py3-none-any.whl", hash = "sha256:f8332781ffde3d3e49df31fe4066e1eab571a87b94a11661a8ecf06e2892ee6d"},
-    {file = "dask-2024.4.0.tar.gz", hash = "sha256:d5be22660b332865e7e868df2f1322a75f6cacaf8dd9ec08057e6fa8a96a19ac"},
-]
-
-[[package]]
-name = "dask"
-version = "2024.4.0"
-extras = ["array"]
-requires_python = ">=3.9"
-summary = "Parallel PyData with Task Scheduling"
-groups = ["arrays", "dask", "dev", "tests"]
-dependencies = [
-    "dask==2024.4.0",
-    "numpy>=1.21",
-]
-files = [
-    {file = "dask-2024.4.0-py3-none-any.whl", hash = "sha256:f8332781ffde3d3e49df31fe4066e1eab571a87b94a11661a8ecf06e2892ee6d"},
-    {file = "dask-2024.4.0.tar.gz", hash = "sha256:d5be22660b332865e7e868df2f1322a75f6cacaf8dd9ec08057e6fa8a96a19ac"},
+    {file = "dask-2024.4.1-py3-none-any.whl", hash = "sha256:cac5d28b9de7a7cfde46d6fbd8fa81f5654980d010b44d1dbe04dd13b5b63126"},
+    {file = "dask-2024.4.1.tar.gz", hash = "sha256:6cd8eb03ddc8dc08d6ca5b167b8de559872bc51cc2b6587d0e9dc754ab19cdf0"},
 ]
 
 [[package]]
@@ -811,7 +795,7 @@ name = "numpy"
 version = "1.26.4"
 requires_python = ">=3.9"
 summary = "Fundamental package for array computing in Python"
-groups = ["arrays", "dask", "default", "dev", "hdf5", "tests"]
+groups = ["arrays", "default", "dev", "hdf5", "tests"]
 files = [
     {file = "numpy-1.26.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:9ff0f4f29c51e2803569d7a51c2304de5554655a60c5d776e35b4a41413830d0"},
     {file = "numpy-1.26.4-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:2e4ee3380d6de9c9ec04745830fd9e2eccb3e6cf790d39d7b98ffd19b0dd754a"},

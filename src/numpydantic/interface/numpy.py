@@ -17,6 +17,7 @@ class NumpyInterface(Interface):
     Numpy :class:`~numpy.ndarray` s!
     """
 
+    input_types = (ndarray, list)
     return_type = ndarray
 
     @classmethod
