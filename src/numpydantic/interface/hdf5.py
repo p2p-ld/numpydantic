@@ -16,7 +16,7 @@ try:
 except ImportError:
     h5py = None
 
-if sys.version_info.minor >= 3.10:
+if sys.version_info.minor >= 10:
     from typing import TypeAlias
 
     H5Arraylike: TypeAlias = Tuple[Union[Path, str], str]
