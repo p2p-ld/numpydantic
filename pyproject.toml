@@ -110,6 +110,9 @@ ignore = [
 
 fixable = ["ALL"]
 
+[tool.black]
+exclude = ["tests"]
+
 [tool.mypy]
 plugins = [
     "pydantic.mypy"
