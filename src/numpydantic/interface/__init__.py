@@ -1,3 +1,7 @@
+"""
+Interfaces between nptyping types and array backends
+"""
+
 from numpydantic.interface.dask import DaskInterface
 from numpydantic.interface.hdf5 import H5Interface
 from numpydantic.interface.interface import Interface

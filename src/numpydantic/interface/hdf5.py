@@ -1,6 +1,9 @@
-import pdb
+"""
+Interfaces for HDF5 Datasets
+"""
+
 from pathlib import Path
-from typing import Any, NamedTuple, Tuple, Union, TypeAlias
+from typing import Any, NamedTuple, Tuple, TypeAlias, Union
 
 import numpy as np
 
@@ -28,15 +31,15 @@ class H5Proxy:
     """
     Proxy class to mimic numpy-like array behavior with an HDF5 array
 
-    The attribute and item access methods only open the file for the duration of the method,
-    making it less perilous to share this object between threads and processes.
+    The attribute and item access methods only open the file for the duration of the
+    method, making it less perilous to share this object between threads and processes.
 
     This class attempts to be a passthrough class to a :class:`h5py.Dataset` object,
     including its attributes and item getters/setters.
 
     When using read-only methods, no locking is attempted (beyond the HDF5 defaults),
-    but when using the write methods (setting an array value), try and use the ``locking``
-    methods of :class:`h5py.File` .
+    but when using the write methods (setting an array value), try and use the
+    ``locking`` methods of :class:`h5py.File` .
 
     Args:
         file (pathlib.Path | str): Location of hdf5 file on filesystem
@@ -74,7 +77,7 @@ class H5Proxy:
             obj = h5f.get(self.path)
             obj[key] = value
 
-    def open(self, mode: str = "r"):
+    def open(self, mode: str = "r") -> "h5py.Dataset":
         """
         Return the opened :class:`h5py.Dataset` object
 
@@ -84,7 +87,7 @@ class H5Proxy:
             self._h5f = h5py.File(self.file, mode)
         return self._h5f.get(self.path)
 
-    def close(self):
+    def close(self) -> None:
         """
         Close the :class:`h5py.File` object left open when returning the dataset with
         :meth:`.open`
@@ -116,7 +119,10 @@ class H5Interface(Interface):
 
     @classmethod
     def check(cls, array: Union[H5ArrayPath, Tuple[Union[Path, str], str]]) -> bool:
-        """Check that the given array is a :class:`.H5ArrayPath` or something that resembles one."""
+        """
+        Check that the given array is a :class:`.H5ArrayPath` or something that
+        resembles one.
+        """
         if isinstance(array, H5ArrayPath):
             return True
 
@@ -152,7 +158,8 @@ class H5Interface(Interface):
             array = H5Proxy(file=array[0], path=array[1])
         else:
             raise ValueError(
-                "Need to specify a file and a path within an HDF5 file to use the HDF5 Interface"
+                "Need to specify a file and a path within an HDF5 file to use the HDF5 "
+                "Interface"
             )
 
         if not array.array_exists():
@@ -165,6 +172,14 @@ class H5Interface(Interface):
 
     @classmethod
     def to_json(cls, array: H5Proxy) -> dict:
+        """
+        Dump to a dictionary containing
+
+        * ``file``: :attr:`.file`
+        * ``path``: :attr:`.path`
+        * ``attrs``: Any HDF5 attributes on the dataset
+        * ``array``: The array as a list of lists
+        """
         try:
             dset = array.open()
             meta = {

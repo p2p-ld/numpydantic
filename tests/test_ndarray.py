@@ -83,24 +83,18 @@ def test_ndarray_coercion():
 
 def test_ndarray_serialize():
     """
-    Large arrays should get compressed with blosc, otherwise just to list
+    Arrays should be dumped to a list when using json, but kept as ndarray otherwise
     """
 
     class Model(BaseModel):
-        large_array: NDArray[Any, Number]
-        small_array: NDArray[Any, Number]
+        array: NDArray[Any, Number]
 
-    mod = Model(
-        large_array=np.random.random((1024, 1024)), small_array=np.random.random((3, 3))
-    )
+    mod = Model(array=np.random.random((3, 3)))
     mod_str = mod.model_dump_json()
     mod_json = json.loads(mod_str)
-    for a in ("array", "shape", "dtype", "unpack_fns"):
-        assert a in mod_json["large_array"].keys()
-    assert isinstance(mod_json["large_array"]["array"], str)
-    assert isinstance(mod_json["small_array"], list)
+    assert isinstance(mod_json["array"], list)
 
-    # but when we just dump to a dict we don't compress
+    # but when we just dump to a dict we don't coerce
     mod_dict = mod.model_dump()
     assert isinstance(mod_dict["large_array"], np.ndarray)
 

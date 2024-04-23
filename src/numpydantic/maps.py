@@ -1,8 +1,12 @@
+"""
+Maps from one value system to another
+"""
+
 from datetime import datetime
 from typing import Any
 
 import numpy as np
-from nptyping import Float, Int, String, Bool
+from nptyping import Bool, Float, Int, String
 
 np_to_python = {
     Any: Any,
@@ -43,6 +47,7 @@ np_to_python = {
     },
     **{n: str for n in (np.character, np.str_, np.string_, np.unicode_)},
 }
+"""Map from python types to numpy"""
 
 
 flat_to_nptyping = {
@@ -75,5 +80,7 @@ flat_to_nptyping = {
     "AnyType": "Any",
     "object": "Object",
 }
+"""Map from NWB-style flat dtypes to nptyping types"""
 
 python_to_nptyping = {float: Float, str: String, int: Int, bool: Bool}
+"""Map from python types to nptyping types"""

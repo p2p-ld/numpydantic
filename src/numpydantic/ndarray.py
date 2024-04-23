@@ -5,7 +5,7 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 """
 
 from collections.abc import Callable
-from typing import Any, Tuple, Union
+from typing import TYPE_CHECKING, Any, Tuple, Union
 
 import nptyping.structure
 import numpy as np
@@ -20,6 +20,9 @@ from numpydantic.maps import np_to_python
 
 # from numpydantic.proxy import NDArrayProxy
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
+
+if TYPE_CHECKING:
+    from pydantic import ValidationInfo
 
 COMPRESSION_THRESHOLD = 16 * 1024
 """
@@ -62,10 +65,11 @@ def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:
 
 def _get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
     """
-    Validate using a matching :class:`.Interface` class using its :meth:`.Interface.validate` method
+    Validate using a matching :class:`.Interface` class using its
+    :meth:`.Interface.validate` method
     """
 
-    def validate_interface(value: Any, info) -> NDArrayType:
+    def validate_interface(value: Any, info: "ValidationInfo") -> NDArrayType:
         interface_cls = Interface.match(value)
         interface = interface_cls(shape, dtype)
         value = interface.validate(value)
@@ -99,7 +103,8 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
 
 class NDArray(NPTypingType, metaclass=NDArrayMeta):
     """
-    Constrained array type allowing npytyping syntax for dtype and shape validation and serialization.
+    Constrained array type allowing npytyping syntax for dtype and shape validation
+    and serialization.
 
     Integrates with pydantic such that
     - JSON schema for list of list encoding

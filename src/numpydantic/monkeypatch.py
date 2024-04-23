@@ -1,3 +1,10 @@
+"""
+Functions to monkeypatch dependent packages - most notably nptyping
+"""
+
+# ruff: noqa: ANN001
+
+
 def patch_npytyping_perf() -> None:
     """
     npytyping makes an expensive call to inspect.stack()
@@ -14,6 +21,7 @@ def patch_npytyping_perf() -> None:
     from nptyping.pandas_ import dataframe
 
     # make a new __module__ methods for the affected classes
+
     def new_module_ndarray(cls) -> str:
         return cls._get_module(inspect.currentframe(), "nptyping.ndarray")
 

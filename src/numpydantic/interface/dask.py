@@ -1,5 +1,11 @@
+"""
+Interface for Dask arrays
+"""
+
 from typing import Any
+
 import numpy as np
+
 from numpydantic.interface.interface import Interface
 
 try:

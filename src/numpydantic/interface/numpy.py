@@ -1,3 +1,7 @@
+"""
+Interface to numpy arrays
+"""
+
 from typing import Any
 
 from numpydantic.interface.interface import Interface
@@ -22,7 +26,10 @@ class NumpyInterface(Interface):
 
     @classmethod
     def check(cls, array: Any) -> bool:
-        """Check that this is in fact a numpy ndarray or something that can be coerced to one"""
+        """
+        Check that this is in fact a numpy ndarray or something that can be
+        coerced to one
+        """
         if isinstance(array, ndarray):
             return True
         else:
@@ -34,7 +41,8 @@ class NumpyInterface(Interface):
 
     def before_validation(self, array: Any) -> ndarray:
         """
-        Coerce to an ndarray. We have already checked if coercion is possible in :meth:`.check`
+        Coerce to an ndarray. We have already checked if coercion is possible
+        in :meth:`.check`
         """
         if not isinstance(array, ndarray):
             array = ndarray(array)

@@ -1,3 +1,7 @@
+"""
+Base Interface metaclass
+"""
+
 from abc import ABC, abstractmethod
 from operator import attrgetter
 from typing import Any, Generic, Tuple, Type, TypeVar, Union
@@ -67,13 +71,15 @@ class Interface(ABC, Generic[T]):
             return array
         if not check_shape(array.shape, self.shape):
             raise ShapeError(
-                f"Invalid shape! expected shape {self.shape.prepared_args}, got shape {array.shape}"
+                f"Invalid shape! expected shape {self.shape.prepared_args}, "
+                f"got shape {array.shape}"
             )
         return array
 
     def after_validation(self, array: NDArrayType) -> T:
         """
-        Optional step post-validation that coerces the intermediate array type into the return type
+        Optional step post-validation that coerces the intermediate array type into the
+        return type
 
         Default method is a no-op
         """
@@ -90,13 +96,15 @@ class Interface(ABC, Generic[T]):
     @abstractmethod
     def enabled(cls) -> bool:
         """
-        Check whether this array interface can be used (eg. its dependent packages are installed, etc.)
+        Check whether this array interface can be used (eg. its dependent packages are
+        installed, etc.)
         """
 
     @classmethod
     def to_json(cls, array: Type[T]) -> Union[list, dict]:
         """
-        Convert an array of :attr:`.return_type` to a JSON-compatible format using base python types
+        Convert an array of :attr:`.return_type` to a JSON-compatible format using
+        base python types
         """
         if not isinstance(array, np.ndarray):
             array = np.array(array)
