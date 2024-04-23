@@ -31,7 +31,8 @@ tests = [
     "pytest-depends<2.0.0,>=1.0.1",
     "coverage>=6.1.1",
     "pytest-cov<5.0.0,>=4.1.0",
-    "coveralls<4.0.0,>=3.3.1"
+    "coveralls<4.0.0,>=3.3.1",
+    "typing-extensions>=4.11.0;python_version<'3.11'",
 ]
 docs = [
     "sphinx<8.0.0,>=7.2.6",

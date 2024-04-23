@@ -1,8 +1,12 @@
+import sys
 import pytest
 
 from numpydantic import NDArray
 
-from typing import reveal_type
+if sys.version_info.minor < 11:
+    from typing_extensions import reveal_type
+else:
+    from typing import reveal_type
 
 
 @pytest.mark.skip("TODO")
