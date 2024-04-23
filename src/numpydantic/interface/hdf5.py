@@ -2,8 +2,9 @@
 Interfaces for HDF5 Datasets
 """
 
+import sys
 from pathlib import Path
-from typing import Any, NamedTuple, Tuple, TypeAlias, Union
+from typing import Any, NamedTuple, Tuple, Union
 
 import numpy as np
 
@@ -15,7 +16,12 @@ try:
 except ImportError:
     h5py = None
 
-H5Arraylike: TypeAlias = Tuple[Union[Path, str], str]
+if sys.version_info.minor >= 3.10:
+    from typing import TypeAlias
+
+    H5Arraylike: TypeAlias = Tuple[Union[Path, str], str]
+else:  # pragma: no cover
+    H5Arraylike = Tuple[Union[Path, str], str]
 
 
 class H5ArrayPath(NamedTuple):
