@@ -101,6 +101,8 @@ select = [
 ]
 ignore = [
     "ANN101", "ANN102", "ANN401", "ANN204",
+    # explicit strict arg for zip
+    "B905",
     # builtin type annotations
     "UP006", "UP035",
     # | for Union types (only supported >=3.10

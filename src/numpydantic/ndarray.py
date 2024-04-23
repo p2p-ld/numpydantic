@@ -44,7 +44,7 @@ def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:
     shape_labels = reversed(split_parts)
     shape_args = reversed(shape.prepared_args)
     list_schema = None
-    for arg, label in zip(shape_args, shape_labels, strict=False):
+    for arg, label in zip(shape_args, shape_labels):
         # which handler to use? for the first we use the actual type
         # handler, everywhere else we use the prior list handler
         inner_schema = array_type_handler if list_schema is None else list_schema
