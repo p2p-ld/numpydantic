@@ -96,7 +96,7 @@ def test_ndarray_serialize():
 
     # but when we just dump to a dict we don't coerce
     mod_dict = mod.model_dump()
-    assert isinstance(mod_dict["large_array"], np.ndarray)
+    assert isinstance(mod_dict["array"], np.ndarray)
 
 
 # def test_ndarray_proxy(tmp_output_dir_func):
