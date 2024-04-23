@@ -6,13 +6,12 @@ Note that these are types as in python typing types, not classes.
 
 # ruff: noqa: D102
 
-from typing import Any, Protocol, Tuple, runtime_checkable
+from typing import Any, Protocol, Tuple, Union, runtime_checkable
 
-import numpy as np
 from nptyping import DType
 
-ShapeType = Tuple[int, ...] | Any
-DtypeType = np.dtype | str | type | Any | DType
+ShapeType = Union[Tuple[int, ...], Any]
+DtypeType = Union[str, type, Any, DType]
 
 
 @runtime_checkable
@@ -25,6 +24,6 @@ class NDArrayType(Protocol):
     @property
     def shape(self) -> ShapeType: ...
 
-    def __getitem__(self, key: int | slice) -> "NDArrayType": ...
+    def __getitem__(self, key: Union[int, slice]) -> "NDArrayType": ...
 
-    def __setitem__(self, key: int | slice, value: "NDArrayType"): ...
+    def __setitem__(self, key: Union[int, slice], value: "NDArrayType"): ...

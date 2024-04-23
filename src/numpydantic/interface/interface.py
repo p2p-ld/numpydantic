@@ -133,7 +133,7 @@ class Interface(ABC, Generic[T]):
         """Input types for all enabled interfaces"""
         in_types = []
         for iface in cls.interfaces():
-            if isinstance(iface.input_types, tuple | list):
+            if isinstance(iface.input_types, Union[tuple, list]):
                 in_types.extend(iface.input_types)
             else:
                 in_types.append(iface.input_types)

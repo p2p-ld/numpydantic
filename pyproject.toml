@@ -111,7 +111,7 @@ ignore = [
 fixable = ["ALL"]
 
 [tool.black]
-exclude = ["tests"]
+exclude = "tests"
 
 [tool.mypy]
 plugins = [
