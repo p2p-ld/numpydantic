@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 import numpy as np
+from nptyping import Float, Int, String, Bool
 
 np_to_python = {
     Any: Any,
@@ -74,3 +75,5 @@ flat_to_nptyping = {
     "AnyType": "Any",
     "object": "Object",
 }
+
+python_to_nptyping = {float: Float, str: String, int: Int, bool: Bool}

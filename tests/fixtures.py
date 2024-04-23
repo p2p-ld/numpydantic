@@ -1,27 +1,38 @@
 import shutil
 from pathlib import Path
+from typing import Callable, Optional, Tuple, Type, Union
 
+import h5py
+import numpy as np
 import pytest
-from linkml_runtime.linkml_model import ClassDefinition, SlotDefinition
+from nptyping import Number
+from pydantic import BaseModel, Field
+
+from numpydantic.interface.hdf5 import H5ArrayPath
+from numpydantic import NDArray, Shape
+from numpydantic.maps import python_to_nptyping
 
 
 @pytest.fixture(scope="session")
-def tmp_output_dir() -> Path:
+def tmp_output_dir(request: pytest.FixtureRequest) -> Path:
     path = Path(__file__).parent.resolve() / "__tmp__"
     if path.exists():
         shutil.rmtree(str(path))
     path.mkdir()
 
-    return path
+    yield path
+
+    if not request.config.getvalue("--with-output"):
+        shutil.rmtree(str(path))
 
 
 @pytest.fixture(scope="function")
-def tmp_output_dir_func(tmp_output_dir) -> Path:
+def tmp_output_dir_func(tmp_output_dir, request: pytest.FixtureRequest) -> Path:
     """
     tmp output dir that gets cleared between every function
     cleans at the start rather than at cleanup in case the output is to be inspected
     """
-    subpath = tmp_output_dir / "__tmpfunc__"
+    subpath = tmp_output_dir / f"__tmpfunc_{request.node.name}__"
     if subpath.exists():
         shutil.rmtree(str(subpath))
     subpath.mkdir()
@@ -29,46 +40,68 @@ def tmp_output_dir_func(tmp_output_dir) -> Path:
 
 
 @pytest.fixture(scope="module")
-def tmp_output_dir_mod(tmp_output_dir) -> Path:
+def tmp_output_dir_mod(tmp_output_dir, request: pytest.FixtureRequest) -> Path:
     """
     tmp output dir that gets cleared between every function
     cleans at the start rather than at cleanup in case the output is to be inspected
     """
-    subpath = tmp_output_dir / "__tmpmod__"
+    subpath = tmp_output_dir / f"__tmpmod_{request.module}__"
     if subpath.exists():
         shutil.rmtree(str(subpath))
     subpath.mkdir()
     return subpath
 
 
-@pytest.fixture()
-def nwb_linkml_array() -> tuple[ClassDefinition, str]:
-    classdef = ClassDefinition(
-        name="NWB_Linkml Array",
-        description="Main class's array",
-        is_a="Arraylike",
-        attributes=[
-            SlotDefinition(name="x", range="numeric", required=True),
-            SlotDefinition(name="y", range="numeric", required=True),
-            SlotDefinition(
-                name="z",
-                range="numeric",
-                required=False,
-                maximum_cardinality=3,
-                minimum_cardinality=3,
-            ),
-            SlotDefinition(
-                name="a",
-                range="numeric",
-                required=False,
-                minimum_cardinality=4,
-                maximum_cardinality=4,
-            ),
-        ],
-    )
-    generated = """Union[
-        NDArray[Shape["* x, * y"], Number],
-        NDArray[Shape["* x, * y, 3 z"], Number],
-        NDArray[Shape["* x, * y, 3 z, 4 a"], Number]
-    ]"""
-    return classdef, generated
+@pytest.fixture(scope="function")
+def array_model() -> (
+    Callable[[Tuple[int, ...], Union[Type, np.dtype]], Type[BaseModel]]
+):
+    def _model(
+        shape: Tuple[int, ...] = (10, 10), dtype: Union[Type, np.dtype] = float
+    ) -> Type[BaseModel]:
+        shape_str = ", ".join([str(s) for s in shape])
+
+        class MyModel(BaseModel):
+            array: NDArray[Shape[shape_str], python_to_nptyping[dtype]]
+
+        return MyModel
+
+    return _model
+
+
+@pytest.fixture(scope="session")
+def model_rgb() -> Type[BaseModel]:
+    class RGB(BaseModel):
+        array: Optional[
+            Union[
+                NDArray[Shape["* x, * y"], Number],
+                NDArray[Shape["* x, * y, 3 r_g_b"], Number],
+                NDArray[Shape["* x, * y, 3 r_g_b, 4 r_g_b_a"], Number],
+            ]
+        ] = Field(None)
+
+    return RGB
+
+
+@pytest.fixture(scope="function")
+def hdf5_file(tmp_output_dir_func) -> h5py.File:
+    h5f_file = tmp_output_dir_func / "h5f.h5"
+    h5f = h5py.File(h5f_file, "w")
+    yield h5f
+    h5f.close()
+
+
+@pytest.fixture(scope="function")
+def hdf5_array(
+    hdf5_file, request
+) -> Callable[[Tuple[int, ...], Union[np.dtype, type]], H5ArrayPath]:
+
+    def _hdf5_array(
+        shape: Tuple[int, ...] = (10, 10), dtype: Union[np.dtype, type] = float
+    ) -> H5ArrayPath:
+        array_path = "/" + "_".join([str(s) for s in shape]) + "__" + dtype.__name__
+        data = np.random.random(shape).astype(dtype)
+        _ = hdf5_file.create_dataset(array_path, data=data)
+        return H5ArrayPath(Path(hdf5_file.filename), array_path)
+
+    return _hdf5_array

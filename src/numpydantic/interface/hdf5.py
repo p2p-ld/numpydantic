@@ -1,3 +1,4 @@
+import pdb
 from pathlib import Path
 from typing import Any, NamedTuple, Tuple, Union, TypeAlias
 
@@ -14,7 +15,7 @@ except ImportError:
 H5Arraylike: TypeAlias = Tuple[Union[Path, str], str]
 
 
-class H5Array(NamedTuple):
+class H5ArrayPath(NamedTuple):
     """Location specifier for arrays within an HDF5 file"""
 
     file: Union[Path, str]
@@ -43,6 +44,7 @@ class H5Proxy:
     """
 
     def __init__(self, file: Union[Path, str], path: str):
+        self._h5f = None
         self.file = Path(file)
         self.path = path
 
@@ -53,8 +55,8 @@ class H5Proxy:
             return obj is not None
 
     @classmethod
-    def from_h5array(cls, h5array: H5Array) -> "H5Proxy":
-        """Instantiate using :class:`.H5Array`"""
+    def from_h5array(cls, h5array: H5ArrayPath) -> "H5Proxy":
+        """Instantiate using :class:`.H5ArrayPath`"""
         return H5Proxy(file=h5array.file, path=h5array.path)
 
     def __getattr__(self, item: str):
@@ -72,18 +74,37 @@ class H5Proxy:
             obj = h5f.get(self.path)
             obj[key] = value
 
+    def open(self, mode: str = "r"):
+        """
+        Return the opened :class:`h5py.Dataset` object
+
+        You must remember to close the associated file with :meth:`.close`
+        """
+        if self._h5f is None:
+            self._h5f = h5py.File(self.file, mode)
+        return self._h5f.get(self.path)
+
+    def close(self):
+        """
+        Close the :class:`h5py.File` object left open when returning the dataset with
+        :meth:`.open`
+        """
+        if self._h5f is not None:
+            self._h5f.close()
+        self._h5f = None
+
 
 class H5Interface(Interface):
     """
     Interface for Arrays stored as datasets within an HDF5 file.
 
-    Takes a :class:`.H5Array` specifier to select a :class:`h5py.Dataset` from a
+    Takes a :class:`.H5ArrayPath` specifier to select a :class:`h5py.Dataset` from a
     :class:`h5py.File` and returns a :class:`.H5Proxy` class that acts like a
     passthrough numpy-like interface to the dataset.
     """
 
     input_types = (
-        H5Array,
+        H5ArrayPath,
         H5Arraylike,
     )
     return_type = H5Proxy
@@ -94,9 +115,9 @@ class H5Interface(Interface):
         return h5py is not None
 
     @classmethod
-    def check(cls, array: Union[H5Array, Tuple[Union[Path, str], str]]) -> bool:
-        """Check that the given array is a :class:`.H5Array` or something that resembles one."""
-        if isinstance(array, H5Array):
+    def check(cls, array: Union[H5ArrayPath, Tuple[Union[Path, str], str]]) -> bool:
+        """Check that the given array is a :class:`.H5ArrayPath` or something that resembles one."""
+        if isinstance(array, H5ArrayPath):
             return True
 
         if isinstance(array, (tuple, list)) and len(array) == 2:
@@ -125,7 +146,7 @@ class H5Interface(Interface):
 
     def before_validation(self, array: Any) -> NDArrayType:
         """Create an :class:`.H5Proxy` to use throughout validation"""
-        if isinstance(array, H5Array):
+        if isinstance(array, H5ArrayPath):
             array = H5Proxy.from_h5array(h5array=array)
         elif isinstance(array, (tuple, list)) and len(array) == 2:
             array = H5Proxy(file=array[0], path=array[1])
@@ -141,3 +162,17 @@ class H5Interface(Interface):
             )
 
         return array
+
+    @classmethod
+    def to_json(cls, array: H5Proxy) -> dict:
+        try:
+            dset = array.open()
+            meta = {
+                "file": array.file,
+                "path": array.path,
+                "attrs": dict(dset.attrs),
+                "array": dset[:].tolist(),
+            }
+            return meta
+        finally:
+            array.close()

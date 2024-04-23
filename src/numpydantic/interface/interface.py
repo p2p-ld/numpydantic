@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from operator import attrgetter
-from typing import Any, Generic, Tuple, Type, TypeVar
+from typing import Any, Generic, Tuple, Type, TypeVar, Union
 
+import numpy as np
 from nptyping.shape_expression import check_shape
 
 from numpydantic.exceptions import DtypeError, ShapeError
@@ -93,6 +94,15 @@ class Interface(ABC, Generic[T]):
         """
 
     @classmethod
+    def to_json(cls, array: Type[T]) -> Union[list, dict]:
+        """
+        Convert an array of :attr:`.return_type` to a JSON-compatible format using base python types
+        """
+        if not isinstance(array, np.ndarray):
+            array = np.array(array)
+        return array.tolist()
+
+    @classmethod
     def interfaces(cls) -> Tuple[Type["Interface"], ...]:
         """
         Enabled interface subclasses
@@ -106,7 +116,7 @@ class Interface(ABC, Generic[T]):
         )
 
     @classmethod
-    def array_types(cls) -> Tuple[NDArrayType, ...]:
+    def return_types(cls) -> Tuple[NDArrayType, ...]:
         """Return types for all enabled interfaces"""
         return tuple([i.return_type for i in cls.interfaces()])
 
@@ -125,7 +135,7 @@ class Interface(ABC, Generic[T]):
     @classmethod
     def match(cls, array: Any) -> Type["Interface"]:
         """
-        Find the interface that should be used for this array
+        Find the interface that should be used for this array based on its input type
         """
         matches = [i for i in cls.interfaces() if i.check(array)]
         if len(matches) > 1:
@@ -134,5 +144,23 @@ class Interface(ABC, Generic[T]):
             raise ValueError(msg)
         elif len(matches) == 0:
             raise ValueError(f"No matching interfaces found for input {array}")
+        else:
+            return matches[0]
+
+    @classmethod
+    def match_output(cls, array: Any) -> Type["Interface"]:
+        """
+        Find the interface that should be used based on the output type -
+        in the case that the output type differs from the input type, eg.
+        the HDF5 interface, match an instantiated array for purposes of
+        serialization to json, etc.
+        """
+        matches = [i for i in cls.interfaces() if isinstance(array, i.return_type)]
+        if len(matches) > 1:
+            msg = f"More than one interface matches output {array}:\n"
+            msg += "\n".join([f"  - {i}" for i in matches])
+            raise ValueError(msg)
+        elif len(matches) == 0:
+            raise ValueError(f"No matching interfaces found for output {array}")
         else:
             return matches[0]

@@ -4,19 +4,14 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 * Order to store data in (row first)
 """
 
-import base64
-import sys
 from collections.abc import Callable
-from copy import copy
-from typing import Any, Tuple, TypeVar, cast, Union
+from typing import Any, Tuple, Union
 
-import blosc2
 import nptyping.structure
 import numpy as np
 from nptyping import Shape
 from nptyping.ndarray import NDArrayMeta as _NDArrayMeta
 from nptyping.nptyping_type import NPTypingType
-from nptyping.shape_expression import check_shape
 from pydantic_core import core_schema
 from pydantic_core.core_schema import ListSchema
 
@@ -65,57 +60,7 @@ def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:
     return list_schema
 
 
-def jsonize_array(array: NDArrayType) -> list | dict:
-    """
-    Render an array to base python types that can be serialized to JSON
-
-    For small arrays, returns a list of lists.
-
-    If the array is over :class:`.COMPRESSION_THRESHOLD` bytes, use :func:`.compress_array`
-    to return a compressed b64 encoded string.
-
-    Args:
-        array (:class:`np.ndarray`, :class:`dask.DaskArray`): Array to render as a list!
-    """
-    # if isinstance(array, DaskArray):
-    #    arr = array.__array__()
-    # elif isinstance(array, NDArrayProxy):
-    #    arr = array[:]
-    # else:
-    #    arr = array
-    arr = array
-
-    # If we're larger than 16kB then compress array!
-    if sys.getsizeof(arr) > COMPRESSION_THRESHOLD:
-        packed = blosc2.pack_array2(arr)
-        packed = base64.b64encode(packed)
-        ret = {
-            "array": packed,
-            "shape": copy(arr.shape),
-            "dtype": copy(arr.dtype.name),
-            "unpack_fns": ["base64.b64decode", "blosc2.unpack_array2"],
-        }
-        return ret
-    else:
-        return arr.tolist()
-
-
-def get_validate_shape(shape: Shape) -> Callable:
-    """
-    Get a closure around a shape validation function that includes the shape definition
-    """
-
-    def validate_shape(value: Any) -> np.ndarray:
-        assert shape is Any or check_shape(
-            value.shape, shape
-        ), f"Invalid shape! expected shape {shape.prepared_args}, got shape {value.shape}"
-
-        return value
-
-    return validate_shape
-
-
-def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
+def _get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
     """
     Validate using a matching :class:`.Interface` class using its :meth:`.Interface.validate` method
     """
@@ -127,6 +72,11 @@ def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
         return value
 
     return validate_interface
+
+
+def _jsonize_array(value: Any) -> Union[list, dict]:
+    interface_cls = Interface.match_output(value)
+    return interface_cls.to_json(value)
 
 
 def coerce_list(value: Any) -> np.ndarray:
@@ -145,9 +95,6 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
     been necessary on and off as we work this class into a stable
     state
     """
-
-
-T = TypeVar("T")
 
 
 class NDArray(NPTypingType, metaclass=NDArrayMeta):
@@ -196,15 +143,11 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
                 [
                     core_schema.no_info_plain_validator_function(coerce_list),
                     core_schema.with_info_plain_validator_function(
-                        get_validate_interface(shape, dtype)
+                        _get_validate_interface(shape, dtype)
                     ),
                 ]
             ),
             serialization=core_schema.plain_serializer_function_ser_schema(
-                jsonize_array, when_used="json"
+                _jsonize_array, when_used="json"
             ),
         )
-
-
-NDArray = cast(Union[np.ndarray, list[int]], NDArray)
-# NDArray = cast(Union[Interface.array_types()], NDArray)
