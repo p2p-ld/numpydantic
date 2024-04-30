@@ -7,8 +7,10 @@ import numpy as np
 import pytest
 from nptyping import Number
 from pydantic import BaseModel, Field
+import zarr
 
 from numpydantic.interface.hdf5 import H5ArrayPath
+from numpydantic.interface.zarr import ZarrArrayPath
 from numpydantic import NDArray, Shape
 from numpydantic.maps import python_to_nptyping
 
@@ -105,3 +107,21 @@ def hdf5_array(
         return H5ArrayPath(Path(hdf5_file.filename), array_path)
 
     return _hdf5_array
+
+
+@pytest.fixture(scope="function")
+def zarr_nested_array(tmp_output_dir_func) -> ZarrArrayPath:
+    """Zarr array within a nested array"""
+    file = tmp_output_dir_func / "nested.zarr"
+    path = "a/b/c"
+    root = zarr.open(str(file), mode="w")
+    array = root.zeros(path, shape=(100, 100), chunks=(10, 10))
+    return ZarrArrayPath(file=file, path=path)
+
+
+@pytest.fixture(scope="function")
+def zarr_array(tmp_output_dir_func) -> Path:
+    file = tmp_output_dir_func / "array.zarr"
+    array = zarr.open(str(file), mode="w", shape=(100, 100), chunks=(10, 10))
+    array[:] = 0
+    return file

@@ -22,8 +22,11 @@ dask = [
 hdf5 = [
     "h5py>=3.10.0"
 ]
+zarr = [
+    "zarr>=2.17.2",
+]
 arrays = [
-    "numpydantic[dask,hdf5]"
+    "numpydantic[dask,hdf5,zarr]"
 ]
 tests = [
     "numpydantic[arrays]",
