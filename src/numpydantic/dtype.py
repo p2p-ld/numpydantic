@@ -14,7 +14,13 @@ Check these using ``in`` rather than ``==``. This interface will develop in futu
 versions to allow a single dtype check.
 """
 
-from typing import Tuple, TypeAlias, Union
+import sys
+from typing import Tuple, Union
+
+if sys.version_info.minor >= 10:
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 
 import numpy as np
 

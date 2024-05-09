@@ -4,7 +4,7 @@ import sys
 import pytest
 from typing import Any, Tuple, Union, Type
 
-if sys.version_info.minor >= 11:
+if sys.version_info.minor >= 10:
     from typing import TypeAlias
 else:
     from typing_extensions import TypeAlias

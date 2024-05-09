@@ -18,10 +18,10 @@ except ImportError:
 
 if sys.version_info.minor >= 10:
     from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 
-    H5Arraylike: TypeAlias = Tuple[Union[Path, str], str]
-else:  # pragma: no cover
-    H5Arraylike = Tuple[Union[Path, str], str]
+H5Arraylike: TypeAlias = Tuple[Union[Path, str], str]
 
 
 class H5ArrayPath(NamedTuple):
