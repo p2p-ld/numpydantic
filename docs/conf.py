@@ -19,6 +19,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinxcontrib.autodoc_pydantic",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
     "sphinx_design",
     "myst_parser",
     "sphinx.ext.todo",
@@ -48,12 +49,7 @@ html_static_path = ["_static"]
 # autodoc
 autodoc_pydantic_model_show_json_error_strategy = "coerce"
 autodoc_pydantic_model_show_json = False
-autodoc_mock_imports = [
-    "dask",
-    "h5py",
-    "linkml",
-    "linkml-runtime",
-]
+
 autoclass_content = "both"
 autodoc_member_order = "bysource"
 add_module_names = False

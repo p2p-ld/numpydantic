@@ -1,2 +1,0 @@
-# LinkML Generation
-
