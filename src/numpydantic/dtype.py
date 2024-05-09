@@ -52,7 +52,7 @@ LongLong = np.longlong
 Timedelta64 = np.timedelta64
 SignedInteger = (np.int8, np.int16, np.int32, np.int64, np.short)
 UnsignedInteger = (np.uint8, np.uint16, np.uint32, np.uint64, np.ushort)
-Integer = tuple([np.integer, *SignedInteger, *UnsignedInteger])
+Integer = tuple([*SignedInteger, *UnsignedInteger])
 Int = Integer  # Int should translate to the "generic" int type.
 
 Float16 = np.float16
@@ -68,7 +68,6 @@ Float = (
     np.float16,
     np.float32,
     np.float64,
-    np.floating,
     np.single,
     np.double,
 )

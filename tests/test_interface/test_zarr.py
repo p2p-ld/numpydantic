@@ -4,6 +4,9 @@ import zarr
 from pydantic import ValidationError
 
 from numpydantic.interface import ZarrInterface
+from numpydantic.exceptions import DtypeError, ShapeError
+
+from tests.conftest import ValidationCase
 
 
 @pytest.fixture()
@@ -24,11 +27,33 @@ def nested_dir_array(tmp_output_dir_func) -> zarr.NestedDirectoryStore:
     return store
 
 
-STORES = (
-    dir_array,
-    zip_array,
+def zarr_array(case: ValidationCase, store) -> zarr.core.Array:
+    return zarr.zeros(shape=case.shape, dtype=case.dtype, store=store)
+
+
+def _test_zarr_case(case: ValidationCase, store):
+    array = zarr_array(case, store)
+    if case.passes:
+        case.model(array=array)
+    else:
+        with pytest.raises((ValidationError, DtypeError, ShapeError)):
+            case.model(array=array)
+
+
+@pytest.fixture(
+    params=[
+        None,  # use the default store
+        "dir_array",
+        "zip_array",
+        "nested_dir_array",
+    ],
+    ids=["MutableMapping", "DirectoryStore", "ZipStore", "NestedDirectoryStore"],
 )
-"""stores for single arrays"""
+def store(request):
+    if isinstance(request.param, str):
+        return request.getfixturevalue(request.param)
+    else:
+        return request.param
 
 
 def test_zarr_enabled():
@@ -45,20 +70,9 @@ def test_zarr_check(interface_type):
         assert not ZarrInterface.check(interface_type[0])
 
 
-@pytest.mark.parametrize(
-    "array,passes",
-    [
-        (zarr.zeros((5, 10)), True),
-        (zarr.zeros((5, 10, 3)), True),
-        (zarr.zeros((5, 10, 3, 4)), True),
-        (zarr.zeros((5, 10, 4)), False),
-        (zarr.zeros((5, 10, 3, 6)), False),
-        (zarr.zeros((5, 10, 4, 6)), False),
-    ],
-)
-def test_zarr_shape(model_rgb, array, passes):
-    if passes:
-        model_rgb(array=array)
-    else:
-        with pytest.raises(ValidationError):
-            model_rgb(array=array)
+def test_zarr_shape(store, shape_cases):
+    _test_zarr_case(shape_cases, store)
+
+
+def test_zarr_dtype(dtype_cases, store):
+    _test_zarr_case(dtype_cases, store)
