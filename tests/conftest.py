@@ -1,7 +1,13 @@
 import pdb
+import sys
 
 import pytest
-from typing import Any, Tuple, Union, Type, TypeAlias
+from typing import Any, Tuple, Union, Type
+
+if sys.version_info.minor < 11:
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 from pydantic import BaseModel, computed_field, ConfigDict
 from numpydantic import NDArray, Shape
 from numpydantic.ndarray import NDArrayMeta
