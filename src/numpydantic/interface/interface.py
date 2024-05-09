@@ -56,7 +56,13 @@ class Interface(ABC, Generic[T]):
         """
         if self.dtype is Any:
             return array
-        if not array.dtype == self.dtype:
+
+        if isinstance(self.dtype, tuple):
+            valid = array.dtype in self.dtype
+        else:
+            valid = array.dtype == self.dtype
+
+        if not valid:
             raise DtypeError(f"Invalid dtype! expected {self.dtype}, got {array.dtype}")
         return array
 
@@ -151,6 +157,7 @@ class Interface(ABC, Generic[T]):
             msg += "\n".join([f"  - {i}" for i in matches])
             raise ValueError(msg)
         elif len(matches) == 0:
+            pdb.set_trace()
             raise ValueError(f"No matching interfaces found for input {array}")
         else:
             return matches[0]

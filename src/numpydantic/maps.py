@@ -8,6 +8,8 @@ from typing import Any
 import numpy as np
 from nptyping import Bool, Float, Int, String
 
+from numpydantic import dtype as dt
+
 np_to_python = {
     Any: Any,
     np.number: float,
@@ -17,34 +19,9 @@ np_to_python = {
     np.byte: bytes,
     np.bytes_: bytes,
     np.datetime64: datetime,
-    **{
-        n: int
-        for n in (
-            np.int8,
-            np.int16,
-            np.int32,
-            np.int64,
-            np.short,
-            np.uint8,
-            np.uint16,
-            np.uint32,
-            np.uint64,
-            np.uint,
-        )
-    },
-    **{
-        n: float
-        for n in (
-            np.float16,
-            np.float32,
-            np.floating,
-            np.float32,
-            np.float64,
-            np.single,
-            np.double,
-            np.float_,
-        )
-    },
+    **{n: int for n in dt.Integer},
+    **{n: float for n in dt.Float},
+    **{n: complex for n in dt.Complex},
     **{n: str for n in (np.character, np.str_, np.string_, np.unicode_)},
 }
 """Map from python types to numpy"""

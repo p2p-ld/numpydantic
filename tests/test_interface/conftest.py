@@ -30,4 +30,8 @@ from tests.fixtures import hdf5_array, zarr_nested_array, zarr_array
     ],
 )
 def interface_type(request):
+    """
+    Test cases for each interface's ``check`` method - each input should match the
+    provided interface and that interface only
+    """
     return request.param

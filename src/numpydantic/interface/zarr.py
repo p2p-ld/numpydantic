@@ -5,14 +5,14 @@ Interface to zarr arrays
 import contextlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Union, Sequence
+from typing import Any, Optional, Sequence, Union
 
 from numpydantic.interface.interface import Interface
 
 try:
+    import zarr
     from zarr.core import Array as ZarrArray
     from zarr.storage import StoreLike
-    import zarr
 except ImportError:
     ZarrArray = None
     StoreLike = None
@@ -32,11 +32,16 @@ class ZarrArrayPath:
     path: Optional[str] = None
     """Path to array within hierarchical zarr store"""
 
-    def open(self, **kwargs) -> ZarrArray:
+    def open(self, **kwargs: dict) -> ZarrArray:
+        """Open the zarr array at the provided path"""
         return zarr.open(str(self.file), path=self.path, **kwargs)
 
     @classmethod
     def from_iterable(cls, spec: Sequence) -> "ZarrArrayPath":
+        """
+        Construct a :class:`.ZarrArrayPath` specifier from an iterable,
+        rather than kwargs
+        """
         if len(spec) == 1:
             return ZarrArrayPath(file=spec[0])
         elif len(spec) == 2:

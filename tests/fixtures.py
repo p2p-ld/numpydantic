@@ -5,7 +5,6 @@ from typing import Callable, Optional, Tuple, Type, Union
 import h5py
 import numpy as np
 import pytest
-from nptyping import Number
 from pydantic import BaseModel, Field
 import zarr
 
@@ -13,6 +12,7 @@ from numpydantic.interface.hdf5 import H5ArrayPath
 from numpydantic.interface.zarr import ZarrArrayPath
 from numpydantic import NDArray, Shape
 from numpydantic.maps import python_to_nptyping
+from numpydantic.dtype import Number
 
 
 @pytest.fixture(scope="session")

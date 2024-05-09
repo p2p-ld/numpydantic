@@ -10,11 +10,18 @@ from typing import TYPE_CHECKING, Any, Tuple, Union
 import nptyping.structure
 import numpy as np
 from nptyping import Shape
+from nptyping.error import InvalidArgumentsError
 from nptyping.ndarray import NDArrayMeta as _NDArrayMeta
 from nptyping.nptyping_type import NPTypingType
+from nptyping.structure import Structure
+from nptyping.structure_expression import check_type_names
+from nptyping.typing_ import (
+    dtype_per_name,
+)
 from pydantic_core import core_schema
 from pydantic_core.core_schema import ListSchema
 
+from numpydantic.dtype import DType
 from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
 
@@ -23,12 +30,6 @@ from numpydantic.types import DtypeType, NDArrayType, ShapeType
 
 if TYPE_CHECKING:
     from pydantic import ValidationInfo
-
-COMPRESSION_THRESHOLD = 16 * 1024
-"""
-Arrays larger than this size (in bytes) will be compressed and b64 encoded when 
-serializing to JSON.
-"""
 
 
 def list_of_lists_schema(shape: Shape, array_type_handler: dict) -> ListSchema:
@@ -95,10 +96,39 @@ def coerce_list(value: Any) -> np.ndarray:
 
 class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
     """
-    Kept here to allow for hooking into metaclass, which has
-    been necessary on and off as we work this class into a stable
-    state
+    Hooking into nptyping's array metaclass to override methods pending
+    completion of the transition away from nptyping
     """
+
+    def _get_dtype(cls, dtype_candidate: Any) -> DType:
+        """
+        Override of base _get_dtype method to allow for compound tuple types
+        """
+        is_dtype = isinstance(dtype_candidate, type) and issubclass(
+            dtype_candidate, np.generic
+        )
+        if dtype_candidate is Any:
+            dtype = Any
+        elif is_dtype:
+            dtype = dtype_candidate
+        elif issubclass(dtype_candidate, Structure):
+            dtype = dtype_candidate
+            check_type_names(dtype, dtype_per_name)
+        elif cls._is_literal_like(dtype_candidate):
+            structure_expression = dtype_candidate.__args__[0]
+            dtype = Structure[structure_expression]
+            check_type_names(dtype, dtype_per_name)
+        elif isinstance(dtype_candidate, tuple):
+            dtype = tuple([cls._get_dtype(dt) for dt in dtype_candidate])
+        else:
+            raise InvalidArgumentsError(
+                f"Unexpected argument '{dtype_candidate}', expecting"
+                " Structure[<StructureExpression>]"
+                " or Literal[<StructureExpression>]"
+                " or a dtype"
+                " or typing.Any."
+            )
+        return dtype
 
 
 class NDArray(NPTypingType, metaclass=NDArrayMeta):
@@ -134,7 +164,16 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
             raise NotImplementedError("Finish handling structured dtypes!")
             # functools.reduce(operator.or_, [int, float, str])
         else:
-            array_type_handler = _handler.generate_schema(np_to_python[dtype])
+            if isinstance(dtype, tuple):
+                types_ = list(set([np_to_python[dt] for dt in dtype]))
+                # TODO: better type filtering - explicitly model what
+                # numeric types are supported by JSON schema
+                types_ = [t for t in types_ if t not in (complex,)]
+                schemas = [_handler.generate_schema(dt) for dt in types_]
+                array_type_handler = core_schema.union_schema(schemas)
+
+            else:
+                array_type_handler = _handler.generate_schema(np_to_python[dtype])
 
         # get the names of the shape constraints, if any
         if shape is Any:
