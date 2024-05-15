@@ -22,17 +22,17 @@ def patch_npytyping_perf() -> None:
 
     # make a new __module__ methods for the affected classes
 
-    def new_module_ndarray(cls) -> str:
+    def new_module_ndarray(cls) -> str:  # pragma: no cover
         return cls._get_module(inspect.currentframe(), "nptyping.ndarray")
 
-    def new_module_recarray(cls) -> str:
+    def new_module_recarray(cls) -> str:  # pragma: no cover
         return cls._get_module(inspect.currentframe(), "nptyping.recarray")
 
-    def new_module_dataframe(cls) -> str:
+    def new_module_dataframe(cls) -> str:  # pragma: no cover
         return cls._get_module(inspect.currentframe(), "nptyping.pandas_.dataframe")
 
     # and a new _get_module method for the parent class
-    def new_get_module(cls, stack: FrameType, module: str) -> str:
+    def new_get_module(cls, stack: FrameType, module: str) -> str:  # pragma: no cover
         return (
             "typing"
             if inspect.getframeinfo(stack.f_back).function == "formatannotation"
