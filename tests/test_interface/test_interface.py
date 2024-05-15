@@ -66,8 +66,8 @@ def test_interface_enabled(interfaces):
     """
     An interface shouldn't be included if it's not enabled
     """
-    assert not interfaces.Interface3.enabled()
-    assert interfaces.Interface3 not in Interface.interfaces()
+    assert not interfaces.interface3.enabled()
+    assert interfaces.interface3 not in Interface.interfaces()
 
 
 def test_interface_type_lists():
