@@ -1,4 +1,7 @@
+import pdb
+
 import pytest
+import json
 
 import dask.array as da
 from pydantic import ValidationError
@@ -42,3 +45,12 @@ def test_dask_shape(shape_cases):
 
 def test_dask_dtype(dtype_cases):
     _test_dask_case(dtype_cases)
+
+
+def test_dask_to_json(array_model):
+    array_list = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    array = da.array(array_list)
+    model = array_model((3, 3), int)
+    instance = model(array=array)
+    jsonified = json.loads(instance.model_dump_json())
+    assert jsonified["array"] == array_list

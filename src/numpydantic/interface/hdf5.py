@@ -13,7 +13,7 @@ from numpydantic.types import NDArrayType
 
 try:
     import h5py
-except ImportError:
+except ImportError:  # pragma: no cover
     h5py = None
 
 if sys.version_info.minor >= 10:
@@ -160,9 +160,11 @@ class H5Interface(Interface):
         """Create an :class:`.H5Proxy` to use throughout validation"""
         if isinstance(array, H5ArrayPath):
             array = H5Proxy.from_h5array(h5array=array)
-        elif isinstance(array, (tuple, list)) and len(array) == 2:
+        elif isinstance(array, (tuple, list)) and len(array) == 2:  # pragma: no cover
             array = H5Proxy(file=array[0], path=array[1])
-        else:
+        else:  # pragma: no cover
+            # this should never happen really since `check` confirms this before
+            # we'd reach here, but just to complete the if else...
             raise ValueError(
                 "Need to specify a file and a path within an HDF5 file to use the HDF5 "
                 "Interface"

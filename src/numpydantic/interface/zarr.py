@@ -13,7 +13,7 @@ try:
     import zarr
     from zarr.core import Array as ZarrArray
     from zarr.storage import StoreLike
-except ImportError:
+except ImportError:  # pragma: no cover
     ZarrArray = None
     StoreLike = None
     storage = None

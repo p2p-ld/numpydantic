@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Type, Union
+from typing import Any, Callable, Optional, Tuple, Type, Union
 
 import h5py
 import numpy as np
@@ -83,6 +83,16 @@ def model_rgb() -> Type[BaseModel]:
         ] = Field(None)
 
     return RGB
+
+
+@pytest.fixture(scope="session")
+def model_blank() -> Type[BaseModel]:
+    """A model with any shape and dtype"""
+
+    class BlankModel(BaseModel):
+        array: NDArray[Shape["*, ..."], Any]
+
+    return BlankModel
 
 
 @pytest.fixture(scope="function")

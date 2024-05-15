@@ -11,7 +11,7 @@ try:
 
     ENABLED = True
 
-except ImportError:
+except ImportError:  # pragma: no cover
     ENABLED = False
     ndarray = None
 
@@ -23,6 +23,13 @@ class NumpyInterface(Interface):
 
     input_types = (ndarray, list)
     return_type = ndarray
+    priority = -1
+    """
+    The numpy interface is usually the interface of last resort.
+    We want to use any more specific interface that we might have,
+    because the numpy interface checks for anything that could be coerced
+    to a numpy array (see :meth:`.NumpyInterface.check` )
+    """
 
     @classmethod
     def check(cls, array: Any) -> bool:

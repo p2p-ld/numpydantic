@@ -1,7 +1,69 @@
 import pdb
 import json
+import pytest
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+
+from numpydantic.interface import H5Interface
+from numpydantic.interface.hdf5 import H5ArrayPath
+from numpydantic.exceptions import DtypeError, ShapeError
+
+from tests.conftest import ValidationCase
+
+
+def hdf5_array_case(case: ValidationCase, array_func) -> H5ArrayPath:
+    """
+    Args:
+        case:
+        array_func: ( the function returned from the `hdf5_array` fixture )
+
+    Returns:
+
+    """
+    return array_func(case.shape, case.dtype)
+
+
+def _test_hdf5_case(case: ValidationCase, array_func):
+    array = hdf5_array_case(case, array_func)
+    if case.passes:
+        case.model(array=array)
+    else:
+        with pytest.raises((ValidationError, DtypeError, ShapeError)):
+            case.model(array=array)
+
+
+def test_hdf5_enabled():
+    assert H5Interface.enabled()
+
+
+def test_hdf5_check(interface_type):
+    if interface_type[1] is H5Interface:
+        if interface_type[0].__name__ == "_hdf5_array":
+            interface_type = (interface_type[0](), interface_type[1])
+        assert H5Interface.check(interface_type[0])
+        if isinstance(interface_type[0], H5ArrayPath):
+            # also test that we can instantiate from a tuple like the H5ArrayPath
+            assert H5Interface.check((interface_type[0].file, interface_type[0].path))
+    else:
+        assert not H5Interface.check(interface_type[0])
+
+
+def test_hdf5_shape(shape_cases, hdf5_array):
+    _test_hdf5_case(shape_cases, hdf5_array)
+
+
+def test_hdf5_dtype(dtype_cases, hdf5_array):
+    if dtype_cases.dtype is str:
+        pytest.skip("hdf5 cant do string arrays")
+    _test_hdf5_case(dtype_cases, hdf5_array)
+
+
+def test_hdf5_dataset_not_exists(hdf5_array, model_blank):
+    array = hdf5_array()
+    with pytest.raises(ValueError) as e:
+        model_blank(array=H5ArrayPath(file=array.file, path="/some/random/path"))
+        assert "file located" in e
+        assert "no array found" in e
 
 
 def test_to_json(hdf5_array, array_model):

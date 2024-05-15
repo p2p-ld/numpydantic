@@ -25,3 +25,9 @@ def test_numpy_shape(shape_cases):
 
 def test_numpy_dtype(dtype_cases):
     _test_np_case(dtype_cases)
+
+
+def test_numpy_coercion(model_blank):
+    """If no other interface matches, we try and coerce to a numpy array"""
+    instance = model_blank(array=[1, 2, 3])
+    assert isinstance(instance.array, np.ndarray)

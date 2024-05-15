@@ -141,7 +141,7 @@ class Interface(ABC, Generic[T]):
         for iface in cls.interfaces():
             if isinstance(iface.input_types, Union[tuple, list]):
                 in_types.extend(iface.input_types)
-            else:
+            else:  # pragma: no cover
                 in_types.append(iface.input_types)
 
         return tuple(in_types)

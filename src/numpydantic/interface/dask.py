@@ -10,7 +10,7 @@ from numpydantic.interface.interface import Interface
 
 try:
     from dask.array.core import Array as DaskArray
-except ImportError:
+except ImportError:  # pragma: no cover
     DaskArray = None
 
 
