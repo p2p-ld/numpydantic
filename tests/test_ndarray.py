@@ -160,12 +160,26 @@ def test_json_schema_dtype_single(dtype, array_model):
     )
 
 
-@pytest.mark.skip()
-def test_json_schema_dtype_builtin(dtype):
+@pytest.mark.parametrize(
+    "dtype,expected",
+    [
+        (dtype.Integer, "integer"),
+        (dtype.Float, "number"),
+        (dtype.Bool, "boolean"),
+        (int, "integer"),
+        (float, "number"),
+        (bool, "boolean"),
+    ],
+)
+def test_json_schema_dtype_builtin(dtype, expected, array_model):
     """
     Using builtin or generic (eg. `dtype.Integer` ) dtypes should
     make a simple json schema without mins/maxes/dtypes.
     """
+    model = array_model(dtype=dtype)
+    schema = model.model_json_schema()
+    inner_type = schema["properties"]["array"]["items"]["items"]
+    assert inner_type["type"] == expected
 
 
 @pytest.mark.skip("Not implemented yet")

@@ -15,19 +15,36 @@ def generate_ndarray_stub() -> str:
     Make a stub file based on the array interfaces that are available
     """
 
-    import_strings = [
-        f"from {arr.__module__} import {arr.__name__}"
-        for arr in Interface.input_types()
-        if arr.__module__ != "builtins"
-    ]
+    import_strings = []
+    type_names = []
+    for arr in Interface.input_types():
+        if arr.__module__ == "builtins":
+            continue
+
+        # Create import statements, saving aliased name of type if needed
+        if arr.__module__.startswith("numpydantic") or arr.__module__ == "typing":
+            type_name = arr.__name__
+            import_strings.append(f"from {arr.__module__} import {arr.__name__}")
+        else:
+            # since other packages could use the same name for an imported object
+            # (eg dask and zarr both use an Array class)
+            # we make an import alias from the module names to differentiate them
+            # in the type annotation
+            mod_name = "".join([a.capitalize() for a in arr.__module__.split(".")])
+            type_name = mod_name + arr.__name__
+            import_strings.append(
+                f"from {arr.__module__} import {arr.__name__} " f"as {type_name}"
+            )
+
+        if arr.__module__ != "typing":
+            type_names.append(type_name)
+        else:
+            type_names.append(str(arr))
+
     import_strings.extend(_BUILTIN_IMPORTS)
     import_string = "\n".join(import_strings)
 
-    class_names = [
-        arr.__name__ if arr.__module__ != "typing" else str(arr)
-        for arr in Interface.input_types()
-    ]
-    class_union = " | ".join(class_names)
+    class_union = " | ".join(type_names)
     ndarray_type = "NDArray = " + class_union
 
     stub_string = "\n".join([import_string, ndarray_type])

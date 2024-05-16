@@ -112,7 +112,6 @@ Unicode = np.unicode_
 
 Number = tuple(
     [
-        np.number,
         *Integer,
         *Float,
         *Complex,
