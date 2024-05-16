@@ -1,3 +1,5 @@
+import pdb
+
 import pytest
 
 from typing import Union, Optional, Any
@@ -9,6 +11,7 @@ from nptyping import Shape, Number
 
 from numpydantic import NDArray
 from numpydantic.exceptions import ShapeError, DtypeError
+from numpydantic import dtype
 
 
 # from .fixtures import tmp_output_dir_func
@@ -99,23 +102,83 @@ def test_ndarray_serialize():
     assert isinstance(mod_dict["array"], np.ndarray)
 
 
-# def test_ndarray_proxy(tmp_output_dir_func):
-#     h5f_source = tmp_output_dir_func / 'test.h5'
-#     with h5py.File(h5f_source, 'w') as h5f:
-#         dset_good = h5f.create_dataset('/data', data=np.random.random((1024,1024,3)))
-#         dset_bad = h5f.create_dataset('/data_bad', data=np.random.random((1024, 1024, 4)))
-#
-#     class Model(BaseModel):
-#         array: NDArray[Shape["* x, * y, 3 z"], Number]
-#
-#     mod = Model(array=NDArrayProxy(h5f_file=h5f_source, path='/data'))
-#     subarray = mod.array[0:5, 0:5, :]
-#     assert isinstance(subarray, np.ndarray)
-#     assert isinstance(subarray.sum(), float)
-#     assert mod.array.name == '/data'
-#
-#     with pytest.raises(NotImplementedError):
-#         mod.array[0] = 5
-#
-#     with pytest.raises(ValidationError):
-#         mod = Model(array=NDArrayProxy(h5f_file=h5f_source, path='/data_bad'))
+_json_schema_types = [
+    *[(t, float) for t in dtype.Float],
+    *[(t, int) for t in dtype.Integer],
+]
+
+
+def test_json_schema_basic(array_model):
+    """
+    NDArray types should correctly generate a list of lists JSON schema
+    """
+    shape = (15, 10)
+    dtype = float
+    model = array_model(shape, dtype)
+    schema = model.model_json_schema()
+    field = schema["properties"]["array"]
+
+    # outer shape
+    assert field["maxItems"] == shape[0]
+    assert field["minItems"] == shape[0]
+    assert field["type"] == "array"
+
+    # inner shape
+    inner = field["items"]
+    assert inner["minItems"] == shape[1]
+    assert inner["maxItems"] == shape[1]
+    assert inner["items"]["type"] == "number"
+
+
+@pytest.mark.parametrize("dtype", [*dtype.Integer, *dtype.Float])
+def test_json_schema_dtype_single(dtype, array_model):
+    """
+    dtypes should have correct mins and maxes set, and store the source dtype
+    """
+    if issubclass(dtype, np.floating):
+        info = np.finfo(dtype)
+        min_val = info.min
+        max_val = info.max
+        schema_type = "number"
+    elif issubclass(dtype, np.integer):
+        info = np.iinfo(dtype)
+        min_val = info.min
+        max_val = info.max
+        schema_type = "integer"
+    else:
+        raise ValueError("These should all be numpy types!")
+
+    shape = (15, 10)
+    model = array_model(shape, dtype)
+    schema = model.model_json_schema()
+    inner_type = schema["properties"]["array"]["items"]["items"]
+    assert inner_type["minimum"] == min_val
+    assert inner_type["maximum"] == max_val
+    assert inner_type["type"] == schema_type
+    assert schema["properties"]["array"]["dtype"] == ".".join(
+        [dtype.__module__, dtype.__name__]
+    )
+
+
+@pytest.mark.skip()
+def test_json_schema_dtype_builtin(dtype):
+    """
+    Using builtin or generic (eg. `dtype.Integer` ) dtypes should
+    make a simple json schema without mins/maxes/dtypes.
+    """
+
+
+@pytest.mark.skip("Not implemented yet")
+def test_json_schema_wildcard():
+    """
+    NDarray types should generate a JSON schema without shape constraints
+    """
+    pass
+
+
+@pytest.mark.skip("Not implemented yet")
+def test_json_schema_ellipsis():
+    """
+    NDArray types should create a recursive JSON schema for any-shaped arrays
+    """
+    pass

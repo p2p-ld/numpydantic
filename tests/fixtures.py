@@ -64,7 +64,7 @@ def array_model() -> (
         shape_str = ", ".join([str(s) for s in shape])
 
         class MyModel(BaseModel):
-            array: NDArray[Shape[shape_str], python_to_nptyping[dtype]]
+            array: NDArray[Shape[shape_str], dtype]
 
         return MyModel
 

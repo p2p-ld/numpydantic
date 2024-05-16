@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Any
 
 import numpy as np
-from nptyping import Bool, Float, Int, String
 
 from numpydantic import dtype as dt
 
@@ -59,5 +58,5 @@ flat_to_nptyping = {
 }
 """Map from NWB-style flat dtypes to nptyping types"""
 
-python_to_nptyping = {float: Float, str: String, int: Int, bool: Bool}
+python_to_nptyping = {float: dt.Float, str: dt.String, int: dt.Int, bool: dt.Bool}
 """Map from python types to nptyping types"""
