@@ -23,7 +23,7 @@ def generate_ndarray_stub() -> str:
 
         # Create import statements, saving aliased name of type if needed
         if arr.__module__.startswith("numpydantic") or arr.__module__ == "typing":
-            type_name = arr.__name__
+            type_name = str(arr) if arr.__module__ == "typing" else arr.__name__
             import_strings.append(f"from {arr.__module__} import {arr.__name__}")
         else:
             # since other packages could use the same name for an imported object
@@ -36,10 +36,7 @@ def generate_ndarray_stub() -> str:
                 f"from {arr.__module__} import {arr.__name__} " f"as {type_name}"
             )
 
-        if arr.__module__ != "typing":
-            type_names.append(type_name)
-        else:
-            type_names.append(str(arr))
+        type_names.append(type_name)
 
     import_strings.extend(_BUILTIN_IMPORTS)
     import_string = "\n".join(import_strings)
