@@ -67,6 +67,10 @@ addopts = [
 testpaths = [
     "tests"
 ]
+filterwarnings = [
+    # nptyping's alias warnings
+    'ignore:.*deprecated alias.*Deprecated NumPy 1\.24.*'
+]
 
 [tool.ruff]
 target-version = "py311"

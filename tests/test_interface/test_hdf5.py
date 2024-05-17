@@ -48,6 +48,22 @@ def test_hdf5_check(interface_type):
         assert not H5Interface.check(interface_type[0])
 
 
+def test_hdf5_check_not_exists():
+    """We should fail a check for a nonexistent hdf5 file"""
+    spec = ("./fakefile.h5", "/fake/array")
+    assert not H5Interface.check(spec)
+
+
+def test_hdf5_check_not_hdf5(tmp_path):
+    """Files that exist but aren't actually hdf5 files should fail a check"""
+    afile = tmp_path / "not_an_hdf.h5"
+    with open(afile, "w") as af:
+        af.write("hey")
+
+    spec = (afile, "/fake/array")
+    assert not H5Interface.check(spec)
+
+
 def test_hdf5_shape(shape_cases, hdf5_array):
     _test_hdf5_case(shape_cases, hdf5_array)
 
@@ -64,6 +80,17 @@ def test_hdf5_dataset_not_exists(hdf5_array, model_blank):
         model_blank(array=H5ArrayPath(file=array.file, path="/some/random/path"))
         assert "file located" in e
         assert "no array found" in e
+
+
+def test_assignment(hdf5_array, model_blank):
+    array = hdf5_array()
+
+    model = model_blank(array=array)
+    model.array[1, 1] = 5
+    assert model.array[1, 1] == 5
+
+    model.array[1:3, 2:4] = 10
+    assert (model.array[1:3, 2:4] == 10).all()
 
 
 def test_to_json(hdf5_array, array_model):
