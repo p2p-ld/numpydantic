@@ -70,7 +70,7 @@ FLOAT: TypeAlias = NDArray[Shape["*, *, *"], Float]
 
 
 @pytest.fixture(
-    scope="session",
+    scope="module",
     params=[
         ValidationCase(shape=(10, 10, 10), passes=True),
         ValidationCase(shape=(10, 10), passes=False),
@@ -107,7 +107,7 @@ def shape_cases(request) -> ValidationCase:
 
 
 @pytest.fixture(
-    scope="session",
+    scope="module",
     params=[
         ValidationCase(dtype=float, passes=True),
         ValidationCase(dtype=int, passes=False),
