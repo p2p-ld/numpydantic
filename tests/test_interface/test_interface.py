@@ -51,7 +51,7 @@ def test_interface_match_error(interfaces):
         assert "Interface2" in e
 
     with pytest.raises(ValueError) as e:
-        Interface.match("hey")
+        Interface.match([[1, 2, 3], ["hey"]])
         assert "No matching interfaces" in e
 
     with pytest.raises(ValueError) as e:

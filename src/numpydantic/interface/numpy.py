@@ -25,7 +25,7 @@ class NumpyInterface(Interface):
 
     input_types = (ndarray, list)
     return_type = ndarray
-    priority = -1
+    priority = -999
     """
     The numpy interface is usually the interface of last resort.
     We want to use any more specific interface that we might have,
@@ -45,7 +45,7 @@ class NumpyInterface(Interface):
             try:
                 _ = np.array(array)
                 return True
-            except TypeError:
+            except Exception:
                 return False
 
     def before_validation(self, array: Any) -> ndarray:

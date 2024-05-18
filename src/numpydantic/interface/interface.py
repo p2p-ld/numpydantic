@@ -154,13 +154,23 @@ class Interface(ABC, Generic[T]):
         """
         Find the interface that should be used for this array based on its input type
         """
-        matches = [i for i in cls.interfaces() if i.check(array)]
+        # first try and find a non-numpy interface, since the numpy interface
+        # will try and load the array into memory in its check method
+        interfaces = cls.interfaces()
+        non_np_interfaces = [i for i in interfaces if i.__name__ != "NumpyInterface"]
+        np_interface = [i for i in interfaces if i.__name__ == "NumpyInterface"][0]
+
+        matches = [i for i in non_np_interfaces if i.check(array)]
         if len(matches) > 1:
             msg = f"More than one interface matches input {array}:\n"
             msg += "\n".join([f"  - {i}" for i in matches])
             raise ValueError(msg)
         elif len(matches) == 0:
-            raise ValueError(f"No matching interfaces found for input {array}")
+            # now try the numpy interface
+            if np_interface.check(array):
+                return np_interface
+            else:
+                raise ValueError(f"No matching interfaces found for input {array}")
         else:
             return matches[0]
 
