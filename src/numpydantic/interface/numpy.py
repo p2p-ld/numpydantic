@@ -8,12 +8,14 @@ from numpydantic.interface.interface import Interface
 
 try:
     from numpy import ndarray
+    import numpy as np
 
     ENABLED = True
 
 except ImportError:  # pragma: no cover
     ENABLED = False
     ndarray = None
+    np = None
 
 
 class NumpyInterface(Interface):
@@ -41,7 +43,7 @@ class NumpyInterface(Interface):
             return True
         else:
             try:
-                _ = ndarray(array)
+                _ = np.array(array)
                 return True
             except TypeError:
                 return False
@@ -52,7 +54,7 @@ class NumpyInterface(Interface):
         in :meth:`.check`
         """
         if not isinstance(array, ndarray):
-            array = ndarray(array)
+            array = np.array(array)
         return array
 
     @classmethod
