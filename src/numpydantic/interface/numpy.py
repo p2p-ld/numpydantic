@@ -7,8 +7,8 @@ from typing import Any
 from numpydantic.interface.interface import Interface
 
 try:
-    from numpy import ndarray
     import numpy as np
+    from numpy import ndarray
 
     ENABLED = True
 
