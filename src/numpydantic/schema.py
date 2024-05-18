@@ -41,7 +41,6 @@ def _numeric_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
 
 def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
     """Get the innermost dtype schema to use in the generated pydantic schema"""
-
     if isinstance(dtype, nptyping.structure.StructureMeta):  # pragma: no cover
         raise NotImplementedError("Structured dtypes are currently unsupported")
 
@@ -63,7 +62,10 @@ def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
     else:
         try:
             python_type = np_to_python[dtype]
-        except KeyError as e:
+        except KeyError as e:  # pragma: no cover
+            # this should pretty much only happen in downstream/3rd-party interfaces
+            # that use interface-specific types. those need to provide mappings back
+            # to base python types (making this more streamlined is TODO)
             if dtype in np_to_python.values():
                 # it's already a python type
                 python_type = dtype

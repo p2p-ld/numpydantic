@@ -169,6 +169,7 @@ def test_json_schema_dtype_single(dtype, array_model):
         (int, "integer"),
         (float, "number"),
         (bool, "boolean"),
+        (complex, "any"),
     ],
 )
 def test_json_schema_dtype_builtin(dtype, expected, array_model):
@@ -179,7 +180,10 @@ def test_json_schema_dtype_builtin(dtype, expected, array_model):
     model = array_model(dtype=dtype)
     schema = model.model_json_schema()
     inner_type = schema["properties"]["array"]["items"]["items"]
-    assert inner_type["type"] == expected
+    if expected == "any":
+        assert inner_type == {}
+    else:
+        assert inner_type["type"] == expected
 
 
 @pytest.mark.skip("Not implemented yet")

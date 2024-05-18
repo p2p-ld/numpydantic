@@ -58,5 +58,11 @@ flat_to_nptyping = {
 }
 """Map from NWB-style flat dtypes to nptyping types"""
 
-python_to_nptyping = {float: dt.Float, str: dt.String, int: dt.Int, bool: dt.Bool}
+python_to_nptyping = {
+    float: dt.Float,
+    str: dt.String,
+    int: dt.Int,
+    bool: dt.Bool,
+    complex: dt.Complex,
+}
 """Map from python types to nptyping types"""
