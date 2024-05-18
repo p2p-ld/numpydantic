@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, Sequence, Union
 
+from pydantic import SerializationInfo
+
 from numpydantic.interface.interface import Interface
 
 try:
@@ -113,14 +115,29 @@ class ZarrInterface(Interface):
 
     @classmethod
     def to_json(
-        cls, array: Union[ZarrArray, str, Path, ZarrArrayPath, Sequence]
+        cls,
+        array: Union[ZarrArray, str, Path, ZarrArrayPath, Sequence],
+        info: Optional[SerializationInfo] = None,
     ) -> dict:
         """
         Dump just the metadata for an array from :meth:`zarr.core.Array.info_items`
-        plus the :meth:`zarr.core.Array.hexdigest`
+        plus the :meth:`zarr.core.Array.hexdigest`.
+
+        The full array can be returned by passing ``'zarr_dump_array': True`` to the
+        serialization ``context`` ::
+
+            model.model_dump_json(context={'zarr_dump_array': True})
         """
+        dump_array = False
+        if info is not None and info.context is not None:
+            dump_array = info.context.get("zarr_dump_array", False)
+
         array = cls._get_array(array)
         info = array.info_items()
         info_dict = {i[0]: i[1] for i in info}
         info_dict["hexdigest"] = array.hexdigest()
+
+        if dump_array:
+            info_dict["array"] = array[:].tolist()
+
         return info_dict

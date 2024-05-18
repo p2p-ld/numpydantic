@@ -4,10 +4,11 @@ Base Interface metaclass
 
 from abc import ABC, abstractmethod
 from operator import attrgetter
-from typing import Any, Generic, Tuple, Type, TypeVar, Union
+from typing import Any, Generic, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from nptyping.shape_expression import check_shape
+from pydantic import SerializationInfo
 
 from numpydantic.exceptions import DtypeError, ShapeError
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
@@ -107,7 +108,9 @@ class Interface(ABC, Generic[T]):
         """
 
     @classmethod
-    def to_json(cls, array: Type[T]) -> Union[list, dict]:
+    def to_json(
+        cls, array: Type[T], info: Optional[SerializationInfo] = None
+    ) -> Union[list, dict]:
         """
         Convert an array of :attr:`.return_type` to a JSON-compatible format using
         base python types

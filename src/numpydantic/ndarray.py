@@ -32,7 +32,6 @@ from numpydantic.maps import python_to_nptyping
 from numpydantic.schema import (
     _handler_type,
     _jsonize_array,
-    coerce_list,
     get_validate_interface,
     make_json_schema,
 )
@@ -119,16 +118,11 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
 
         return core_schema.json_or_python_schema(
             json_schema=list_schema,
-            python_schema=core_schema.chain_schema(
-                [
-                    core_schema.no_info_plain_validator_function(coerce_list),
-                    core_schema.with_info_plain_validator_function(
-                        get_validate_interface(shape, dtype)
-                    ),
-                ]
+            python_schema=core_schema.with_info_plain_validator_function(
+                get_validate_interface(shape, dtype)
             ),
             serialization=core_schema.plain_serializer_function_ser_schema(
-                _jsonize_array, when_used="json"
+                _jsonize_array, when_used="json", info_arg=True
             ),
         )
 

@@ -1,5 +1,7 @@
 import pytest
 
+import numpy as np
+
 from numpydantic.interface import Interface
 
 
@@ -88,3 +90,12 @@ def test_interface_type_lists():
                 assert atype in Interface.return_types()
         else:
             assert interface.return_type in Interface.return_types()
+
+
+def test_interfaces_sorting():
+    """
+    Interfaces should be returned in descending order of priority
+    """
+    ifaces = Interface.interfaces()
+    priorities = [i.priority for i in ifaces]
+    assert (np.diff(priorities) <= 0).all()

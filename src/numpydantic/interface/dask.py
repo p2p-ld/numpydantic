@@ -2,9 +2,10 @@
 Interface for Dask arrays
 """
 
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
+from pydantic import SerializationInfo
 
 from numpydantic.interface.interface import Interface
 
@@ -37,7 +38,9 @@ class DaskInterface(Interface):
         return DaskArray is not None
 
     @classmethod
-    def to_json(cls, array: DaskArray) -> list:
+    def to_json(
+        cls, array: DaskArray, info: Optional[SerializationInfo] = None
+    ) -> list:
         """
         Convert an array to a JSON serializable array by first converting to a numpy
         array and then to a list.

@@ -8,6 +8,7 @@ from typing import Any, Callable, Union
 import nptyping.structure
 import numpy as np
 from nptyping import Shape
+from pydantic import SerializationInfo
 from pydantic_core import CoreSchema, core_schema
 from pydantic_core.core_schema import ListSchema, ValidationInfo
 
@@ -173,17 +174,7 @@ def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
     return validate_interface
 
 
-def _jsonize_array(value: Any) -> Union[list, dict]:
+def _jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
     """Use an interface class to render an array as JSON"""
     interface_cls = Interface.match_output(value)
-    return interface_cls.to_json(value)
-
-
-def coerce_list(value: Any) -> np.ndarray:
-    """
-    If a value is passed as a list or list of lists, try and coerce it into an array
-    rather than failing validation.
-    """
-    if isinstance(value, list):
-        value = np.array(value)
-    return value
+    return interface_cls.to_json(value, info)

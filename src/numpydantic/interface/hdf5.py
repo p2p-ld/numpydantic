@@ -4,9 +4,10 @@ Interfaces for HDF5 Datasets
 
 import sys
 from pathlib import Path
-from typing import Any, NamedTuple, Tuple, Union
+from typing import Any, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
+from pydantic import SerializationInfo
 
 from numpydantic.interface.interface import Interface
 from numpydantic.types import NDArrayType
@@ -179,7 +180,7 @@ class H5Interface(Interface):
         return array
 
     @classmethod
-    def to_json(cls, array: H5Proxy) -> dict:
+    def to_json(cls, array: H5Proxy, info: Optional[SerializationInfo] = None) -> dict:
         """
         Dump to a dictionary containing
 
