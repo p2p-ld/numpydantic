@@ -115,7 +115,7 @@ class Interface(ABC, Generic[T]):
         Convert an array of :attr:`.return_type` to a JSON-compatible format using
         base python types
         """
-        if not isinstance(array, np.ndarray):
+        if not isinstance(array, np.ndarray):  # pragma: no cover
             array = np.array(array)
         return array.tolist()
 

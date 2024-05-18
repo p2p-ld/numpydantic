@@ -1,3 +1,5 @@
+import pdb
+
 import pytest
 
 import numpy as np
@@ -47,21 +49,21 @@ def test_interface_match_error(interfaces):
     """
     with pytest.raises(ValueError) as e:
         Interface.match([1, 2, 3])
-        assert "Interface1" in e
-        assert "Interface2" in e
+    assert "Interface1" in str(e.value)
+    assert "Interface2" in str(e.value)
 
     with pytest.raises(ValueError) as e:
-        Interface.match([[1, 2, 3], ["hey"]])
-        assert "No matching interfaces" in e
+        Interface.match(([1, 2, 3], ["hey"]))
+    assert "No matching interfaces" in str(e.value)
 
     with pytest.raises(ValueError) as e:
         Interface.match_output((1, 2, 3))
-        assert "Interface1" in e
-        assert "Interface2" in e
+    assert "Interface1" in str(e.value)
+    assert "Interface2" in str(e.value)
 
     with pytest.raises(ValueError) as e:
         Interface.match_output("hey")
-        assert "No matching interfaces" in e
+    assert "No matching interfaces" in str(e.value)
 
 
 def test_interface_enabled(interfaces):
