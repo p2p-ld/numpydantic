@@ -34,8 +34,11 @@ generating JSON Schema, serialization to JSON
 - **Types** - Annotations (based on [npytyping](https://github.com/ramonhagenaars/nptyping))
   for specifying arrays in pydantic models
 - **Validation** - Shape, dtype, and other array validations
-- **Interfaces** - Works with {mod}`~.interface.numpy`, {mod}`~.interface.dask`, {mod}`~.interface.hdf5`,
-  {mod}`~.interface.video`, and {mod}`~.interface.zarr`,
+- **Interfaces** - Works with [`numpy`](https://numpydantic.readthedocs.io/en/latest/api/interface/numpy.html), 
+  [`dask`](https://numpydantic.readthedocs.io/en/latest/api/interface/dask.html), 
+  [`hdf5`](https://numpydantic.readthedocs.io/en/latest/api/interface/hdf5.html),
+  [`video`](https://numpydantic.readthedocs.io/en/latest/api/interface/video.html), 
+  [`zarr`](https://numpydantic.readthedocs.io/en/latest/api/interface/zarr.html),
   and a simple extension system to make it work with whatever else you want!
 - **Serialization** - Dump an array as a JSON-compatible array-of-arrays with enough metadata to be able to 
   recreate the model in the native format
