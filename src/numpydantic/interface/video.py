@@ -2,7 +2,6 @@
 Interface to support treating videos like arrays using OpenCV
 """
 
-import pdb
 from pathlib import Path
 from typing import Any, Optional, Tuple, Union
 
@@ -135,7 +134,9 @@ class VideoProxy:
             if isinstance(item[0], int):
                 # single frame
                 frame = self._get_frame(item[0])
-                return frame[*item[1:]]
+                # syntax doesn't work in 3.9 but would be more explicit...
+                # return frame[*item[1:]]
+                return frame[item[1:]]
 
             elif isinstance(item[0], slice):
                 frames = []
@@ -151,7 +152,11 @@ class VideoProxy:
                 for i in range(fslice.start, fslice.stop, fslice.step):
                     frames.append(self._get_frame(i))
                 frame = np.stack(frames)
-                return frame[:, *item[1:]]
+                # syntax doesn't work in 3.9 but would be simpler..
+                # return frame[:, *item[1:]]
+                # construct a new slice instead
+                new_slice = (slice(None, None, None), *item[1:])
+                return frame[new_slice]
             else:  # pragma: no cover
                 raise ValueError(f"indices must be an int or a slice! got {item}")
 
