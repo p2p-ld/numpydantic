@@ -6,10 +6,12 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import importlib.metadata as metadata
+
 project = "numpydantic"
 copyright = "2024, Jonny Saunders"
 author = "Jonny Saunders"
-release = "v0.0.0"
+release = metadata.version("numpydantic")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

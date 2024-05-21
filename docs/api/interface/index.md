@@ -9,5 +9,6 @@
 dask
 hdf5
 numpy
+video
 zarr
 ```

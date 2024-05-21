@@ -25,12 +25,12 @@ or implement `__get_pydantic_core_schema__` on your type to fully support it.
 And setting `arbitrary_types_allowed = True` still prohibits you from 
 generating JSON Schema, serialization to JSON
 
-
 ## Features:
 - **Types** - Annotations (based on [npytyping](https://github.com/ramonhagenaars/nptyping))
   for specifying arrays in pydantic models
 - **Validation** - Shape, dtype, and other array validations
-- **Interfaces** - Works with {mod}`~.interface.numpy`, {mod}`~.interface.dask`, {mod}`~.interface.hdf5`, {mod}`~.interface.zarr`, 
+- **Interfaces** - Works with {mod}`~.interface.numpy`, {mod}`~.interface.dask`, {mod}`~.interface.hdf5`,
+  {mod}`~.interface.video`, and {mod}`~.interface.zarr`,
   and a simple extension system to make it work with whatever else you want!
 - **Serialization** - Dump an array as a JSON-compatible array-of-arrays with enough metadata to be able to 
   recreate the model in the native format
@@ -47,6 +47,26 @@ Coming soon:
   minimum and maximum precision ranges, and so on as type maps provided by interface classes :)
 - (see [todo](./todo.md))
 
+## Installation
+
+numpydantic tries to keep dependencies minimal, so by default it only comes with 
+dependencies to use the numpy interface. Add the extra relevant to your favorite
+array library to be able to use it!
+
+```shell
+pip install numpydantic
+# dask
+pip install 'numpydantic[dask]'
+# hdf5
+pip install 'numpydantic[hdf5]'
+# video
+pip install 'numpydantic[video]'
+# zarr
+pip install 'numpydantic[zarr]'
+# all array formats
+pip intsall 'numpydantic[array]'
+```
+
 ## Usage
 
 Specify an array using [nptyping syntax](https://github.com/ramonhagenaars/nptyping/blob/master/USERDOCS.md)
@@ -55,7 +75,10 @@ and use it with your favorite array library :)
 Use the {class}`~numpydantic.NDArray` class like you would any other python type,
 combine it with {class}`typing.Union`, make it {class}`~typing.Optional`, etc.
 
-For example, to support a 
+For example, to specify a very special type of image that can either be
+- a 2D float array where the axes can be any size, or 
+- a 3D uint8 array where the third axis must be size 3
+- a 1080p video 
 
 ```python
 from typing import Union
@@ -65,43 +88,36 @@ import numpy as np
 from numpydantic import NDArray, Shape
 
 class Image(BaseModel):
-    """
-    Images: grayscale, RGB, RGBA, and videos too!
-    """
     array: Union[
-        NDArray[Shape["* x, * y"], np.uint8],
+        NDArray[Shape["* x, * y"], float],
         NDArray[Shape["* x, * y, 3 rgb"], np.uint8],
-        NDArray[Shape["* t, * x, * y, 4 rgba"], np.float64]
+        NDArray[Shape["* t, 1080 y, 1920 x, 3 rgb"], np.uint8]
     ]
 ```
 
 And then use that as a transparent interface to your favorite array library!
 
-### Numpy
+### Interfaces
+
+#### Numpy
 
 The Coca-Cola of array libraries
 
 ```python
 import numpy as np
 # works
-frame_gray = Image(array=np.ones((1280, 720), dtype=np.uint8))
+frame_gray = Image(array=np.ones((1280, 720), dtype=float))
 frame_rgb  = Image(array=np.ones((1280, 720, 3), dtype=np.uint8))
-frame_rgba = Image(array=np.ones((1280, 720, 4), dtype=np.uint8))
-video_rgb  = Image(array=np.ones((100, 1280, 720, 3), dtype=np.uint8))
 
 # fails
-wrong_n_dimensions = Image(array=np.ones((1280,), dtype=np.uint8))
+wrong_n_dimensions = Image(array=np.ones((1280,), dtype=float))
 wrong_shape = Image(array=np.ones((1280,720,10), dtype=np.uint8))
-wrong_type = Image(array=np.ones((1280,720,3), dtype=np.float64))
 
-# shapes and types are checked together, so..
-# this works
-float_video = Image(array=np.ones((100, 1280, 720, 4), dtype=float))
-# this doesn't
-wrong_shape_float_video = Image(array=np.ones((100, 1280, 720, 3), dtype=float))
+# shapes and types are checked together, so this also fails
+wrong_shape_dtype_combo = Image(array=np.ones((1280, 720, 3), dtype=float))
 ```
 
-### Dask
+#### Dask
 
 High performance chunked arrays! The backend for many new array libraries! 
 
@@ -110,14 +126,12 @@ Works exactly the same as numpy arrays
 ```python
 import dask.array as da
 
-# validate a huge video
-video_array = da.zeros(shape=(1920,1080,1000000,3), dtype=np.uint8)
-
-# this works
+# validate a humongous image without having to load it into memory
+video_array = da.zeros(shape=(1e10,1e20,3), dtype=np.uint8)
 dask_video = Image(array=video_array)
 ```
 
-### HDF5
+#### HDF5
 
 Array work increasingly can't fit on memory, but dealing with arrays on disk 
 can become a pain in concurrent applications. Numpydantic allows you to 
@@ -136,7 +150,7 @@ array_path = "/nested/array"
 
 # make an HDF5 array
 h5f = h5py.File(h5f_file, "w")
-array = np.random.random((1920,1080,3)).astype(np.uint8)
+array = np.random.randint(0, 255, (1920,1080,3), np.uint8)
 h5f.create_dataset(array_path, data=array)
 h5f.close()
 ```
@@ -172,17 +186,229 @@ object and leave the file open between calls:
 >>> h5f_image.array.close()
 ```
 
-### Zarr
+#### Video
+
+Videos are just arrays with fancy encoding! Numpydantic can validate shape and dtype
+as well as lazy load chunks of frames with arraylike syntax!
+
+Say we have some video `data.mp4` ...
+
+```python
+video = Image(array='data.mp4')
+# get a single frame
+video.array[5]
+# or a range of frames!
+video.array[5:10]
+# or whatever slicing you want to do!
+video.array[5:50:5, 0:10, 50:70]
+```
+
+As elsewhere, a proxy class is a transparent pass-through interface to the underlying
+opencv class, so we can get the rest of the video properties ...
+
+```python
+import cv2
+
+# get the total frames from opencv
+video.array.get(cv2.CAP_PROP_FRAME_COUNT)
+# the proxy class also provides a convenience property
+video.array.n_frames
+```
+
+#### Zarr
 
 Zarr works similarly!
 
 Use it with any of Zarr's backends: Nested, Zipfile, S3, it's all the same!
 
-```{todo}
-Add the zarr examples!
+Eg. create a nested zarr array on disk and use it...
+
+```python
+import zarr
+from numpydantic.interface.zarr import ZarrArrayPath
+
+array_file = 'data/array.zarr'
+nested_path = 'data/sets/here'
+
+root = zarr.open(array_file, mode='w')
+nested_array = root.zeros(
+    nested_path, 
+    shape=(1000, 1080, 1920, 3), 
+    dtype=np.uint8
+)
+
+# validates just fine!
+zarr_video = Image(array=ZarrArrayPath(array_file, nested_path))
+# or just pass a tuple, the interface can discover it's a zarr array
+zarr_video = Image(array=(array_file, nested_path))
 ```
 
+### JSON Schema
 
+Numpydantic generates JSON Schema for all its array specifications, so for the above
+model, we get a schema for each of the possible array types that properly handles
+the shape and dtype constraints and includes the origin numpy type as a `dtype` annotation.
+
+```python
+Image.model_json_schema()
+```
+
+```json
+{
+  "properties": {
+    "array": {
+      "anyOf": [
+        {
+          "items": {"items": {"type": "number"}, "type": "array"},
+          "type": "array"
+        },
+        {
+          "dtype": "numpy.uint8",
+          "items": {
+            "items": {
+              "items": {
+                "maximum": 255,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        {
+          "dtype": "numpy.uint8",
+          "items": {
+            "items": {
+              "items": {
+                "items": {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              "maxItems": 1920,
+              "minItems": 1920,
+              "type": "array"
+            },
+            "maxItems": 1080,
+            "minItems": 1080,
+            "type": "array"
+          },
+          "type": "array"
+        }
+      ],
+      "title": "Array"
+    }
+  },
+  "required": ["array"],
+  "title": "Image",
+  "type": "object"
+}
+```
+
+numpydantic can even handle shapes with unbounded numbers of dimensions by using
+recursive JSON schema!!!
+
+So the any-shaped array (using nptyping's ellipsis notation):
+
+```python
+class AnyShape(BaseModel):
+    array: NDArray[Shape["*, ..."], np.uint8]
+```
+
+is rendered to JSON-Schema like this:
+
+```json
+{
+  "$defs": {
+    "any-shape-array-9b5d89838a990d79": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/any-shape-array-9b5d89838a990d79"
+          },
+          "type": "array"
+        },
+        {"maximum": 255, "minimum": 0, "type": "integer"}
+      ]
+    }
+  },
+  "properties": {
+    "array": {
+      "dtype": "numpy.uint8",
+      "items": {"$ref": "#/$defs/any-shape-array-9b5d89838a990d79"},
+      "title": "Array",
+      "type": "array"
+    }
+  },
+  "required": ["array"],
+  "title": "AnyShape",
+  "type": "object"
+}
+```
+
+where the key `"any-shape-array-9b5d89838a990d79"` uses a (blake2b) hash of the
+inner dtype specification so that having multiple any-shaped arrays in a single 
+model schema are deduplicated without conflicts.
+
+### Dumping
+
+One of the main reasons to use chunked array libraries like zarr is to avoid
+needing to load the entire array into memory. When dumping data to JSON, numpydantic 
+tries to mirror this behavior, by default only dumping the metadata that is
+necessary to identify the array.
+
+For example, with zarr:
+
+```python
+array = zarr.array([[1,2,3],[4,5,6],[7,8,9]], dtype=float)
+instance = Image(array=array)
+dumped = instance.model_dump_json()
+```
+
+```json
+{
+  "array":
+  {
+    "Chunk shape": "(3, 3)",
+    "Chunks initialized": "1/1",
+    "Compressor": "Blosc(cname='lz4', clevel=5, shuffle=SHUFFLE, blocksize=0)",
+    "Data type": "float64",
+    "No. bytes": "72",
+    "No. bytes stored": "421",
+    "Order": "C",
+    "Read-only": "False",
+    "Shape": "(3, 3)",
+    "Storage ratio": "0.2",
+    "Store type": "zarr.storage.KVStore",
+    "Type": "zarr.core.Array",
+    "hexdigest": "c51604eace325fe42bbebf39146c0956bd2ed13c"
+  }
+}
+```
+
+To print the whole array, we use pydantic's serialization contexts:
+
+```python
+dumped = instance.model_dump_json(context={'zarr_dump_array': True})
+```
+```json
+{
+  "array":
+  {
+    "same thing,": "except also...",
+    "array": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+    "hexdigest": "c51604eace325fe42bbebf39146c0956bd2ed13c"
+  }
+}
+```
 
 
 ```{toctree}

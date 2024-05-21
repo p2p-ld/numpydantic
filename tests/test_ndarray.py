@@ -14,9 +14,6 @@ from numpydantic.exceptions import ShapeError, DtypeError
 from numpydantic import dtype
 
 
-# from .fixtures import tmp_output_dir_func
-
-
 def test_ndarray_type():
     class Model(BaseModel):
         array: NDArray[Shape["2 x, * y"], Number]
@@ -186,17 +183,43 @@ def test_json_schema_dtype_builtin(dtype, expected, array_model):
         assert inner_type["type"] == expected
 
 
-@pytest.mark.skip("Not implemented yet")
-def test_json_schema_wildcard():
-    """
-    NDarray types should generate a JSON schema without shape constraints
-    """
-    pass
+def _recursive_array(schema):
+    assert "$defs" in schema
+    # get the key uses for the array
+    array_key = list(schema["$defs"].keys())[0]
+
+    # the array property should be a ref to the recursive array
+    # get the innermost part of the field schema
+    field_schema = schema["properties"]["array"]
+    while "items" in field_schema:
+        field_schema = field_schema["items"]
+    assert field_schema["$ref"] == f"#/$defs/{array_key}"
+
+    # and the recursive array should indeed be recursive...
+    # specifically it should be an array whose items can be itself or
+    # of the type specified by the dtype
+    any_of = schema["$defs"][array_key]["anyOf"]
+    assert any_of[0]["items"]["$ref"] == f"#/$defs/{array_key}"
+    assert any_of[0]["type"] == "array"
+    # here we are just assuming that it's a uint8 array..
+    assert any_of[1]["type"] == "integer"
+    assert any_of[1]["maximum"] == 255
+    assert any_of[1]["minimum"] == 0
 
 
-@pytest.mark.skip("Not implemented yet")
 def test_json_schema_ellipsis():
     """
     NDArray types should create a recursive JSON schema for any-shaped arrays
     """
-    pass
+
+    class AnyShape(BaseModel):
+        array: NDArray[Shape["*, ..."], np.uint8]
+
+    schema = AnyShape.model_json_schema()
+    _recursive_array(schema)
+
+    class ConstrainedAnyShape(BaseModel):
+        array: NDArray[Shape["3, 4, ..."], np.uint8]
+
+    schema = ConstrainedAnyShape.model_json_schema()
+    _recursive_array(schema)

@@ -125,12 +125,29 @@ class VideoProxy:
             raise ValueError(f"Could not get frame {frame}")
         return frame
 
+    def _complete_slice(self, slice_: slice) -> slice:
+        """Get a fully-built slice that can be passed to range"""
+        if slice_.step is None:
+            slice_ = slice(slice_.start, slice_.stop, 1)
+        if slice_.stop is None:
+            slice_ = slice(slice_.start, self.n_frames, slice_.step)
+        if slice_.start is None:
+            slice_ = slice(0, slice_.stop, slice_.step)
+        return slice_
+
     def __getitem__(self, item: Union[int, slice, tuple]) -> np.ndarray:
         if isinstance(item, int):
             # want a single frame
             return self._get_frame(item)
+        elif isinstance(item, slice):
+            # slice of frames
+            item = self._complete_slice(item)
+            frames = []
+            for i in range(item.start, item.stop, item.step):
+                frames.append(self._get_frame(i))
+            return np.stack(frames)
         else:
-            # slices are passes as tuples
+            # slices are passed as tuples
             # first arg needs to be handled specially
             if isinstance(item[0], int):
                 # single frame
@@ -142,13 +159,7 @@ class VideoProxy:
             elif isinstance(item[0], slice):
                 frames = []
                 # make a new slice since range cant take Nones, filling in missing vals
-                fslice = item[0]
-                if fslice.step is None:
-                    fslice = slice(fslice.start, fslice.stop, 1)
-                if fslice.stop is None:
-                    fslice = slice(fslice.start, self.n_frames, fslice.step)
-                if fslice.start is None:
-                    fslice = slice(0, fslice.stop, fslice.step)
+                fslice = self._complete_slice(item[0])
 
                 for i in range(fslice.start, fslice.stop, fslice.step):
                     frames.append(self._get_frame(i))

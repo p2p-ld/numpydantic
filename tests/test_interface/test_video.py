@@ -122,6 +122,12 @@ def test_video_getitem(avi_video):
     assert single_slice.shape == (10, 5, 3)
 
     # also get a range of frames
+    # range without further slices
+    range_slice = instance.array[3:5]
+    assert range_slice.shape == (2, 100, 50, 3)
+    assert range_slice[0, 3, 3, 0] == 3
+    assert range_slice[0, 4, 4, 0] == 0
+
     # full range
     range_slice = instance.array[3:5, 0:10, 0:5]
     assert range_slice.shape == (2, 10, 5, 3)

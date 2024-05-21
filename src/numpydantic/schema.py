@@ -3,7 +3,9 @@ Helper functions for use with :class:`~numpydantic.NDArray` - see the note in
 :mod:`~numpydantic.ndarray` for why these are separated.
 """
 
-from typing import Any, Callable, Union
+import hashlib
+import json
+from typing import Any, Callable, Optional, Union
 
 import nptyping.structure
 import numpy as np
@@ -124,12 +126,58 @@ def list_of_lists_schema(shape: Shape, array_type: CoreSchema) -> ListSchema:
         # make the current level list schema, accounting for shape
         if arg == "*":
             list_schema = core_schema.list_schema(inner_schema, metadata=metadata)
+        elif arg == "...":
+            list_schema = _unbounded_shape(inner_schema, metadata=metadata)
         else:
             arg = int(arg)
             list_schema = core_schema.list_schema(
                 inner_schema, min_length=arg, max_length=arg, metadata=metadata
             )
     return list_schema
+
+
+def _hash_schema(schema: CoreSchema) -> str:
+    """
+    Make a hex-encoded 8-byte blake2b hash from a pydantic core schema.
+    Collisions are really not important or likely here, but we do want the same schema
+    to produce the same hash.
+    """
+    schema_str = json.dumps(
+        schema, sort_keys=True, indent=None, separators=(",", ":")
+    ).encode("utf-8")
+    hasher = hashlib.blake2b(digest_size=8)
+    hasher.update(schema_str)
+    return hasher.hexdigest()
+
+
+def _unbounded_shape(
+    inner_type: CoreSchema, metadata: Optional[dict] = None
+) -> core_schema.DefinitionsSchema:
+    """
+    Make a recursive schema that refers to itself using a hashed version of the inner
+    type
+    """
+
+    schema_hash = _hash_schema(inner_type)
+    array_ref = f"any-shape-array-{schema_hash}"
+
+    schema = core_schema.definitions_schema(
+        core_schema.list_schema(
+            core_schema.definition_reference_schema(array_ref), metadata=metadata
+        ),
+        [
+            core_schema.union_schema(
+                [
+                    core_schema.list_schema(
+                        core_schema.definition_reference_schema(array_ref)
+                    ),
+                    inner_type,
+                ],
+                ref=array_ref,
+            )
+        ],
+    )
+    return schema
 
 
 def make_json_schema(
@@ -154,7 +202,8 @@ def make_json_schema(
 
     # get the names of the shape constraints, if any
     if shape is Any:
-        list_schema = core_schema.list_schema(core_schema.any_schema())
+        list_schema = _unbounded_shape(dtype_schema)
+        # list_schema = core_schema.list_schema(core_schema.any_schema())
     else:
         list_schema = list_of_lists_schema(shape, dtype_schema)
 
