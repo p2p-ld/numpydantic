@@ -20,6 +20,7 @@ extensions = [
     "sphinxcontrib.autodoc_pydantic",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
+    "sphinx.ext.doctest",
     "sphinx_design",
     "myst_parser",
     "sphinx.ext.todo",

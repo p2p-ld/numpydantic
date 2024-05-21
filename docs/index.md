@@ -1,18 +1,50 @@
 # numpydantic
 
-A python package for array types in pydantic.
+A python package for specifying, validating, and serializing arrays with arbitrary backends in pydantic.
+
+**Problem:** 
+1) Pydantic is great for modeling data. 
+2) Arrays are one of a few elemental types in computing,
+
+but ...
+
+3) if you try and specify an array in pydantic, this happens:
+
+```python
+>>> from pydantic import BaseModel
+>>> import numpy as np
+
+>>> class MyModel(BaseModel):
+>>>     array: np.ndarray
+pydantic.errors.PydanticSchemaGenerationError: 
+Unable to generate pydantic-core schema for <class 'numpy.ndarray'>. 
+Set `arbitrary_types_allowed=True` in the model_config to ignore this error 
+or implement `__get_pydantic_core_schema__` on your type to fully support it.
+```
+
+And setting `arbitrary_types_allowed = True` still prohibits you from 
+generating JSON Schema, serialization to JSON
+
 
 ## Features:
 - **Types** - Annotations (based on [npytyping](https://github.com/ramonhagenaars/nptyping))
   for specifying arrays in pydantic models
 - **Validation** - Shape, dtype, and other array validations
-- **Seralization** - JSON-Schema List-of-list schema generation
-- **Interfaces** - Works with numpy, dask, HDF5, zarr, and a simple extension system to make it work with
-  whatever else you want!
+- **Interfaces** - Works with {mod}`~.interface.numpy`, {mod}`~.interface.dask`, {mod}`~.interface.hdf5`, {mod}`~.interface.zarr`, 
+  and a simple extension system to make it work with whatever else you want!
+- **Serialization** - Dump an array as a JSON-compatible array-of-arrays with enough metadata to be able to 
+  recreate the model in the native format
+- **Schema Generation** - Correct JSON Schema for arrays, complete with shape and dtype constraints, to
+  make your models interoperable 
 
 Coming soon:
 - **Metadata** - This package was built to be used with [linkml arrays](https://linkml.io/linkml/schemas/arrays.html),
-  so we will be extending it to include any metadata included in the type annotation object in the JSON schema representation.
+  so we will be extending it to include arbitrary metadata included in the type annotation object in the JSON schema representation.
+- **Extensible Specification** - for v1, we are implementing the existing nptyping syntax, but 
+  for v2 we will be updating that to an extensible specification syntax to allow interfaces to validate additional
+  constraints like chunk sizes, as well as make array specifications more introspectable and friendly to runtime usage.
+- **Advanced dtype handling** - handling dtypes that only exist in some array backends, allowing
+  minimum and maximum precision ranges, and so on as type maps provided by interface classes :)
 - (see [todo](./todo.md))
 
 ## Usage
@@ -20,17 +52,10 @@ Coming soon:
 Specify an array using [nptyping syntax](https://github.com/ramonhagenaars/nptyping/blob/master/USERDOCS.md)
 and use it with your favorite array library :)
 
-```{todo}
-We will be moving away from using nptyping in v2.0.0.
-
-It was written for an older era in python before the dramatic changes in the Python
-type system and is no longer actively maintained. We will be reimplementing a syntax
-that extends its array specification syntax to include things like ranges and extensible
-dtypes with varying precision (and is much less finnicky to deal with).
-```
-
 Use the {class}`~numpydantic.NDArray` class like you would any other python type,
 combine it with {class}`typing.Union`, make it {class}`~typing.Optional`, etc.
+
+For example, to support a 
 
 ```python
 from typing import Union
@@ -46,8 +71,6 @@ class Image(BaseModel):
     array: Union[
         NDArray[Shape["* x, * y"], np.uint8],
         NDArray[Shape["* x, * y, 3 rgb"], np.uint8],
-        NDArray[Shape["* x, * y, 4 rgba"], np.uint8],
-        NDArray[Shape["* t, * x, * y, 3 rgb"], np.uint8],
         NDArray[Shape["* t, * x, * y, 4 rgba"], np.float64]
     ]
 ```

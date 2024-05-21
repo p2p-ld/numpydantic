@@ -1,5 +1,16 @@
 # TODO
 
+## Syntax
+
+```{todo}
+We will be moving away from using nptyping in v2.0.0.
+
+It was written for an older era in python before the dramatic changes in the Python
+type system and is no longer actively maintained. We will be reimplementing a syntax
+that extends its array specification syntax to include things like ranges and extensible
+dtypes with varying precision (and is much less finnicky to deal with).
+```
+
 ## Validation
 
 ```{todo}
