@@ -84,8 +84,9 @@ class VideoProxy:
         Note that this order flips the order of height and width from typical resolution
         specifications: eg. 1080p video is typically 1920x1080, but here it would be
         1080x1920. This follows opencv's ordering, which matches expectations when
-        eg. an image is read and plotted with matplotlib: the first index is the position
-        in the 0th dimension - the height, or "y" axis - and the second is the width/x.
+        eg. an image is read and plotted with matplotlib: the first index is the
+        position in the 0th dimension - the height, or "y" axis - and the second is the
+        width/x.
         """
         if self._shape is None:
             self._shape = (self.n_frames, *self.sample_frame.shape)
@@ -117,7 +118,7 @@ class VideoProxy:
             self._n_frames = int(n_frames)
         return self._n_frames
 
-    def _get_frame(self, frame: int):
+    def _get_frame(self, frame: int) -> np.ndarray:
         self.video.set(cv2.CAP_PROP_POS_FRAMES, frame)
         status, frame = self.video.read()
         if not status:  # pragma: no cover
