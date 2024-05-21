@@ -1,7 +1,7 @@
-# types
+# schema
 
 ```{eval-rst}
-.. automodule:: numpydantic.types
+.. automodule:: numpydantic.schema
     :members:
     :undoc-members:
 ```

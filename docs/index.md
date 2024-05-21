@@ -416,9 +416,8 @@ dumped = instance.model_dump_json(context={'zarr_dump_array': True})
 :caption: Contents
 :hidden: true
 
-overview
-ndarray
-hooks
+design
+interfaces
 todo
 ```
 
@@ -427,12 +426,13 @@ todo
 :caption: API
 :hidden: true
 
-api/interface/index
 api/index
+api/interface/index
 api/dtype
 api/ndarray
 api/maps
 api/monkeypatch
+api/schema
 api/types
 
 ```
