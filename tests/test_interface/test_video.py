@@ -47,8 +47,8 @@ def avi_video(tmp_path):
 
     video_path.unlink(missing_ok=True)
 
-
-def test_video_validation(avi_video):
+@pytest.mark.parametrize('input_type', [str, Path])
+def test_video_validation(avi_video, input_type):
     """Color videos should validate for normal uint8 shape specs"""
 
     shape = (100, 50)
@@ -59,7 +59,7 @@ def test_video_validation(avi_video):
         array: NDArray[Shape[shape_str], dt.UInt8]
 
     # should correctly validate :)
-    instance = MyModel(array=vid)
+    instance = MyModel(array=input_type(vid))
     assert isinstance(instance.array, VideoProxy)
 
 

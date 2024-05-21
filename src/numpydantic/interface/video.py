@@ -12,7 +12,7 @@ from numpydantic.interface.interface import Interface
 try:
     import cv2
     from cv2 import VideoCapture
-except ImportError:
+except ImportError:  # pragma: no cover
     cv2 = None
     VideoCapture = None
 
@@ -27,7 +27,7 @@ class VideoProxy:
     def __init__(
         self, path: Optional[Path] = None, video: Optional[VideoCapture] = None
     ):
-        if path is None and video is None:
+        if path is None and video is None:  # pragma: no cover
             raise ValueError(
                 "Need to either supply a path or an opened VideoCapture object"
             )
@@ -46,7 +46,7 @@ class VideoProxy:
     def video(self) -> VideoCapture:
         """Opened video capture object"""
         if self._video is None:
-            if self.path is None:
+            if self.path is None:  # pragma: no cover
                 raise RuntimeError(
                     "Instantiated with a VideoCapture object that has been closed, "
                     "and it cant be reopened since source path cant be gotten "
@@ -104,8 +104,10 @@ class VideoProxy:
         t"""
         if self._n_frames is None:
             n_frames = self.video.get(cv2.CAP_PROP_FRAME_COUNT)
-            if n_frames == 0:
+            if n_frames == 0:  # pragma: no cover
                 # have to count manually for some containers with bad metadata
+                # not testing for now, will wait until we encounter such a
+                # video in the wild where this doesn't work.
                 current_frame = self.video.get(cv2.CAP_PROP_POS_FRAMES)
                 self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 n_frames = 0
@@ -204,7 +206,7 @@ class VideoInterface(Interface):
         if isinstance(array, str):
             try:
                 array = Path(array)
-            except TypeError:
+            except TypeError:  # pragma: no cover
                 # fine, just not a video
                 return False
 
