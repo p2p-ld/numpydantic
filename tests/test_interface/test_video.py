@@ -47,7 +47,8 @@ def avi_video(tmp_path):
 
     video_path.unlink(missing_ok=True)
 
-@pytest.mark.parametrize('input_type', [str, Path])
+
+@pytest.mark.parametrize("input_type", [str, Path])
 def test_video_validation(avi_video, input_type):
     """Color videos should validate for normal uint8 shape specs"""
 
