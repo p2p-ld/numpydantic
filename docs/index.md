@@ -8,7 +8,9 @@ A python package for specifying, validating, and serializing arrays with arbitra
 
 but ...
 
-3) if you try and specify an array in pydantic, this happens:
+3) Typical type annotations would only work for a single array library implementation
+4) They wouldn't allow you to specify array shapes and dtypes, and
+5) If you try and specify an array in pydantic, this happens:
 
 ```python
 >>> from pydantic import BaseModel
@@ -22,8 +24,39 @@ Set `arbitrary_types_allowed=True` in the model_config to ignore this error
 or implement `__get_pydantic_core_schema__` on your type to fully support it.
 ```
 
-And setting `arbitrary_types_allowed = True` still prohibits you from 
-generating JSON Schema, serialization to JSON
+**Solution:**
+
+Numpydantic allows you to do this:
+
+```python
+from pydantic import BaseModel
+from numpydantic import NDArray, Shape
+
+class MyModel(BaseModel):
+    array: NDArray[Shape["3 x, 4 y, * z"], int]
+```
+
+And use it with your favorite array library:
+
+```python
+import numpy as np
+import dask.array as da
+import zarr
+
+# numpy
+model = MyModel(array=np.zeros((3, 4, 5), dtype=int))
+# dask
+model = MyModel(array=da.zeros((3, 4, 5), dtype=int))
+# hdf5 datasets
+model = MyModel(array=('data.h5', '/nested/dataset'))
+# zarr arrays
+model = MyModel(array=zarr.zeros((3,4,5), dtype=int))
+model = MyModel(array='data.zarr')
+model = MyModel(array=('data.zarr', '/nested/dataset'))
+# video files
+model = MyModel(array="data.mp4")
+```
+
 
 ## Features:
 - **Types** - Annotations (based on [npytyping](https://github.com/ramonhagenaars/nptyping))
@@ -31,7 +64,9 @@ generating JSON Schema, serialization to JSON
 - **Validation** - Shape, dtype, and other array validations
 - **Interfaces** - Works with {mod}`~.interface.numpy`, {mod}`~.interface.dask`, {mod}`~.interface.hdf5`,
   {mod}`~.interface.video`, and {mod}`~.interface.zarr`,
-  and a simple extension system to make it work with whatever else you want!
+  and a simple extension system to make it work with whatever else you want! Provides
+  a uniform and transparent interface so you can both use common indexing operations
+  and also access any special features of a given array library.
 - **Serialization** - Dump an array as a JSON-compatible array-of-arrays with enough metadata to be able to 
   recreate the model in the native format
 - **Schema Generation** - Correct JSON Schema for arrays, complete with shape and dtype constraints, to
