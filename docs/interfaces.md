@@ -1,5 +1,66 @@
 # Interfaces
 
+Interfaces are the bridge between the abstract {class}`~numpydantic.NDArray` specification
+and concrete array libraries. They are subclasses of the abstract {class}`.Interface`
+class.
+
+They contain methods for coercion, validation, serialization, and any other 
+implementation-specific functionality. 
+
+## Discovery
+
+Interfaces are discovered through the {meth}`.Interface.interfaces` method - 
+returning all subclasses of `Interface`. To use a custom interface, it just
+needs to be defined/imported by the time you intend to use it when instantiating
+a pydantic model.
+
+Each interface implements a {meth}`.Interface.enabled` method that determines
+whether that interface can be used. Typically that means checking if its dependencies
+are present in the environment, but can also control conditional use.
+
+## Matching
+
+When a pydantic model is instantiated and an `NDArray` is to be validated, 
+{meth}`.Interface.match` first, uh, finds the matching interface.
+
+Each interface must define a {meth}`.Interface.check` class that accepts the
+array to be validated and returns whether it can be used. Interfaces can 
+have any `check`ing logic they want, and so can eg. determine if a path 
+is a particular type of file, but should return quickly and do little work 
+since they are called frequently.
+
+Validation fails if an argument doesn't match any interface.
+
+```{note}
+The {class}`.NumpyInterface` is special cased and is only checked if 
+no other interface matches. It attempts to cast the input argument to a
+{class}`numpy.ndarray` to see if it is arraylike, and since many 
+lazy-loaded array libraries will attempt to load the whole array into memory
+when cast to an `ndarray`, we only try as a last resort. 
+```
+
+## Validation
+
+Validation is a chain of lifecycle methods, with a single argument passed and returned
+to and from each:
+
+{meth}`.Interface.validate` calls in order:
+
+- {meth}`.Interface.before_validation`
+- {meth}`.Interface.validate_dtype`
+- {meth}`.Interface.validate_shape`
+- {meth}`.Interface.after_validation`
+
+The `before` and `after` methods provide hooks for coercion, loading, etc. such that
+`validate` can accept one of the types in the interface's 
+{attr}`~.Interface.input_types` and return the {attr}`~.Interface.return_type` .
+
+## Diagram
+
+```{todo}
+Sorry this is unreadable, need to recall how to change the theme for 
+generated mermaid diagrams but it is very late and i want to push this.
+```
 
 ```{mermaid}
 flowchart LR

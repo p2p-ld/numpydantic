@@ -129,7 +129,16 @@ def list_of_lists_schema(shape: Shape, array_type: CoreSchema) -> ListSchema:
         elif arg == "...":
             list_schema = _unbounded_shape(inner_schema, metadata=metadata)
         else:
-            arg = int(arg)
+            try:
+                arg = int(arg)
+            except ValueError as e:
+                raise ValueError(
+                    "Array shapes must be integers, wildcards, or ellipses. "
+                    "Shape variables (for declaring that one dimension must be the "
+                    "same size as another) are not supported because it is "
+                    "impossible to express dynamic minItems/maxItems in JSON Schema. "
+                    "See: https://github.com/orgs/json-schema-org/discussions/730"
+                ) from e
             list_schema = core_schema.list_schema(
                 inner_schema, min_length=arg, max_length=arg, metadata=metadata
             )

@@ -4,4 +4,5 @@
 .. automodule:: numpydantic.dtype
     :members:
     :undoc-members:
-```
+    :imported-members: 
+``` 

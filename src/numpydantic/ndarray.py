@@ -13,7 +13,7 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 
 """
 
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import Any, Tuple
 
 import numpy as np
 from nptyping.error import InvalidArgumentsError
@@ -36,13 +36,6 @@ from numpydantic.schema import (
     make_json_schema,
 )
 from numpydantic.types import DtypeType, ShapeType
-
-if TYPE_CHECKING:  # pragma: no cover
-    pass
-
-"""
-python types that pydantic/json schema can't support (and Any will be used instead)
-"""
 
 
 class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
@@ -90,12 +83,9 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
     Constrained array type allowing npytyping syntax for dtype and shape validation
     and serialization.
 
-    Integrates with pydantic such that
-    - JSON schema for list of list encoding
-    - Serialized as LoL, with automatic compression for large arrays
-    - Automatic coercion from lists on instantiation
-
-    Also supports validation on :class:`.NDArrayProxy` types for lazy loading.
+    This class is not intended to be instantiated or used for type checking, it
+    implements the ``__get_pydantic_core_schema__` method to invoke
+    the relevant :ref:`interface <Interfaces>` for validation and serialization.
 
     References:
         - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types

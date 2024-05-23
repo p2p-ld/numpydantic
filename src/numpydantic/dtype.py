@@ -9,7 +9,7 @@ interfaces.
 This module also allows for convenient access to all abstract dtypes in a single
 module, rather than needing to import each individually.
 
-Some types like :ref:`Integer` are compound types - tuples of multiple dtypes.
+Some types like `Integer` are compound types - tuples of multiple dtypes.
 Check these using ``in`` rather than ``==``. This interface will develop in future
 versions to allow a single dtype check.
 """
@@ -59,6 +59,7 @@ Timedelta64 = np.timedelta64
 SignedInteger = (np.int8, np.int16, np.int32, np.int64, np.short)
 UnsignedInteger = (np.uint8, np.uint16, np.uint32, np.uint64, np.ushort)
 Integer = tuple([*SignedInteger, *UnsignedInteger])
+"""All integer types"""
 Int = Integer  # Int should translate to the "generic" int type.
 
 Float16 = np.float16

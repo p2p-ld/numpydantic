@@ -80,6 +80,7 @@ Coming soon:
   constraints like chunk sizes, as well as make array specifications more introspectable and friendly to runtime usage.
 - **Advanced dtype handling** - handling dtypes that only exist in some array backends, allowing
   minimum and maximum precision ranges, and so on as type maps provided by interface classes :)
+- **More Elaborate Arrays** - structured dtypes, recarrays, xarray-style labeled arrays...
 - (see [todo](./todo.md))
 
 ## Installation
@@ -452,6 +453,7 @@ dumped = instance.model_dump_json(context={'zarr_dump_array': True})
 :hidden: true
 
 design
+syntax
 interfaces
 todo
 ```
@@ -466,9 +468,13 @@ api/interface/index
 api/dtype
 api/ndarray
 api/maps
+api/meta
 api/monkeypatch
 api/schema
 api/types
 
 ```
 
+## See Also
+
+- [`jaxtyping`](https://docs.kidger.site/jaxtyping/)
