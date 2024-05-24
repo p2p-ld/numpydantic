@@ -13,7 +13,7 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 
 """
 
-from typing import Any, Tuple
+from typing import TYPE_CHECKING, Any, Tuple
 
 import numpy as np
 from nptyping.error import InvalidArgumentsError
@@ -28,6 +28,8 @@ from pydantic import GetJsonSchemaHandler
 from pydantic_core import core_schema
 
 from numpydantic.dtype import DType
+from numpydantic.exceptions import InterfaceError
+from numpydantic.interface import Interface
 from numpydantic.maps import python_to_nptyping
 from numpydantic.schema import (
     _handler_type,
@@ -37,12 +39,44 @@ from numpydantic.schema import (
 )
 from numpydantic.types import DtypeType, ShapeType
 
+if TYPE_CHECKING:
+    from nptyping.base_meta_classes import SubscriptableMeta
+
 
 class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
     """
     Hooking into nptyping's array metaclass to override methods pending
     completion of the transition away from nptyping
     """
+
+    if TYPE_CHECKING:
+        __getitem__ = SubscriptableMeta.__getitem__
+
+    def __instancecheck__(self, instance: Any):
+        """
+        Extended type checking that determines whether
+
+        1) the ``type`` of the given instance is one of those in
+            :meth:`.Interface.input_types`
+
+        but also
+
+        2) it satisfies the constraints set on the :class:`.NDArray` annotation
+
+        Args:
+            instance (:class:`typing.Any`): Thing to check!
+
+        Returns:
+            bool: ``True`` if matches constraints, ``False`` otherwise.
+        """
+        shape, dtype = self.__args__
+        try:
+            interface_cls = Interface.match(instance, fast=True)
+            interface = interface_cls(shape, dtype)
+            _ = interface.validate(instance)
+            return True
+        except InterfaceError:
+            return False
 
     def _get_dtype(cls, dtype_candidate: Any) -> DType:
         """

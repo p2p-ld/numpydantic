@@ -223,3 +223,23 @@ def test_json_schema_ellipsis():
 
     schema = ConstrainedAnyShape.model_json_schema()
     _recursive_array(schema)
+
+
+def test_instancecheck():
+    """
+    NDArray should handle ``isinstance()`` s.t. valid arrays are ``True``
+    and invalid arrays are ``False``
+
+    We don't make this test exhaustive because correctness of validation
+    is tested elsewhere. We are just testing that the type checking works
+    """
+    array_type = NDArray[Shape["1, 2, 3"], int]
+
+    assert isinstance(np.zeros((1, 2, 3), dtype=int), array_type)
+    assert not isinstance(np.zeros((2, 2, 3), dtype=int), array_type)
+    assert not isinstance(np.zeros((1, 2, 3), dtype=float), array_type)
+
+    def my_function(array: NDArray[Shape["1, 2, 3"], int]):
+        return array
+
+    my_function(np.zeros((1, 2, 3), int))

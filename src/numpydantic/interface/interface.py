@@ -10,7 +10,12 @@ import numpy as np
 from nptyping.shape_expression import check_shape
 from pydantic import SerializationInfo
 
-from numpydantic.exceptions import DtypeError, ShapeError
+from numpydantic.exceptions import (
+    DtypeError,
+    NoMatchError,
+    ShapeError,
+    TooManyMatchesError,
+)
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 
 T = TypeVar("T", bound=NDArrayType)
@@ -32,6 +37,25 @@ class Interface(ABC, Generic[T]):
     def validate(self, array: Any) -> T:
         """
         Validate input, returning final array type
+
+        Calls the methods, in order:
+
+        * :meth:`.before_validation`
+        * :meth:`.validate_dtype`
+        * :meth:`.validate_shape`
+        * :meth:`.after_validation`
+
+        passing the ``array`` argument and returning it from each.
+
+        Implementing an interface subclass largely consists of overriding these methods
+        as needed.
+
+        Raises:
+            If validation fails, rather than eg. returning ``False``, exceptions will
+            be raised (to halt the rest of the pydantic validation process).
+            When using interfaces outside of pydantic, you must catch both
+            :class:`.DtypeError` and :class:`.ShapeError` (both of which are children
+            of :class:`.InterfaceError` )
         """
         array = self.before_validation(array)
         array = self.validate_dtype(array)
@@ -150,9 +174,21 @@ class Interface(ABC, Generic[T]):
         return tuple(in_types)
 
     @classmethod
-    def match(cls, array: Any) -> Type["Interface"]:
+    def match(cls, array: Any, fast: bool = False) -> Type["Interface"]:
         """
         Find the interface that should be used for this array based on its input type
+
+        First runs the ``check`` method for all interfaces returned by
+        :meth:`.Interface.interfaces` **except** for :class:`.NumpyInterface` ,
+        and if no match is found then try the numpy interface. This is because
+        :meth:`.NumpyInterface.check` can be expensive, as we could potentially
+        try to
+
+        Args:
+            fast (bool): if ``False`` , check all interfaces and raise exceptions for
+              having multiple matching interfaces (default). If ``True`` ,
+              check each interface (as ordered by its ``priority`` , decreasing),
+              and return on the first match.
         """
         # first try and find a non-numpy interface, since the numpy interface
         # will try and load the array into memory in its check method
@@ -160,17 +196,24 @@ class Interface(ABC, Generic[T]):
         non_np_interfaces = [i for i in interfaces if i.__name__ != "NumpyInterface"]
         np_interface = [i for i in interfaces if i.__name__ == "NumpyInterface"][0]
 
-        matches = [i for i in non_np_interfaces if i.check(array)]
+        if fast:
+            matches = []
+            for i in non_np_interfaces:
+                if i.check(array):
+                    return i
+        else:
+            matches = [i for i in non_np_interfaces if i.check(array)]
+
         if len(matches) > 1:
             msg = f"More than one interface matches input {array}:\n"
             msg += "\n".join([f"  - {i}" for i in matches])
-            raise ValueError(msg)
+            raise TooManyMatchesError(msg)
         elif len(matches) == 0:
             # now try the numpy interface
             if np_interface.check(array):
                 return np_interface
             else:
-                raise ValueError(f"No matching interfaces found for input {array}")
+                raise NoMatchError(f"No matching interfaces found for input {array}")
         else:
             return matches[0]
 
@@ -186,8 +229,8 @@ class Interface(ABC, Generic[T]):
         if len(matches) > 1:
             msg = f"More than one interface matches output {array}:\n"
             msg += "\n".join([f"  - {i}" for i in matches])
-            raise ValueError(msg)
+            raise TooManyMatchesError(msg)
         elif len(matches) == 0:
-            raise ValueError(f"No matching interfaces found for output {array}")
+            raise NoMatchError(f"No matching interfaces found for output {array}")
         else:
             return matches[0]

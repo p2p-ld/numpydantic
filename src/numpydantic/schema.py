@@ -225,7 +225,9 @@ def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
     :meth:`.Interface.validate` method
     """
 
-    def validate_interface(value: Any, info: "ValidationInfo") -> NDArrayType:
+    def validate_interface(
+        value: Any, info: Optional["ValidationInfo"] = None
+    ) -> NDArrayType:
         interface_cls = Interface.match(value)
         interface = interface_cls(shape, dtype)
         value = interface.validate(value)
