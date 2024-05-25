@@ -1,8 +1,8 @@
 # Changelog
 
-# 1.*
+## 1.*
 
-## 1.1.0 - 24-05-24 - Instance Checking
+### 1.1.0 - 24-05-24 - Instance Checking
 
 https://github.com/p2p-ld/numpydantic/pull/1
 
