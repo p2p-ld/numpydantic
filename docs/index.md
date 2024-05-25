@@ -57,6 +57,25 @@ model = MyModel(array=('data.zarr', '/nested/dataset'))
 model = MyModel(array="data.mp4")
 ```
 
+And use the `NDArray` type annotation like a regular type outside
+of pydantic -- eg. to validate an array anywhere, use `isinstance`:
+
+```python
+array_type = NDArray[Shape["1, 2, 3"], int]
+isinstance(np.zeros((1,2,3), dtype=int), array_type)
+# True
+isinstance(zarr.zeros((1,2,3), dtype=int), array_type)
+# True
+isinstance(np.zeros((4,5,6), dtype=int), array_type)
+# False
+isinstance(np.zeros((1,2,3), dtype=float), array_type)
+# False
+```
+
+```{note}
+`NDArray` can't do validation with static type checkers yet, see 
+{ref}`design_challenges` and {ref}`type_checkers`
+```
 
 ## Features:
 - **Types** - Annotations (based on [npytyping](https://github.com/ramonhagenaars/nptyping))
