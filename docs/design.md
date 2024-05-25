@@ -17,6 +17,7 @@ relatively low. Its `Dtype[ArrayClass, "{shape_expression}"]` syntax is not well
 suited for modeling arrays intended to be general across implementations, and 
 makes it challenging to adapt to pydantic's schema generation system.
 
+(design_challenges)=
 ## Challenges
 
 The Python type annotation system is weird and not like the rest of Python! 
