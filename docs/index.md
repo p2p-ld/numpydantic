@@ -475,6 +475,7 @@ design
 syntax
 interfaces
 todo
+changelog
 ```
 
 ```{toctree}
