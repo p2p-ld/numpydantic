@@ -144,17 +144,38 @@ class Interface(ABC, Generic[T]):
         return array.tolist()
 
     @classmethod
-    def interfaces(cls) -> Tuple[Type["Interface"], ...]:
+    def interfaces(
+        cls, with_disabled: bool = False, sort: bool = True
+    ) -> Tuple[Type["Interface"], ...]:
         """
         Enabled interface subclasses
+
+        Args:
+            with_disabled (bool): If ``True`` , get every known interface.
+                If ``False`` (default), get only enabled interfaces.
+            sort (bool): If ``True`` (default), sort interfaces by priority.
+                If ``False`` , sorted by definition order. Used for recursion:
+                we only want to sort once at the top level.
         """
-        return tuple(
-            sorted(
-                [i for i in Interface.__subclasses__() if i.enabled()],
+        # get recursively
+        subclasses = []
+        for i in cls.__subclasses__():
+            if with_disabled:
+                subclasses.append(i)
+
+            if i.enabled():
+                subclasses.append(i)
+
+            subclasses.extend(i.interfaces(with_disabled=with_disabled, sort=False))
+
+        if sort:
+            subclasses = sorted(
+                subclasses,
                 key=attrgetter("priority"),
                 reverse=True,
             )
-        )
+
+        return tuple(subclasses)
 
     @classmethod
     def return_types(cls) -> Tuple[NDArrayType, ...]:

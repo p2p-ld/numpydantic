@@ -39,7 +39,7 @@ from numpydantic.schema import (
 )
 from numpydantic.types import DtypeType, ShapeType
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from nptyping.base_meta_classes import SubscriptableMeta
 
 
@@ -49,7 +49,7 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
     completion of the transition away from nptyping
     """
 
-    if TYPE_CHECKING:
+    if TYPE_CHECKING:  # pragma: no cover
         __getitem__ = SubscriptableMeta.__getitem__
 
     def __instancecheck__(self, instance: Any):

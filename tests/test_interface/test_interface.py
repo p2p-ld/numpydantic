@@ -1,5 +1,3 @@
-import pdb
-
 import pytest
 
 import numpy as np
@@ -14,9 +12,12 @@ def interfaces():
     class Interface1(Interface):
         input_types = (list,)
         return_type = tuple
+        priority = 1000
+        checked = False
 
         @classmethod
         def check(cls, array):
+            cls.checked = True
             if isinstance(array, list):
                 return True
             return False
@@ -26,18 +27,34 @@ def interfaces():
             return True
 
     Interface2 = type("Interface2", Interface1.__bases__, dict(Interface1.__dict__))
+    Interface2.checked = False
+    Interface2.priority = 999
 
     class Interface3(Interface1):
+        priority = 998
+        checked = False
+
         @classmethod
         def enabled(cls) -> bool:
             return False
+
+    class Interface4(Interface3):
+        priority = 997
+        checked = False
+
+        @classmethod
+        def enabled(cls) -> bool:
+            return True
 
     class Interfaces:
         interface1 = Interface1
         interface2 = Interface2
         interface3 = Interface3
+        interface4 = Interface4
 
     yield Interfaces
+    # Interface.__subclasses__().remove(Interface1)
+    # Interface.__subclasses__().remove(Interface2)
     del Interface1
     del Interface2
     del Interface3
@@ -64,6 +81,20 @@ def test_interface_match_error(interfaces):
     with pytest.raises(ValueError) as e:
         Interface.match_output("hey")
     assert "No matching interfaces" in str(e.value)
+
+
+def test_interface_match_fast(interfaces):
+    """
+    fast matching should return as soon as an interface is found
+    and not raise an error for duplicates
+    """
+    Interface.interfaces()[0].checked = False
+    Interface.interfaces()[1].checked = False
+    # this doesnt' raise an error
+    matched = Interface.match([1, 2, 3], fast=True)
+    assert matched == Interface.interfaces()[0]
+    assert Interface.interfaces()[0].checked
+    assert not Interface.interfaces()[1].checked
 
 
 def test_interface_enabled(interfaces):
@@ -101,3 +132,22 @@ def test_interfaces_sorting():
     ifaces = Interface.interfaces()
     priorities = [i.priority for i in ifaces]
     assert (np.diff(priorities) <= 0).all()
+
+
+def test_interface_with_disabled(interfaces):
+    """
+    Get all interfaces, even if not enabled
+    """
+    ifaces = Interface.interfaces(with_disabled=True)
+    assert interfaces.interface3 in ifaces
+
+
+def test_interface_recursive(interfaces):
+    """
+    Get all interfaces, including subclasses of subclasses
+    """
+    ifaces = Interface.interfaces()
+    assert issubclass(interfaces.interface4, interfaces.interface3)
+    assert issubclass(interfaces.interface3, interfaces.interface1)
+    assert issubclass(interfaces.interface1, Interface)
+    assert interfaces.interface4 in ifaces
