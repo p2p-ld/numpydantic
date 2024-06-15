@@ -2,6 +2,10 @@
 
 ## 1.*
 
+### 1.2.0 - 24-06-13 - Shape ranges
+
+- Add ability to specify shapes as ranges - see [shape ranges](shape-ranges)
+
 ### 1.1.0 - 24-05-24 - Instance Checking
 
 https://github.com/p2p-ld/numpydantic/pull/1

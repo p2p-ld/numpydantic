@@ -491,6 +491,7 @@ api/maps
 api/meta
 api/monkeypatch
 api/schema
+api/shape
 api/types
 
 ```

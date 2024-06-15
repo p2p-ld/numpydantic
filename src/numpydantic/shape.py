@@ -58,6 +58,14 @@ class ShapeMeta(ContainerMeta, implementation="Shape"):
         dim_string_without_labels = remove_labels(dim_strings)
         return {"prepared_args": dim_string_without_labels}
 
+    def __setattr__(cls, key: str, value: Any) -> None:  # pragma: no cover
+        """just for documentation generation - allow __annotations__"""
+
+        if key not in ("_abc_impl", "__abstractmethods__", "__annotations__"):
+            raise NPTypingError(f"Cannot set values to nptyping.{cls.__name__}.")
+        else:
+            object.__setattr__(cls, key, value)
+
 
 class Shape(NPTypingType, ABC, metaclass=ShapeMeta):
     """

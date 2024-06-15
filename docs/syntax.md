@@ -61,6 +61,24 @@ For a 2-dimensional, 3 x any-shaped array:
 Shape["3, *"]
 ```
 
+(shape-ranges)=
+### Ranges
+
+Dimension sizes can also be specified as ranges[^ranges].
+Ranges must have no whitespace, and may use integers or wildcards.
+Range specifications are **inclusive** on both ends.
+
+For an array whose...
+- First dimension can be of length 2, 3, or 4
+- Second dimension is 2 or greater
+- Third dimension is 4 or less
+
+```python
+Shape["2-4, 2-*, *-4"]
+```
+
+[^ranges]: This is an extension to nptyping's syntax, and so using `nptyping.Shape` is unsupported - use {class}`numpydantic.Shape`
+
 ### Labels
 
 Dimensions can be given labels, and in future versions these labels will be 
