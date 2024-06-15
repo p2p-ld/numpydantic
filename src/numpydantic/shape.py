@@ -30,7 +30,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Union
 
 from nptyping.base_meta_classes import ContainerMeta
-from nptyping.error import InvalidShapeError
+from nptyping.error import InvalidShapeError, NPTypingError
 from nptyping.nptyping_type import NPTypingType
 from nptyping.shape_expression import (
     get_dimensions,
