@@ -67,6 +67,41 @@ def test_ndarray_union():
         instance = Model(array=np.random.random((5, 10, 4, 6)))
 
 
+@pytest.mark.parametrize("dtype", dtype.Number)
+def test_ndarray_unparameterized(dtype):
+    """
+    NDArray without any parameters is any shape, any type
+    Returns:
+
+    """
+
+    class Model(BaseModel):
+        array: NDArray
+
+    # not very sophisticated fuzzing of "any shape"
+    test_cases = 10
+    for i in range(test_cases):
+        n_dimensions = np.random.randint(1, 8)
+        dim_sizes = np.random.randint(1, 7, size=n_dimensions)
+        _ = Model(array=np.zeros(dim_sizes, dtype=dtype))
+
+
+def test_ndarray_any():
+    """
+    using :class:`typing.Any` in for the shape means any shape
+    """
+
+    class Model(BaseModel):
+        array: NDArray[Any, np.uint8]
+
+    # not very sophisticated fuzzing of "any shape"
+    test_cases = 100
+    for i in range(test_cases):
+        n_dimensions = np.random.randint(1, 8)
+        dim_sizes = np.random.randint(1, 16, size=n_dimensions)
+        _ = Model(array=np.zeros(dim_sizes, dtype=np.uint8))
+
+
 def test_ndarray_coercion():
     """
     Coerce lists to arrays
