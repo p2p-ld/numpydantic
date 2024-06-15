@@ -7,7 +7,6 @@ from operator import attrgetter
 from typing import Any, Generic, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
-from nptyping.shape_expression import check_shape
 from pydantic import SerializationInfo
 
 from numpydantic.exceptions import (
@@ -16,6 +15,7 @@ from numpydantic.exceptions import (
     ShapeError,
     TooManyMatchesError,
 )
+from numpydantic.shape import check_shape
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 
 T = TypeVar("T", bound=NDArrayType)

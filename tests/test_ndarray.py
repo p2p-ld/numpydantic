@@ -7,9 +7,9 @@ import json
 
 import numpy as np
 from pydantic import BaseModel, ValidationError, Field
-from nptyping import Shape, Number
+from nptyping import Number
 
-from numpydantic import NDArray
+from numpydantic import NDArray, Shape
 from numpydantic.exceptions import ShapeError, DtypeError
 from numpydantic import dtype
 

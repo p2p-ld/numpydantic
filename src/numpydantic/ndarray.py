@@ -42,6 +42,8 @@ from numpydantic.types import DtypeType, ShapeType
 if TYPE_CHECKING:  # pragma: no cover
     from nptyping.base_meta_classes import SubscriptableMeta
 
+    from numpydantic import Shape
+
 
 class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
     """
@@ -77,6 +79,28 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
             return True
         except InterfaceError:
             return False
+
+    def _get_shape(cls, dtype_candidate: Any) -> "Shape":
+        """
+        Override of base method to use our local definition of shape
+        """
+        from numpydantic.shape import Shape
+
+        if dtype_candidate is Any or dtype_candidate is Shape:
+            shape = Any
+        elif issubclass(dtype_candidate, Shape):
+            shape = dtype_candidate
+        elif cls._is_literal_like(dtype_candidate):
+            shape_expression = dtype_candidate.__args__[0]
+            shape = Shape[shape_expression]
+        else:
+            raise InvalidArgumentsError(
+                f"Unexpected argument '{dtype_candidate}', expecting"
+                " Shape[<ShapeExpression>]"
+                " or Literal[<ShapeExpression>]"
+                " or typing.Any."
+            )
+        return shape
 
     def _get_dtype(cls, dtype_candidate: Any) -> DType:
         """

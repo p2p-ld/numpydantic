@@ -5,11 +5,10 @@ Helper functions for use with :class:`~numpydantic.NDArray` - see the note in
 
 import hashlib
 import json
-from typing import Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import nptyping.structure
 import numpy as np
-from nptyping import Shape
 from pydantic import SerializationInfo
 from pydantic_core import CoreSchema, core_schema
 from pydantic_core.core_schema import ListSchema, ValidationInfo
@@ -18,6 +17,9 @@ from numpydantic import dtype as dt
 from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
+
+if TYPE_CHECKING:
+    from numpydantic import Shape
 
 _handler_type = Callable[[Any], core_schema.CoreSchema]
 _UNSUPPORTED_TYPES = (complex,)
@@ -88,7 +90,7 @@ def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
     return array_type
 
 
-def list_of_lists_schema(shape: Shape, array_type: CoreSchema) -> ListSchema:
+def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
     """
     Make a pydantic JSON schema for an array as a list of lists.
 
@@ -98,13 +100,15 @@ def list_of_lists_schema(shape: Shape, array_type: CoreSchema) -> ListSchema:
     This function is typically called from :func:`.make_json_schema`
 
     Args:
-        shape (:class:`.Shape` ): Shape determines the depth and max/min elements
-            for each layer of list schema
+        shape (:class:`~numpydantic.Shape`): Shape determines the depth and max/min
+            elements for each layer of list schema
         array_type ( :class:`pydantic_core.CoreSchema` ): The pre-rendered pydantic
             core schema to use in the innermost list entry
     """
+    from numpydantic.shape import _is_range
 
-    shape_parts = shape.__args__[0].split(",")
+    shape_parts = [part.strip() for part in shape.__args__[0].split(",")]
+    # labels, if present
     split_parts = [
         p.split(" ")[1] if len(p.split(" ")) == 2 else None for p in shape_parts
     ]
@@ -129,18 +133,28 @@ def list_of_lists_schema(shape: Shape, array_type: CoreSchema) -> ListSchema:
         elif arg == "...":
             list_schema = _unbounded_shape(inner_schema, metadata=metadata)
         else:
-            try:
-                arg = int(arg)
-            except ValueError as e:
-                raise ValueError(
-                    "Array shapes must be integers, wildcards, or ellipses. "
-                    "Shape variables (for declaring that one dimension must be the "
-                    "same size as another) are not supported because it is "
-                    "impossible to express dynamic minItems/maxItems in JSON Schema. "
-                    "See: https://github.com/orgs/json-schema-org/discussions/730"
-                ) from e
+            if _is_range(arg):
+                arg_min, arg_max = arg.split("-")
+                arg_min = None if arg_min == "*" else int(arg_min)
+                arg_max = None if arg_max == "*" else int(arg_max)
+
+            else:
+                try:
+                    arg = int(arg)
+                    arg_min = arg
+                    arg_max = arg
+                except ValueError as e:
+
+                    raise ValueError(
+                        "Array shapes must be integers, wildcards, ellipses, or "
+                        "ranges. Shape variables (for declaring that one dimension "
+                        "must be the same size as another) are not supported because "
+                        "it is impossible to express dynamic minItems/maxItems in "
+                        "JSON Schema. "
+                        "See: https://github.com/orgs/json-schema-org/discussions/730"
+                    ) from e
             list_schema = core_schema.list_schema(
-                inner_schema, min_length=arg, max_length=arg, metadata=metadata
+                inner_schema, min_length=arg_min, max_length=arg_max, metadata=metadata
             )
     return list_schema
 
