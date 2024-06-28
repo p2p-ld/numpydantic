@@ -2,6 +2,13 @@
 
 ## 1.*
 
+### 1.2.1 - 24-06-27
+
+Fix a minor bug where {class}`~numpydantic.exceptions.DtypeError` would not cause
+pydantic to throw a {class}`pydantic.ValidationError` because custom validator functions
+need to raise either `AssertionError` or `ValueError` - made `DtypeError` also
+inherit from `ValueError` because that is also technically true.
+
 ### 1.2.0 - 24-06-13 - Shape ranges
 
 - Add ability to specify shapes as ranges - see [shape ranges](shape-ranges)
