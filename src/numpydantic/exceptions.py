@@ -7,7 +7,7 @@ class InterfaceError(Exception):
     """Parent mixin class for errors raised by :class:`.Interface` subclasses"""
 
 
-class DtypeError(TypeError, InterfaceError):
+class DtypeError(ValueError, TypeError, InterfaceError):
     """Exception raised for invalid dtypes"""
 
 
