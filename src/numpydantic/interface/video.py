@@ -210,10 +210,7 @@ class VideoInterface(Interface):
                 # fine, just not a video
                 return False
 
-        if isinstance(array, Path) and array.suffix.lower() in VIDEO_EXTENSIONS:
-            return True
-
-        return False
+        return isinstance(array, Path) and array.suffix.lower() in VIDEO_EXTENSIONS
 
     def before_validation(self, array: Any) -> VideoProxy:
         """Get a :class:`.VideoProxy` object for this video"""

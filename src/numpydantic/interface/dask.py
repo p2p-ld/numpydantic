@@ -28,9 +28,7 @@ class DaskInterface(Interface):
         """
         check if array is a dask array
         """
-        if DaskArray is not None and isinstance(array, DaskArray):
-            return True
-        return False
+        return DaskArray is not None and isinstance(array, DaskArray)
 
     @classmethod
     def enabled(cls) -> bool:
