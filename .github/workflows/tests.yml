@@ -41,7 +41,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -e ".[tests,linkml]"
+        run: pip install -e ".[tests]"
 
       - name: Install numpy version
         run: pip install "numpy${{ matrix.numpy-version }}"
@@ -54,6 +54,7 @@ jobs:
         with:
           flag-name: run-${{ join(matrix.*, '-') }}
           parallel: true
+          debug: true
 
   finish-coverage:
     needs: test
