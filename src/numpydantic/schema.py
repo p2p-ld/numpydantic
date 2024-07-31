@@ -18,7 +18,7 @@ from numpydantic.maps import np_to_python
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.vendor.nptyping.structure import StructureMeta
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from numpydantic import Shape
 
 _handler_type = Callable[[Any], core_schema.CoreSchema]
@@ -143,7 +143,7 @@ def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
                     arg = int(arg)
                     arg_min = arg
                     arg_max = arg
-                except ValueError as e:
+                except ValueError as e:  # pragma: no cover
 
                     raise ValueError(
                         "Array shapes must be integers, wildcards, ellipses, or "

@@ -40,6 +40,56 @@ def test_ndarray_type():
     instance = Model(array=np.zeros((2, 3)), array_any=np.ones((3, 4, 5)))
 
 
+def test_schema_unsupported_type():
+    """
+    Complex numbers should just be made with an `any` schema
+    """
+
+    class Model(BaseModel):
+        array: NDArray[Shape["2 x, * y"], complex]
+
+    schema = Model.model_json_schema()
+    assert schema["properties"]["array"]["items"] == {
+        "items": {},
+        "type": "array",
+    }
+
+
+def test_schema_tuple():
+    """
+    Types specified as tupled should have their schemas as a union
+    """
+
+    class Model(BaseModel):
+        array: NDArray[Shape["2 x, * y"], (np.uint8, np.uint16)]
+
+    schema = Model.model_json_schema()
+    assert schema["properties"]["array"]["items"] == {
+        "items": {
+            "anyOf": [
+                {"maximum": 255, "minimum": 0, "type": "integer"},
+                {"maximum": 65535, "minimum": 0, "type": "integer"},
+            ]
+        },
+        "type": "array",
+    }
+
+
+def test_schema_number():
+    """
+    np.numeric should just be the float schema
+    """
+
+    class Model(BaseModel):
+        array: NDArray[Shape["2 x, * y"], np.number]
+
+    schema = Model.model_json_schema()
+    assert schema["properties"]["array"]["items"] == {
+        "items": {"type": "number"},
+        "type": "array",
+    }
+
+
 def test_ndarray_union():
     class Model(BaseModel):
         array: Optional[
