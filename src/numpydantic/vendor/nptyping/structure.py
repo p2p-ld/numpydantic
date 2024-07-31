@@ -29,9 +29,9 @@ from typing import (
     List,
 )
 
-from nptyping.base_meta_classes import ContainerMeta
-from nptyping.nptyping_type import NPTypingType
-from nptyping.structure_expression import (
+from numpydantic.vendor.nptyping.base_meta_classes import ContainerMeta
+from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
+from numpydantic.vendor.nptyping.structure_expression import (
     create_name_to_type_dict,
     normalize_structure_expression,
     validate_structure_expression,

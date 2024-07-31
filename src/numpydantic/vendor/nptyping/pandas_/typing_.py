@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from nptyping.typing_ import Object
-from nptyping.typing_ import dtype_per_name as dtype_per_name_default
+from numpydantic.vendor.nptyping.typing_ import Object
+from numpydantic.vendor.nptyping.typing_ import dtype_per_name as dtype_per_name_default
 
 dtype_per_name = {
     **dtype_per_name_default,  # type: ignore[arg-type]

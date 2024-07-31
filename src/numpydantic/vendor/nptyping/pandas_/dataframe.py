@@ -27,8 +27,8 @@ from abc import ABC
 from typing import Any, Tuple
 
 import numpy as np
-from nptyping import InvalidArgumentsError
-from nptyping.base_meta_classes import (
+from numpydantic.vendor.nptyping import InvalidArgumentsError
+from numpydantic.vendor.nptyping.base_meta_classes import (
     FinalMeta,
     ImmutableMeta,
     InconstructableMeta,
@@ -36,11 +36,11 @@ from nptyping.base_meta_classes import (
     PrintableMeta,
     SubscriptableMeta,
 )
-from nptyping.error import DependencyError
-from nptyping.nptyping_type import NPTypingType
-from nptyping.pandas_.typing_ import dtype_per_name
-from nptyping.structure import Structure
-from nptyping.structure_expression import check_structure
+from numpydantic.vendor.nptyping.error import DependencyError
+from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
+from numpydantic.vendor.nptyping.pandas_.typing_ import dtype_per_name
+from numpydantic.vendor.nptyping.structure import Structure
+from numpydantic.vendor.nptyping.structure_expression import check_structure
 
 try:
     import pandas as pd
@@ -105,7 +105,7 @@ class DataFrameMeta(
 
     @property
     def __module__(cls) -> str:
-        return cls._get_module(inspect.stack(), "nptyping.pandas_.dataframe")
+        return cls._get_module(inspect.currentframe(), "nptyping.ndarray")
 
     def _check_item(cls, item: Any) -> None:
         # Check if the item is what we expect and raise if it is not.

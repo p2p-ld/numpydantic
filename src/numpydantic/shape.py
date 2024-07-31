@@ -29,15 +29,15 @@ from abc import ABC
 from functools import lru_cache
 from typing import Any, Dict, List, Union
 
-from nptyping.base_meta_classes import ContainerMeta
-from nptyping.error import InvalidShapeError, NPTypingError
-from nptyping.nptyping_type import NPTypingType
-from nptyping.shape_expression import (
+from numpydantic.vendor.nptyping.base_meta_classes import ContainerMeta
+from numpydantic.vendor.nptyping.error import InvalidShapeError, NPTypingError
+from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
+from numpydantic.vendor.nptyping.shape_expression import (
     get_dimensions,
     normalize_shape_expression,
     remove_labels,
 )
-from nptyping.typing_ import ShapeExpression, ShapeTuple
+from numpydantic.vendor.nptyping.typing_ import ShapeExpression, ShapeTuple
 
 
 class ShapeMeta(ContainerMeta, implementation="Shape"):

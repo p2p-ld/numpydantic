@@ -33,8 +33,8 @@ from typing import (
     Union,
 )
 
-from nptyping.error import InvalidShapeError
-from nptyping.typing_ import ShapeExpression, ShapeTuple
+from numpydantic.vendor.nptyping.error import InvalidShapeError
+from numpydantic.vendor.nptyping.typing_ import ShapeExpression, ShapeTuple
 
 if TYPE_CHECKING:
     from nptyping.shape import Shape  # pragma: no cover

@@ -22,25 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from nptyping.assert_isinstance import assert_isinstance
-from nptyping.error import (
+from numpydantic.vendor.nptyping.assert_isinstance import assert_isinstance
+from numpydantic.vendor.nptyping.error import (
     InvalidArgumentsError,
     InvalidDTypeError,
     InvalidShapeError,
     InvalidStructureError,
     NPTypingError,
 )
-from nptyping.ndarray import NDArray
-from nptyping.package_info import __version__
-from nptyping.pandas_.dataframe import DataFrame
-from nptyping.recarray import RecArray
-from nptyping.shape import Shape
-from nptyping.shape_expression import (
+from numpydantic.vendor.nptyping.ndarray import NDArray
+from numpydantic.vendor.nptyping.package_info import __version__
+from numpydantic.vendor.nptyping.pandas_.dataframe import DataFrame
+from numpydantic.vendor.nptyping.recarray import RecArray
+from numpydantic.vendor.nptyping.shape import Shape
+from numpydantic.vendor.nptyping.shape_expression import (
     normalize_shape_expression,
     validate_shape_expression,
 )
-from nptyping.structure import Structure
-from nptyping.typing_ import (
+from numpydantic.vendor.nptyping.structure import Structure
+from numpydantic.vendor.nptyping.typing_ import (
     Bool,
     Bool8,
     Byte,

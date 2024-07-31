@@ -23,7 +23,8 @@ SOFTWARE.
 """
 
 from abc import ABCMeta, abstractmethod
-from inspect import FrameInfo
+from inspect import FrameInfo, getframeinfo
+from types import FrameType
 from typing import (
     Any,
     Dict,
@@ -34,7 +35,7 @@ from typing import (
     TypeVar,
 )
 
-from nptyping.error import InvalidArgumentsError, NPTypingError
+from numpydantic.vendor.nptyping.error import InvalidArgumentsError, NPTypingError
 
 _T = TypeVar("_T")
 
@@ -126,10 +127,14 @@ class SubscriptableMeta(ABCMeta):
     @abstractmethod
     def _get_item(cls, item: Any) -> Tuple[Any, ...]: ...  # pragma: no cover
 
-    def _get_module(cls, stack: List[FrameInfo], module: str) -> str:
+    def _get_module(cls, stack: FrameType, module: str) -> str:
         # The magic below makes Python's help function display a meaningful
         # text with nptyping types.
-        return "typing" if stack[1][3] == "formatannotation" else module
+        return (
+            "typing"
+            if getframeinfo(stack.f_back).function == "formatannotation"
+            else module
+        )
 
     def _get_additional_values(
         cls, item: Any  # pylint: disable=unused-argument

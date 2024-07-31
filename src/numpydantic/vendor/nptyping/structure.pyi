@@ -27,9 +27,18 @@ try:
 except ImportError:
     from typing_extensions import Literal  # type: ignore[attr-defined,misc,assignment]
 
-from typing import Any, cast
+from typing import Any, Dict, cast
 
 import numpy as np
+from numpydantic.vendor.nptyping.base_meta_classes import ContainerMeta
+
+class StructureMeta(ContainerMeta, implementation="Structure"):
+
+    __args__ = tuple()
+
+    def _validate_expression(cls, item: str) -> None: ...
+    def _normalize_expression(cls, item: str) -> str: ...
+    def _get_additional_values(cls, item: Any) -> Dict[str, Any]: ...
 
 # For MyPy:
 Structure = cast(Literal, Structure)  # type: ignore[has-type,misc,valid-type]

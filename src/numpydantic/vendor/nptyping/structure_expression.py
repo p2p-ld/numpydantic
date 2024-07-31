@@ -38,14 +38,14 @@ from typing import (
 )
 
 import numpy as np
-from nptyping.error import InvalidShapeError, InvalidStructureError
-from nptyping.shape import Shape
-from nptyping.shape_expression import (
+from numpydantic.vendor.nptyping.error import InvalidShapeError, InvalidStructureError
+from numpydantic.vendor.nptyping.shape import Shape
+from numpydantic.vendor.nptyping.shape_expression import (
     check_shape,
     normalize_shape_expression,
     validate_shape_expression,
 )
-from nptyping.typing_ import StructureExpression
+from numpydantic.vendor.nptyping.typing_ import StructureExpression
 
 if TYPE_CHECKING:
     from nptyping.structure import Structure  # pragma: no cover

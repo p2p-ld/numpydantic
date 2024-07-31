@@ -27,7 +27,7 @@ from abc import ABC
 from typing import Any, Tuple
 
 import numpy as np
-from nptyping.base_meta_classes import (
+from numpydantic.vendor.nptyping.base_meta_classes import (
     FinalMeta,
     ImmutableMeta,
     InconstructableMeta,
@@ -35,13 +35,16 @@ from nptyping.base_meta_classes import (
     PrintableMeta,
     SubscriptableMeta,
 )
-from nptyping.error import InvalidArgumentsError
-from nptyping.nptyping_type import NPTypingType
-from nptyping.shape import Shape
-from nptyping.shape_expression import check_shape
-from nptyping.structure import Structure
-from nptyping.structure_expression import check_structure, check_type_names
-from nptyping.typing_ import (
+from numpydantic.vendor.nptyping.error import InvalidArgumentsError
+from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
+from numpydantic.vendor.nptyping.shape import Shape
+from numpydantic.vendor.nptyping.shape_expression import check_shape
+from numpydantic.vendor.nptyping.structure import Structure
+from numpydantic.vendor.nptyping.structure_expression import (
+    check_structure,
+    check_type_names,
+)
+from numpydantic.vendor.nptyping.typing_ import (
     DType,
     dtype_per_name,
     name_per_dtype,
@@ -67,7 +70,7 @@ class NDArrayMeta(
 
     @property
     def __module__(cls) -> str:
-        return cls._get_module(inspect.stack(), "nptyping.ndarray")
+        return cls._get_module(inspect.currentframe(), "nptyping.ndarray")
 
     def _get_item(cls, item: Any) -> Tuple[Any, ...]:
         cls._check_item(item)

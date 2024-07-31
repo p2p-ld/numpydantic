@@ -7,7 +7,7 @@ import hashlib
 import json
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
-import nptyping.structure
+from numpydantic.vendor.nptyping.structure import StructureMeta
 import numpy as np
 from pydantic import SerializationInfo
 from pydantic_core import CoreSchema, core_schema
@@ -45,7 +45,7 @@ def _numeric_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
 
 def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
     """Get the innermost dtype schema to use in the generated pydantic schema"""
-    if isinstance(dtype, nptyping.structure.StructureMeta):  # pragma: no cover
+    if isinstance(dtype, StructureMeta):  # pragma: no cover
         raise NotImplementedError("Structured dtypes are currently unsupported")
 
     if isinstance(dtype, tuple):

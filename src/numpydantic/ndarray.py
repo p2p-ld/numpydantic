@@ -16,12 +16,12 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 from typing import TYPE_CHECKING, Any, Tuple
 
 import numpy as np
-from nptyping.error import InvalidArgumentsError
-from nptyping.ndarray import NDArrayMeta as _NDArrayMeta
-from nptyping.nptyping_type import NPTypingType
-from nptyping.structure import Structure
-from nptyping.structure_expression import check_type_names
-from nptyping.typing_ import (
+from numpydantic.vendor.nptyping.error import InvalidArgumentsError
+from numpydantic.vendor.nptyping.ndarray import NDArrayMeta as _NDArrayMeta
+from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
+from numpydantic.vendor.nptyping.structure import Structure
+from numpydantic.vendor.nptyping.structure_expression import check_type_names
+from numpydantic.vendor.nptyping.typing_ import (
     dtype_per_name,
 )
 from pydantic import GetJsonSchemaHandler

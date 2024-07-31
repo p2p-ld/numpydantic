@@ -26,10 +26,11 @@ import inspect
 from typing import Any, Tuple
 
 import numpy as np
-from nptyping.error import InvalidArgumentsError
-from nptyping.ndarray import NDArray, NDArrayMeta
-from nptyping.structure import Structure
-from nptyping.typing_ import DType
+
+from numpydantic.vendor.nptyping.error import InvalidArgumentsError
+from numpydantic.vendor.nptyping.ndarray import NDArray, NDArrayMeta
+from numpydantic.vendor.nptyping.structure import Structure
+from numpydantic.vendor.nptyping.typing_ import DType
 
 
 class RecArrayMeta(NDArrayMeta, implementation="RecArray"):
@@ -52,7 +53,7 @@ class RecArrayMeta(NDArrayMeta, implementation="RecArray"):
 
     @property
     def __module__(cls) -> str:
-        return cls._get_module(inspect.stack(), "nptyping.recarray")
+        return cls._get_module(inspect.currentframe(), "nptyping.ndarray")
 
     def __instancecheck__(  # pylint: disable=bad-mcs-method-argument
         self, instance: Any
