@@ -417,3 +417,10 @@ dumped = instance.model_dump_json(context={'zarr_dump_array': True})
   }
 }
 ```
+
+## Vendored Dependencies
+
+We have vendored dependencies in the `src/numpydantic/vendor` package,
+and reproduced their licenses in the `licenses` directory.
+
+- [nptyping](https://github.com/ramonhagenaars/nptyping) - `numpydantic.vendor.nptyping` - `/licenses/nptyping.txt`

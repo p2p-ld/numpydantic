@@ -132,3 +132,8 @@ fixable = ["ALL"]
 plugins = [
     "pydantic.mypy"
 ]
+
+[tool.coverage.run]
+omit = [
+    "src/numpydantic/vendor/*"
+]
