@@ -2,6 +2,10 @@
 
 ## 1.*
 
+### 1.2.2 - 24-07-31
+
+Add `datetime` map to numpy's :class:`numpy.datetime64` type
+
 ### 1.2.1 - 24-06-27
 
 Fix a minor bug where {class}`~numpydantic.exceptions.DtypeError` would not cause
