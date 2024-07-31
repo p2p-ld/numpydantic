@@ -2,6 +2,33 @@
 
 ## 1.*
 
+### 1.2.3 - 24-07-31 - Vendor `nptyping`
+
+`nptyping` vendored into `numpydantic.vendor.nptyping` - 
+`nptyping` is no longer maintained, and pins `numpy<2`.
+It also has many obnoxious warnings and we have to monkeypatch it
+so it performs halfway decently. Since we are en-route to deprecating
+usage of `nptyping` anyway, in the meantime we have just vendored it in
+(it is MIT licensed, included) so that we can make those changes ourselves
+and have to patch less of it. Currently the whole package is vendored with 
+modifications, but will be whittled away until we have replaced it with
+updated type specification system :)
+
+Bugfix:
+- [#2](https://github.com/p2p-ld/numpydantic/issues/2) - Support `numpy>=2`
+- Remove deprecated numpy dtypes
+
+CI:
+- Add windows and mac tests
+- Add testing with numpy>=2 and <2
+
+DevOps:
+- Make a tox file for local testing, not used in CI.
+
+Tidying:
+- Remove `monkeypatch` module! we don't need it anymore!
+  everything has either been upstreamed or vendored.
+
 ### 1.2.2 - 24-07-31
 
 Add `datetime` map to numpy's :class:`numpy.datetime64` type

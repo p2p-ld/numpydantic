@@ -7,7 +7,6 @@ import hashlib
 import json
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
-import nptyping.structure
 import numpy as np
 from pydantic import SerializationInfo
 from pydantic_core import CoreSchema, core_schema
@@ -17,8 +16,9 @@ from numpydantic import dtype as dt
 from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
+from numpydantic.vendor.nptyping.structure import StructureMeta
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from numpydantic import Shape
 
 _handler_type = Callable[[Any], core_schema.CoreSchema]
@@ -45,12 +45,12 @@ def _numeric_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
 
 def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
     """Get the innermost dtype schema to use in the generated pydantic schema"""
-    if isinstance(dtype, nptyping.structure.StructureMeta):  # pragma: no cover
+    if isinstance(dtype, StructureMeta):  # pragma: no cover
         raise NotImplementedError("Structured dtypes are currently unsupported")
 
     if isinstance(dtype, tuple):
         # if it's a meta-type that refers to a generic float/int, just make that
-        if dtype == dt.Float:
+        if dtype in (dt.Float, dt.Number):
             array_type = core_schema.float_schema()
         elif dtype == dt.Integer:
             array_type = core_schema.int_schema()
@@ -143,7 +143,7 @@ def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
                     arg = int(arg)
                     arg_min = arg
                     arg_max = arg
-                except ValueError as e:
+                except ValueError as e:  # pragma: no cover
 
                     raise ValueError(
                         "Array shapes must be integers, wildcards, ellipses, or "

@@ -7,11 +7,12 @@ import json
 
 import numpy as np
 from pydantic import BaseModel, ValidationError, Field
-from nptyping import Number
+
 
 from numpydantic import NDArray, Shape
 from numpydantic.exceptions import ShapeError, DtypeError
 from numpydantic import dtype
+from numpydantic.dtype import Number
 
 
 def test_ndarray_type():
@@ -37,6 +38,53 @@ def test_ndarray_type():
         instance = Model(array=np.ones((2, 3), dtype=bool))
 
     instance = Model(array=np.zeros((2, 3)), array_any=np.ones((3, 4, 5)))
+
+
+def test_schema_unsupported_type():
+    """
+    Complex numbers should just be made with an `any` schema
+    """
+
+    class Model(BaseModel):
+        array: NDArray[Shape["2 x, * y"], complex]
+
+    schema = Model.model_json_schema()
+    assert schema["properties"]["array"]["items"] == {
+        "items": {},
+        "type": "array",
+    }
+
+
+def test_schema_tuple():
+    """
+    Types specified as tupled should have their schemas as a union
+    """
+
+    class Model(BaseModel):
+        array: NDArray[Shape["2 x, * y"], (np.uint8, np.uint16)]
+
+    schema = Model.model_json_schema()
+    assert "anyOf" in schema["properties"]["array"]["items"]["items"]
+    conditions = schema["properties"]["array"]["items"]["items"]["anyOf"]
+
+    assert all([i["type"] == "integer" for i in conditions])
+    assert sorted([i["maximum"] for i in conditions]) == [255, 65535]
+    assert all([i["minimum"] == 0 for i in conditions])
+
+
+def test_schema_number():
+    """
+    np.numeric should just be the float schema
+    """
+
+    class Model(BaseModel):
+        array: NDArray[Shape["2 x, * y"], np.number]
+
+    schema = Model.model_json_schema()
+    assert schema["properties"]["array"]["items"] == {
+        "items": {"type": "number"},
+        "type": "array",
+    }
 
 
 def test_ndarray_union():

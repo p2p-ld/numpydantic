@@ -1,14 +1,14 @@
 [project]
 name = "numpydantic"
-version = "1.2.2"
+version = "1.2.3"
 description = "Type and shape validation and serialization for numpy arrays in pydantic models"
 authors = [
     {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
 ]
 dependencies = [
     "pydantic>=2.3.0",
-    "nptyping>=2.5.0",
     "numpy>=1.24.0",
+    "typing-extensions>=4.11.0;python_version<'3.11'"
 ]
 homepage = "https://numpydantic.readthedocs.io"
 requires-python = "<4.0,>=3.9"
@@ -40,7 +40,6 @@ tests = [
     "coverage>=6.1.1",
     "pytest-cov<5.0.0,>=4.1.0",
     "coveralls<4.0.0,>=3.3.1",
-    "typing-extensions>=4.11.0;python_version<'3.11'",
 ]
 docs = [
     "sphinx<8.0.0,>=7.2.6",
@@ -101,6 +100,10 @@ select = [
     "I",
     # annotations
     "ANN",
+    # perf
+    "PERF",
+    # numpy
+    "NPY",
     ## ----------
     # pydocstyle
     # undocumented public objects
@@ -131,4 +134,9 @@ fixable = ["ALL"]
 [tool.mypy]
 plugins = [
     "pydantic.mypy"
+]
+
+[tool.coverage.run]
+omit = [
+    "src/numpydantic/vendor/*"
 ]

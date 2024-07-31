@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 from typing import Any, Callable, Optional, Tuple, Type, Union
+from warnings import warn
 
 import h5py
 import numpy as np
@@ -25,7 +26,13 @@ def tmp_output_dir(request: pytest.FixtureRequest) -> Path:
     yield path
 
     if not request.config.getvalue("--with-output"):
-        shutil.rmtree(str(path))
+        try:
+            shutil.rmtree(str(path))
+        except PermissionError as e:
+            # sporadic error on windows machines...
+            warn(
+                f"Temporary directory could not be removed due to a permissions error: \n{str(e)}"
+            )
 
 
 @pytest.fixture(scope="function")

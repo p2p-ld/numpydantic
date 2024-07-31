@@ -8,7 +8,7 @@ Note that these are types as in python typing types, not classes.
 
 from typing import Any, Protocol, Tuple, Union, runtime_checkable
 
-from nptyping import DType
+from numpydantic.vendor.nptyping import DType
 
 ShapeType = Union[Tuple[int, ...], Any]
 DtypeType = Union[str, type, Any, DType]
