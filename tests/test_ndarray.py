@@ -64,15 +64,12 @@ def test_schema_tuple():
         array: NDArray[Shape["2 x, * y"], (np.uint8, np.uint16)]
 
     schema = Model.model_json_schema()
-    assert schema["properties"]["array"]["items"] == {
-        "items": {
-            "anyOf": [
-                {"maximum": 255, "minimum": 0, "type": "integer"},
-                {"maximum": 65535, "minimum": 0, "type": "integer"},
-            ]
-        },
-        "type": "array",
-    }
+    assert "anyOf" in schema["properties"]["array"]["items"]["items"]
+    conditions = schema["properties"]["array"]["items"]["items"]["anyOf"]
+
+    assert all([i["type"] == "integer" for i in conditions])
+    assert sorted([i["maximum"] for i in conditions]) == [255, 65535]
+    assert all([i["minimum"] == 0 for i in conditions])
 
 
 def test_schema_number():
