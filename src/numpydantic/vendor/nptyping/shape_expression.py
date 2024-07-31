@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 import re
 import string
 from functools import lru_cache
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
     from nptyping.shape import Shape  # pragma: no cover
 
 
-@lru_cache()
+@lru_cache
 def check_shape(shape: ShapeTuple, target: "Shape") -> bool:
     """
     Check whether the given shape corresponds to the given shape_expression.

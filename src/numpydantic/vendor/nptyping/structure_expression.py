@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 import re
 from collections import Counter, defaultdict
 from difflib import get_close_matches
@@ -37,7 +38,6 @@ from typing import (
 )
 
 import numpy as np
-
 from nptyping.error import InvalidShapeError, InvalidStructureError
 from nptyping.shape import Shape
 from nptyping.shape_expression import (
@@ -109,8 +109,7 @@ def check_structure(
             return False
 
         def iterator() -> Generator[Tuple[str, Tuple[np.dtype, int]], None, None]:  # type: ignore[type-arg] # pylint: disable=line-too-long
-            for name_, dtype_tuple_ in fields.items():
-                yield name_, dtype_tuple_  # type: ignore[misc]
+            yield from fields.items()
 
     for name, dtype_tuple in iterator():
         field_in_target_not_in_subject = dtype_tuple is None

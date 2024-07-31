@@ -22,22 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-try:
-    from typing import (  # type: ignore[attr-defined,misc] # pylint: disable=unused-import
-        Literal,
-        TypeAlias,
-        TypeGuard,
-        final,
-    )
-except ImportError:  # pragma: no cover
-    from typing_extensions import (  # type: ignore[attr-defined,misc]
-        Literal,
-        TypeAlias,
-        TypeGuard,
-        final,
-    )
 
-from typing import Tuple, Union
+from typing import (  # type: ignore[attr-defined,misc] # pylint: disable=unused-import
+    Tuple,
+    TypeAlias,
+    Union,
+)
 
 import numpy as np
 

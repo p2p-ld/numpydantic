@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from abc import ABCMeta, abstractmethod
 from inspect import FrameInfo
 from typing import (
@@ -44,6 +45,7 @@ class InconstructableMeta(ABCMeta):
     """
 
     def __call__(cls, *_: Any, **__: Any) -> None:
+        """Raise an error if constructed"""
         raise NPTypingError(
             f"Cannot instantiate nptyping.{cls.__name__}. Did you mean to use [ ] ?"
         )
@@ -76,6 +78,7 @@ class FinalMeta(ABCMeta):
         cls._name_per_meta_cls[cls] = implementation
 
     def __new__(cls, name: str, *args: Any, **kwargs: Any) -> type:
+        """Prevent subclasses, return from internal dict instead"""
         if name == cls._name_per_meta_cls[cls]:
             assert name, "cls_name not set"
             return type.__new__(cls, name, *args, **kwargs)
@@ -105,8 +108,7 @@ class PrintableMeta(ABCMeta):
     """
 
     @abstractmethod
-    def __str__(cls) -> str:
-        ...  # pragma: no cover
+    def __str__(cls) -> str: ...  # pragma: no cover
 
     def __repr__(cls) -> str:
         return str(cls)
@@ -122,8 +124,7 @@ class SubscriptableMeta(ABCMeta):
     _parameterized: bool = False
 
     @abstractmethod
-    def _get_item(cls, item: Any) -> Tuple[Any, ...]:
-        ...  # pragma: no cover
+    def _get_item(cls, item: Any) -> Tuple[Any, ...]: ...  # pragma: no cover
 
     def _get_module(cls, stack: List[FrameInfo], module: str) -> str:
         # The magic below makes Python's help function display a meaningful
@@ -201,12 +202,10 @@ class ContainerMeta(
     __args__: Tuple[str, ...]
 
     @abstractmethod
-    def _validate_expression(cls, item: str) -> None:
-        ...  # pragma: no cover
+    def _validate_expression(cls, item: str) -> None: ...  # pragma: no cover
 
     @abstractmethod
-    def _normalize_expression(cls, item: str) -> str:
-        ...  # pragma: no cover
+    def _normalize_expression(cls, item: str) -> str: ...  # pragma: no cover
 
     def _get_item(cls, item: Any) -> Tuple[Any, ...]:
         if not isinstance(item, str):

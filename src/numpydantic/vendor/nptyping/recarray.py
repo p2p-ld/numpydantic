@@ -21,11 +21,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 import inspect
 from typing import Any, Tuple
 
 import numpy as np
-
 from nptyping.error import InvalidArgumentsError
 from nptyping.ndarray import NDArray, NDArrayMeta
 from nptyping.structure import Structure
