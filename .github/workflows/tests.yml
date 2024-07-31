@@ -51,6 +51,7 @@ jobs:
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@v2.3.0
+        if: runner.os != 'macOS'
         with:
           flag-name: run-${{ join(matrix.*, '-') }}
           parallel: true
