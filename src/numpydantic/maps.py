@@ -64,5 +64,6 @@ python_to_nptyping = {
     int: dt.Int,
     bool: dt.Bool,
     complex: dt.Complex,
+    datetime: np.datetime64,
 }
 """Map from python types to nptyping types"""

@@ -135,6 +135,15 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
             )
         return dtype
 
+    def _dtype_to_str(cls, dtype: Any) -> str:
+        if dtype is Any:
+            result = "Any"
+        elif issubclass(dtype, Structure):
+            result = str(dtype)
+        elif isinstance(dtype, tuple):
+            result = ", ".join([str(dt) for dt in dtype])
+        return result
+
 
 class NDArray(NPTypingType, metaclass=NDArrayMeta):
     """
