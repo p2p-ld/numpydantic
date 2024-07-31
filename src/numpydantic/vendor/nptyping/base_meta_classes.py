@@ -228,9 +228,7 @@ class ContainerMeta(
         return (norm_shape_expression,)
 
     def __subclasscheck__(cls, subclass: Any) -> bool:
-        type_match = type(subclass) == type(  # pylint: disable=unidiomatic-typecheck
-            cls
-        )
+        type_match = type(subclass) is type(cls)
         return type_match and (
             subclass.__args__ == cls.__args__ or not cls._parameterized
         )
