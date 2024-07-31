@@ -144,9 +144,9 @@ class VideoProxy:
         elif isinstance(item, slice):
             # slice of frames
             item = self._complete_slice(item)
-            frames = []
-            for i in range(item.start, item.stop, item.step):
-                frames.append(self._get_frame(i))
+            frames = [
+                self._get_frame(i) for i in range(item.start, item.stop, item.step)
+            ]
             return np.stack(frames)
         else:
             # slices are passed as tuples

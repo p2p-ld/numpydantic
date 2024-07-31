@@ -7,7 +7,6 @@ import hashlib
 import json
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
-from numpydantic.vendor.nptyping.structure import StructureMeta
 import numpy as np
 from pydantic import SerializationInfo
 from pydantic_core import CoreSchema, core_schema
@@ -17,6 +16,7 @@ from numpydantic import dtype as dt
 from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
+from numpydantic.vendor.nptyping.structure import StructureMeta
 
 if TYPE_CHECKING:
     from numpydantic import Shape

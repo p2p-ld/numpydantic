@@ -21,7 +21,7 @@ np_to_python = {
     **{n: int for n in dt.Integer},
     **{n: float for n in dt.Float},
     **{n: complex for n in dt.Complex},
-    **{n: str for n in (np.character, np.str_, np.string_, np.unicode_)},
+    **{n: str for n in (np.character, np.str_, np.bytes_, np.str_)},
 }
 """Map from python types to numpy"""
 

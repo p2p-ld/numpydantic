@@ -101,6 +101,10 @@ select = [
     "I",
     # annotations
     "ANN",
+    # perf
+    "PERF",
+    # numpy
+    "NPY",
     ## ----------
     # pydocstyle
     # undocumented public objects

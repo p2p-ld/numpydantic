@@ -23,12 +23,11 @@ SOFTWARE.
 """
 
 from abc import ABCMeta, abstractmethod
-from inspect import FrameInfo, getframeinfo
+from inspect import getframeinfo
 from types import FrameType
 from typing import (
     Any,
     Dict,
-    List,
     Optional,
     Set,
     Tuple,

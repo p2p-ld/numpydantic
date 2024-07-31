@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-
 from typing import (  # type: ignore[attr-defined,misc] # pylint: disable=unused-import
     Tuple,
     TypeAlias,
@@ -38,10 +37,8 @@ ShapeTuple: TypeAlias = Tuple[int, ...]
 
 Number = np.number
 Bool = np.bool_
-Bool8 = np.bool8
 Obj = np.object_  # Obj is a common abbreviation and should be usable.
 Object = np.object_
-Object0 = np.object0
 Datetime64 = np.datetime64
 Integer = np.integer
 SignedInteger = np.signedinteger
@@ -53,7 +50,6 @@ Byte = np.byte
 Short = np.short
 IntC = np.intc
 IntP = np.intp
-Int0 = np.int0
 Int = np.integer  # Int should translate to the "generic" int type.
 Int_ = np.int_
 LongLong = np.longlong
@@ -67,7 +63,6 @@ UByte = np.ubyte
 UShort = np.ushort
 UIntC = np.uintc
 UIntP = np.uintp
-UInt0 = np.uint0
 UInt = np.uint
 ULongLong = np.ulonglong
 Inexact = np.inexact
@@ -78,38 +73,33 @@ Float64 = np.float64
 Half = np.half
 Single = np.single
 Double = np.double
-Float = np.float_
+Float = np.float64
 LongDouble = np.longdouble
-LongFloat = np.longfloat
+LongFloat = np.longdouble
 ComplexFloating = np.complexfloating
 Complex64 = np.complex64
 Complex128 = np.complex128
 CSingle = np.csingle
-SingleComplex = np.singlecomplex
+SingleComplex = np.complex64
 CDouble = np.cdouble
-Complex = np.complex_
-CFloat = np.cfloat
+Complex = np.complex128
+CFloat = np.complex128
 CLongDouble = np.clongdouble
-CLongFloat = np.clongfloat
-LongComplex = np.longcomplex
+CLongFloat = np.clongdouble
+LongComplex = np.clongdouble
 Flexible = np.flexible
 Void = np.void
-Void0 = np.void0
 Character = np.character
 Bytes = np.bytes_
 Str = np.str_
-String = np.string_
-Bytes0 = np.bytes0
-Unicode = np.unicode_
-Str0 = np.str0
+String = np.str_
+Unicode = np.str_
 
 dtypes = [
     (Number, "Number"),
     (Bool, "Bool"),
-    (Bool8, "Bool8"),
     (Obj, "Obj"),
     (Object, "Object"),
-    (Object0, "Object0"),
     (Datetime64, "Datetime64"),
     (Integer, "Integer"),
     (SignedInteger, "SignedInteger"),
@@ -121,7 +111,6 @@ dtypes = [
     (Short, "Short"),
     (IntC, "IntC"),
     (IntP, "IntP"),
-    (Int0, "Int0"),
     (Int, "Int"),
     (LongLong, "LongLong"),
     (Timedelta64, "Timedelta64"),
@@ -134,7 +123,6 @@ dtypes = [
     (UShort, "UShort"),
     (UIntC, "UIntC"),
     (UIntP, "UIntP"),
-    (UInt0, "UInt0"),
     (UInt, "UInt"),
     (ULongLong, "ULongLong"),
     (Inexact, "Inexact"),
@@ -161,14 +149,11 @@ dtypes = [
     (LongComplex, "LongComplex"),
     (Flexible, "Flexible"),
     (Void, "Void"),
-    (Void0, "Void0"),
     (Character, "Character"),
     (Bytes, "Bytes"),
     (String, "String"),
     (Str, "Str"),
-    (Bytes0, "Bytes0"),
     (Unicode, "Unicode"),
-    (Str0, "Str0"),
 ]
 
 name_per_dtype = dict(dtypes)

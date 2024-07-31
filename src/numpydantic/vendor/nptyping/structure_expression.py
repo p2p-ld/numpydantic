@@ -38,6 +38,7 @@ from typing import (
 )
 
 import numpy as np
+
 from numpydantic.vendor.nptyping.error import InvalidShapeError, InvalidStructureError
 from numpydantic.vendor.nptyping.shape import Shape
 from numpydantic.vendor.nptyping.shape_expression import (

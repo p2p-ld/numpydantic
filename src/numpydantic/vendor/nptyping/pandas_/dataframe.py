@@ -27,6 +27,7 @@ from abc import ABC
 from typing import Any, Tuple
 
 import numpy as np
+
 from numpydantic.vendor.nptyping import InvalidArgumentsError
 from numpydantic.vendor.nptyping.base_meta_classes import (
     FinalMeta,

@@ -69,9 +69,7 @@ Half = np.half
 Single = np.single
 Double = np.double
 LongDouble = np.longdouble
-LongFloat = np.longfloat
 Float = (
-    np.float_,
     np.float16,
     np.float32,
     np.float64,
@@ -84,32 +82,24 @@ ComplexFloating = np.complexfloating
 Complex64 = np.complex64
 Complex128 = np.complex128
 CSingle = np.csingle
-SingleComplex = np.singlecomplex
 CDouble = np.cdouble
-CFloat = np.cfloat
 CLongDouble = np.clongdouble
-CLongFloat = np.clongfloat
 Complex = (
-    np.complex_,
     np.complexfloating,
     np.complex64,
     np.complex128,
     np.csingle,
-    np.singlecomplex,
     np.cdouble,
-    np.cfloat,
     np.clongdouble,
-    np.clongfloat,
 )
 
-LongComplex = np.longcomplex
 Flexible = np.flexible
 Void = np.void
 Character = np.character
 Bytes = np.bytes_
 Str = np.str_
-String = np.string_
-Unicode = np.unicode_
+String = np.str_
+Unicode = np.str_
 
 Number = tuple(
     [
