@@ -50,7 +50,7 @@ def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
 
     if isinstance(dtype, tuple):
         # if it's a meta-type that refers to a generic float/int, just make that
-        if dtype == dt.Float:
+        if dtype in (dt.Float, dt.Number):
             array_type = core_schema.float_schema()
         elif dtype == dt.Integer:
             array_type = core_schema.int_schema()

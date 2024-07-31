@@ -2,14 +2,34 @@ name: Tests
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
     strategy:
       matrix:
-        python-version: ["3.9", "3.11", "3.12"]
+        platform: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        numpy-version: ["<2.0.0", ">=2.0.0"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        exclude:
+          - numpy-version: "<2.0.0"
+            python-version: "3.10"
+          - numpy-version: "<2.0.0"
+            python-version: "3.11"
+          - platform: "macos-latest"
+            python-version: "3.10"
+          - platform: "macos-latest"
+            python-version: "3.11"
+          - platform: "windows-latest"
+            python-version: "3.10"
+          - platform: "windows-latest"
+            python-version: "3.11"
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v2
@@ -23,19 +43,24 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[tests,linkml]"
 
+      - name: Install numpy version
+        run: pip install "numpy${{ matrix.numpy-version }}"
+
       - name: Run Tests
         run: pytest
 
-      - name: Report coverage
-        if: ${{ matrix.python-version }} == "3.11"
-        run: "coveralls --service=github"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: run-${{ join(matrix.*, '-') }}
+          parallel: true
 
-  lint:
+  finish-coverage:
+    needs: test
+    if: ${{ always() }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v3
-      - uses: chartboost/ruff-action@v1
-      - uses: psf/black@stable
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true

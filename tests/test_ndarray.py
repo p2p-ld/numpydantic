@@ -7,11 +7,12 @@ import json
 
 import numpy as np
 from pydantic import BaseModel, ValidationError, Field
-from nptyping import Number
+
 
 from numpydantic import NDArray, Shape
 from numpydantic.exceptions import ShapeError, DtypeError
 from numpydantic import dtype
+from numpydantic.dtype import Number
 
 
 def test_ndarray_type():

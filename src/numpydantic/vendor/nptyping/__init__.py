@@ -42,10 +42,8 @@ from numpydantic.vendor.nptyping.shape_expression import (
 from numpydantic.vendor.nptyping.structure import Structure
 from numpydantic.vendor.nptyping.typing_ import (
     Bool,
-    Bool8,
     Byte,
     Bytes,
-    Bytes0,
     CDouble,
     CFloat,
     Character,
@@ -68,7 +66,6 @@ from numpydantic.vendor.nptyping.typing_ import (
     Half,
     Inexact,
     Int,
-    Int0,
     Int8,
     Int16,
     Int32,
@@ -82,17 +79,14 @@ from numpydantic.vendor.nptyping.typing_ import (
     LongLong,
     Number,
     Object,
-    Object0,
     Short,
     SignedInteger,
     Single,
     SingleComplex,
-    Str0,
     String,
     Timedelta64,
     UByte,
     UInt,
-    UInt0,
     UInt8,
     UInt16,
     UInt32,
@@ -104,7 +98,6 @@ from numpydantic.vendor.nptyping.typing_ import (
     UnsignedInteger,
     UShort,
     Void,
-    Void0,
 )
 
 __all__ = [

@@ -78,14 +78,12 @@ Float = (
 )
 Floating = Float
 
-ComplexFloating = np.complexfloating
 Complex64 = np.complex64
 Complex128 = np.complex128
 CSingle = np.csingle
 CDouble = np.cdouble
 CLongDouble = np.clongdouble
 Complex = (
-    np.complexfloating,
     np.complex64,
     np.complex128,
     np.csingle,

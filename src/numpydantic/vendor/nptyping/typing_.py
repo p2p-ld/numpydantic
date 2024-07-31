@@ -22,11 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import (  # type: ignore[attr-defined,misc] # pylint: disable=unused-import
-    Tuple,
-    TypeAlias,
-    Union,
-)
+import sys
+from typing import Tuple, Union
+
+if sys.version_info.minor >= 10:
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 
 import numpy as np
 
