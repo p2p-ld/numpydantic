@@ -40,12 +40,29 @@ class Interface(ABC, Generic[T]):
 
         Calls the methods, in order:
 
-        * :meth:`.before_validation`
-        * :meth:`.validate_dtype`
-        * :meth:`.validate_shape`
-        * :meth:`.after_validation`
+        * array = :meth:`.before_validation` (array)
+        * dtype = :meth:`.get_dtype` (array) - get the dtype from the array,
+            override if eg. the dtype is not contained in ``array.dtype``
+        * valid = :meth:`.validate_dtype` (dtype) - check that the dtype matches
+            the one in the NDArray specification. Override if special
+            validation logic is needed for a given format
+        * :meth:`.raise_for_dtype` (valid, dtype) - after checking dtype validity,
+            raise an exception if it was invalid. Override to implement custom
+            exceptions or error conditions, or make validation errors conditional.
+        * array = :meth:`.after_validate_dtype` (array) - hook for additional
+            validation or array modification mid-validation
+        * shape = :meth:`.get_shape` (array) - get the shape from the array,
+            override if eg. the shape is not contained in ``array.shape``
+        * valid = :meth:`.validate_shape` (shape) - check that the shape matches
+            the one in the NDArray specification. Override if special validation
+            logic is needed.
+        * :meth:`.raise_for_shape` (valid, shape) - after checking shape validity,
+            raise an exception if it was invalid. You know the deal bc it's the same
+            as raise for dtype.
+        * :meth:`.after_validation` - hook after validation for modifying the array
+            that is set as the model field value
 
-        passing the ``array`` argument and returning it from each.
+        Follow the method signatures and return types to override 
 
         Implementing an interface subclass largely consists of overriding these methods
         as needed.
@@ -58,8 +75,16 @@ class Interface(ABC, Generic[T]):
             of :class:`.InterfaceError` )
         """
         array = self.before_validation(array)
-        array = self.validate_dtype(array)
-        array = self.validate_shape(array)
+
+        dtype = self.get_dtype(array)
+        dtype_valid = self.validate_dtype(dtype)
+        self.raise_for_dtype(dtype_valid, dtype)
+        array = self.after_validate_dtype(array)
+
+        shape = self.get_shape(array)
+        shape_valid = self.validate_shape(shape)
+        self.raise_for_shape(shape_valid, shape)
+
         array = self.after_validation(array)
         return array
 
@@ -72,40 +97,76 @@ class Interface(ABC, Generic[T]):
         """
         return array
 
-    def validate_dtype(self, array: NDArrayType) -> NDArrayType:
+    def get_dtype(self, array: NDArrayType) -> DtypeType:
         """
-        Validate the dtype of the given array, returning it unmutated.
+        Get the dtype from the input array
+        """
+        return array.dtype
 
+    def validate_dtype(self, dtype: DtypeType) -> bool:
+        """
+        Validate the dtype of the given array, returning
+        ``True`` if valid, ``False`` if not.
+
+
+        """
+        if self.dtype is Any:
+            return True
+
+        if isinstance(self.dtype, tuple):
+            valid = dtype in self.dtype
+        elif self.dtype is np.str_:
+            valid = getattr(dtype, "type", None) is np.str_ or dtype is np.str_
+        else:
+            valid = dtype == self.dtype
+        return valid
+
+    def raise_for_dtype(self, valid: bool, dtype: DtypeType) -> None:
+        """
+        After validating, raise an exception if invalid
         Raises:
             :class:`~numpydantic.exceptions.DtypeError`
         """
-        if self.dtype is Any:
-            return array
-
-        if isinstance(self.dtype, tuple):
-            valid = array.dtype in self.dtype
-        else:
-            valid = array.dtype == self.dtype
-
         if not valid:
-            raise DtypeError(f"Invalid dtype! expected {self.dtype}, got {array.dtype}")
+            raise DtypeError(f"Invalid dtype! expected {self.dtype}, got {dtype}")
+
+    def after_validate_dtype(self, array: NDArrayType) -> NDArrayType:
+        """
+        Hook to modify array after validating dtype.
+        Default is a no-op.
+        """
         return array
 
-    def validate_shape(self, array: NDArrayType) -> NDArrayType:
+    def get_shape(self, array: NDArrayType) -> Tuple[int, ...]:
         """
-        Validate the shape of the given array, returning it unmutated
+        Get the shape from the array as a tuple of integers
+        """
+        return array.shape
+
+    def validate_shape(self, shape: Tuple[int, ...]) -> bool:
+        """
+        Validate the shape of the given array against the shape
+        specifier, returning ``True`` if valid, ``False`` if not.
+
+
+        """
+        if self.shape is Any:
+            return True
+
+        return check_shape(shape, self.shape)
+
+    def raise_for_shape(self, valid: bool, shape: Tuple[int, ...]) -> None:
+        """
+        Raise a ShapeError if the shape is invalid.
 
         Raises:
             :class:`~numpydantic.exceptions.ShapeError`
         """
-        if self.shape is Any:
-            return array
-        if not check_shape(array.shape, self.shape):
+        if not valid:
             raise ShapeError(
                 f"Invalid shape! expected shape {self.shape.prepared_args}, "
-                f"got shape {array.shape}"
+                f"got shape {shape}"
             )
-        return array
 
     def after_validation(self, array: NDArrayType) -> T:
         """

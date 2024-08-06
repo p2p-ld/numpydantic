@@ -7,18 +7,22 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, Sequence, Union
 
+import numpy as np
 from pydantic import SerializationInfo
 
 from numpydantic.interface.interface import Interface
+from numpydantic.types import DtypeType
 
 try:
     import zarr
+    from numcodecs import VLenUTF8
     from zarr.core import Array as ZarrArray
     from zarr.storage import StoreLike
 except ImportError:  # pragma: no cover
     ZarrArray = None
     StoreLike = None
     storage = None
+    VLenUTF8 = None
 
 
 @dataclass
@@ -112,6 +116,19 @@ class ZarrInterface(Interface):
         Ensure that the zarr array is opened
         """
         return self._get_array(array)
+
+    def get_dtype(self, array: ZarrArray) -> DtypeType:
+        """
+        Override base dtype getter to handle zarr's string-as-object encoding.
+        """
+        if (
+            getattr(array.dtype, "type", None) is np.object_
+            and array.filters
+            and any([isinstance(f, VLenUTF8) for f in array.filters])
+        ):
+            return np.str_
+        else:
+            return array.dtype
 
     @classmethod
     def to_json(

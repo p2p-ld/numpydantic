@@ -41,19 +41,42 @@ when cast to an `ndarray`, we only try as a last resort.
 
 ## Validation
 
-Validation is a chain of lifecycle methods, with a single argument passed and returned
-to and from each:
+Validation is a chain of lifecycle methods, each of which can be overridden
+for interfaces to implement custom behavior that matches the array format.
 
-{meth}`.Interface.validate` calls in order:
+{meth}`.Interface.validate` calls the following methods, in order:
+
+An initial hook for modifying the input data before validation, eg.
+if it needs to be coerced or wrapped in some proxy class. This method
+should accept all and only the types specified in that interface's
+{attr}`~.Interface.input_types`.
 
 - {meth}`.Interface.before_validation`
-- {meth}`.Interface.validate_dtype`
-- {meth}`.Interface.validate_shape`
-- {meth}`.Interface.after_validation`
 
-The `before` and `after` methods provide hooks for coercion, loading, etc. such that
-`validate` can accept one of the types in the interface's 
-{attr}`~.Interface.input_types` and return the {attr}`~.Interface.return_type` .
+A cluster of methods for validating dtype.
+Separating these methods allow for array formats that store dtype information
+in a nonstandard attribute, require additional coercion, or for implementing
+custom exception handlers or rescuers.
+Check the method signatures and return types
+when overriding and the docstrings for details.
+
+- {meth}`.Interface.get_dtype`
+- {meth}`.Interface.validate_dtype`
+- {meth}`.Interface.raise_for_dtype`
+
+A halftime hook for modifying the array or bailing early between validation phases.
+
+- {meth}`.Interface.after_validate_dtype`
+
+A cluster of methods for validating shape, similar to the dtype cluster.
+
+- {meth}`.Interface.get_shape`
+- {meth}`.Interface.validate_shape`
+- {meth}`.Interface.raise_for_shape`
+
+A final hook for modifying the array before passing it to be assigned to the field.
+This method should return an object matching the interface's {attr}`~.Interface.return_type`.
+- {meth}`.Interface.after_validation`
 
 ## Diagram
 
