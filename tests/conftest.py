@@ -67,6 +67,7 @@ RGB_UNION: TypeAlias = Union[
 NUMBER: TypeAlias = NDArray[Shape["*, *, *"], Number]
 INTEGER: TypeAlias = NDArray[Shape["*, *, *"], Integer]
 FLOAT: TypeAlias = NDArray[Shape["*, *, *"], Float]
+STRING: TypeAlias = NDArray[Shape["*, *, *"], str]
 
 
 @pytest.fixture(
@@ -121,10 +122,15 @@ def shape_cases(request) -> ValidationCase:
         ValidationCase(annotation=INTEGER, dtype=np.uint8, passes=True),
         ValidationCase(annotation=INTEGER, dtype=float, passes=False),
         ValidationCase(annotation=INTEGER, dtype=np.float32, passes=False),
+        ValidationCase(annotation=INTEGER, dtype=str, passes=False),
         ValidationCase(annotation=FLOAT, dtype=float, passes=True),
         ValidationCase(annotation=FLOAT, dtype=np.float32, passes=True),
         ValidationCase(annotation=FLOAT, dtype=int, passes=False),
         ValidationCase(annotation=FLOAT, dtype=np.uint8, passes=False),
+        ValidationCase(annotation=FLOAT, dtype=str, passes=False),
+        ValidationCase(annotation=STRING, dtype=str, passes=True),
+        ValidationCase(annotation=STRING, dtype=int, passes=False),
+        ValidationCase(annotation=STRING, dtype=float, passes=False),
     ],
     ids=[
         "float",
@@ -139,10 +145,15 @@ def shape_cases(request) -> ValidationCase:
         "integer-uint8",
         "integer-float",
         "integer-float32",
+        "integer-str",
         "float-float",
         "float-float32",
         "float-int",
         "float-uint8",
+        "float-str",
+        "str-str",
+        "str-int",
+        "str-float",
     ],
 )
 def dtype_cases(request) -> ValidationCase:
