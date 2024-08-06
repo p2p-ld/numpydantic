@@ -62,7 +62,7 @@ class Interface(ABC, Generic[T]):
         * :meth:`.after_validation` - hook after validation for modifying the array
             that is set as the model field value
 
-        Follow the method signatures and return types to override 
+        Follow the method signatures and return types to override.
 
         Implementing an interface subclass largely consists of overriding these methods
         as needed.
