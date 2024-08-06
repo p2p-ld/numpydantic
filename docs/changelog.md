@@ -2,6 +2,17 @@
 
 ## 1.*
 
+### 1.3.0 - 24-08-05 - Better string dtype handling
+
+API Changes:
+- Split apart the validation methods into smaller chunks to better support
+  overrides by interfaces. Customize getting and raising errors for dtype and shape,
+  as well as separation of concerns between getting, validating, and raising.
+
+Bugfix:
+- [#4](https://github.com/p2p-ld/numpydantic/issues/4) - Support dtype checking
+  for strings in zarr and numpy arrays
+
 ### 1.2.3 - 24-07-31 - Vendor `nptyping`
 
 `nptyping` vendored into `numpydantic.vendor.nptyping` - 
