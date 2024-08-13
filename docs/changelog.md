@@ -2,6 +2,10 @@
 
 ## 1.*
 
+### 1.3.2 - 24-08-12 - Allow subclasses of dtypes
+
+(also when using objects for dtypes, subclasses of that object are allowed to validate)
+
 ### 1.3.1 - 24-08-12 - Allow arbitrary dtypes, pydantic models as dtypes
 
 Previously we would only allow dtypes if we knew for sure that there was some
