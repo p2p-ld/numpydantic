@@ -3,7 +3,9 @@ import json
 import pytest
 import zarr
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
+from numcodecs import Pickle
+
 
 from numpydantic.interface import ZarrInterface
 from numpydantic.interface.zarr import ZarrArrayPath
@@ -31,7 +33,19 @@ def nested_dir_array(tmp_output_dir_func) -> zarr.NestedDirectoryStore:
 
 
 def _zarr_array(case: ValidationCase, store) -> zarr.core.Array:
-    return zarr.zeros(shape=case.shape, dtype=case.dtype, store=store)
+    if issubclass(case.dtype, BaseModel):
+        pytest.skip(
+            f"Zarr can't handle objects properly at the moment, "
+            "see https://github.com/zarr-developers/zarr-python/issues/2081"
+        )
+        # return zarr.full(
+        #     shape=case.shape,
+        #     fill_value=case.dtype(x=1),
+        #     dtype=object,
+        #     object_codec=Pickle(),
+        # )
+    else:
+        return zarr.zeros(shape=case.shape, dtype=case.dtype, store=store)
 
 
 def _test_zarr_case(case: ValidationCase, store):

@@ -266,6 +266,30 @@ def test_json_schema_dtype_builtin(dtype, expected, array_model):
         assert inner_type["type"] == expected
 
 
+def test_json_schema_dtype_model():
+    """
+    Pydantic models can be used in arrays as dtypes
+    """
+
+    class TestModel(BaseModel):
+        x: int
+        y: int
+        z: int
+
+    class MyModel(BaseModel):
+        array: NDArray[Shape["*, *"], TestModel]
+
+    schema = MyModel.model_json_schema()
+    # we should have a "$defs" with TestModel in it,
+    # and our array should be objects of that type
+    assert schema["properties"]["array"]["items"]["items"] == {
+        "$ref": "#/$defs/TestModel"
+    }
+    # we don't test pydantic' generic json schema model generation,
+    # just that one was defined
+    assert "TestModel" in schema["$defs"]
+
+
 def _recursive_array(schema):
     assert "$defs" in schema
     # get the key uses for the array

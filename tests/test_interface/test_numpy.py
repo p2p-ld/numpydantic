@@ -1,13 +1,16 @@
 import numpy as np
 import pytest
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel
 from numpydantic.exceptions import DtypeError, ShapeError
 
 from tests.conftest import ValidationCase
 
 
 def numpy_array(case: ValidationCase) -> np.ndarray:
-    return np.zeros(shape=case.shape, dtype=case.dtype)
+    if issubclass(case.dtype, BaseModel):
+        return np.full(shape=case.shape, fill_value=case.dtype(x=1))
+    else:
+        return np.zeros(shape=case.shape, dtype=case.dtype)
 
 
 def _test_np_case(case: ValidationCase):

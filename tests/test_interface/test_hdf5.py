@@ -20,6 +20,8 @@ def hdf5_array_case(case: ValidationCase, array_func) -> H5ArrayPath:
     Returns:
 
     """
+    if issubclass(case.dtype, BaseModel):
+        pytest.skip("hdf5 cant support arbitrary python objects")
     return array_func(case.shape, case.dtype)
 
 
