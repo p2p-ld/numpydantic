@@ -66,6 +66,10 @@ class BadModel(BaseModel):
     x: int
 
 
+class SubClass(BasicModel):
+    pass
+
+
 RGB_UNION: TypeAlias = Union[
     NDArray[Shape["* x, * y"], Number],
     NDArray[Shape["* x, * y, 3 r_g_b"], Number],
@@ -143,6 +147,7 @@ def shape_cases(request) -> ValidationCase:
         ValidationCase(annotation=MODEL, dtype=BasicModel, passes=True),
         ValidationCase(annotation=MODEL, dtype=BadModel, passes=False),
         ValidationCase(annotation=MODEL, dtype=int, passes=False),
+        ValidationCase(annotation=MODEL, dtype=SubClass, passes=True),
     ],
     ids=[
         "float",
@@ -169,6 +174,7 @@ def shape_cases(request) -> ValidationCase:
         "model-model",
         "model-badmodel",
         "model-int",
+        "model-subclass",
     ],
 )
 def dtype_cases(request) -> ValidationCase:

@@ -128,7 +128,13 @@ class Interface(ABC, Generic[T]):
         elif self.dtype is np.str_:
             valid = getattr(dtype, "type", None) is np.str_ or dtype is np.str_
         else:
-            valid = dtype == self.dtype
+            # try to match as any subclass, if self.dtype is a class
+            try:
+                valid = issubclass(dtype, self.dtype)
+            except TypeError:
+                # expected, if dtype or self.dtype is not a class
+                valid = dtype == self.dtype
+
         return valid
 
     def raise_for_dtype(self, valid: bool, dtype: DtypeType) -> None:
