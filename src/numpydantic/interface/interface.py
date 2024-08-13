@@ -101,7 +101,17 @@ class Interface(ABC, Generic[T]):
         """
         Get the dtype from the input array
         """
-        return array.dtype
+        if hasattr(array.dtype, "type") and array.dtype.type is np.object_:
+            return self.get_object_dtype(array)
+        else:
+            return array.dtype
+
+    def get_object_dtype(self, array: NDArrayType) -> DtypeType:
+        """
+        When an array contains an object, get the dtype of the object contained
+        by the array.
+        """
+        return type(array.ravel()[0])
 
     def validate_dtype(self, dtype: DtypeType) -> bool:
         """

@@ -58,6 +58,14 @@ class ValidationCase(BaseModel):
         return Model
 
 
+class BasicModel(BaseModel):
+    x: int
+
+
+class BadModel(BaseModel):
+    x: int
+
+
 RGB_UNION: TypeAlias = Union[
     NDArray[Shape["* x, * y"], Number],
     NDArray[Shape["* x, * y, 3 r_g_b"], Number],
@@ -68,6 +76,7 @@ NUMBER: TypeAlias = NDArray[Shape["*, *, *"], Number]
 INTEGER: TypeAlias = NDArray[Shape["*, *, *"], Integer]
 FLOAT: TypeAlias = NDArray[Shape["*, *, *"], Float]
 STRING: TypeAlias = NDArray[Shape["*, *, *"], str]
+MODEL: TypeAlias = NDArray[Shape["*, *, *"], BasicModel]
 
 
 @pytest.fixture(
@@ -131,6 +140,9 @@ def shape_cases(request) -> ValidationCase:
         ValidationCase(annotation=STRING, dtype=str, passes=True),
         ValidationCase(annotation=STRING, dtype=int, passes=False),
         ValidationCase(annotation=STRING, dtype=float, passes=False),
+        ValidationCase(annotation=MODEL, dtype=BasicModel, passes=True),
+        ValidationCase(annotation=MODEL, dtype=BadModel, passes=False),
+        ValidationCase(annotation=MODEL, dtype=int, passes=False),
     ],
     ids=[
         "float",
@@ -154,6 +166,9 @@ def shape_cases(request) -> ValidationCase:
         "str-str",
         "str-int",
         "str-float",
+        "model-model",
+        "model-badmodel",
+        "model-int",
     ],
 )
 def dtype_cases(request) -> ValidationCase:

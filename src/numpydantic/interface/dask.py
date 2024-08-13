@@ -8,6 +8,7 @@ import numpy as np
 from pydantic import SerializationInfo
 
 from numpydantic.interface.interface import Interface
+from numpydantic.types import DtypeType, NDArrayType
 
 try:
     from dask.array.core import Array as DaskArray
@@ -29,6 +30,10 @@ class DaskInterface(Interface):
         check if array is a dask array
         """
         return DaskArray is not None and isinstance(array, DaskArray)
+
+    def get_object_dtype(self, array: NDArrayType) -> DtypeType:
+        """Dask arrays require a compute() call to retrieve a single value"""
+        return type(array.ravel()[0].compute())
 
     @classmethod
     def enabled(cls) -> bool:

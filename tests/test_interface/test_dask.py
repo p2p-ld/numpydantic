@@ -4,7 +4,7 @@ import pytest
 import json
 
 import dask.array as da
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from numpydantic.interface import DaskInterface
 from numpydantic.exceptions import DtypeError, ShapeError
@@ -13,7 +13,10 @@ from tests.conftest import ValidationCase
 
 
 def dask_array(case: ValidationCase) -> da.Array:
-    return da.zeros(shape=case.shape, dtype=case.dtype, chunks=10)
+    if issubclass(case.dtype, BaseModel):
+        return da.full(shape=case.shape, fill_value=case.dtype(x=1), chunks=-1)
+    else:
+        return da.zeros(shape=case.shape, dtype=case.dtype, chunks=10)
 
 
 def _test_dask_case(case: ValidationCase):

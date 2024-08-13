@@ -2,6 +2,23 @@
 
 ## 1.*
 
+### 1.3.1 - 24-08-12 - Allow arbitrary dtypes, pydantic models as dtypes
+
+Previously we would only allow dtypes if we knew for sure that there was some
+python base type to generate a schema with. 
+
+That seems overly restrictive, so relax the requirements to allow
+any type to be a dtype. If there are problems with serialization (we assume there will)
+or handling the object in a given array framework, we leave that up to the person
+who declared the model to handle :). Let people break things and have fun!
+
+Also support the ability to use a pydantic model as the inner type, which works
+as expected because pydantic already knows how to generate a schema from its own models.
+
+Only one substantial change, and that is a `get_object_dtype` method which 
+interfaces can override if there is some fancy way they have of getting 
+types/items from an object array.
+
 ### 1.3.0 - 24-08-05 - Better string dtype handling
 
 API Changes:

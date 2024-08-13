@@ -8,7 +8,7 @@ import json
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import numpy as np
-from pydantic import SerializationInfo
+from pydantic import BaseModel, SerializationInfo
 from pydantic_core import CoreSchema, core_schema
 from pydantic_core.core_schema import ListSchema, ValidationInfo
 
@@ -66,18 +66,18 @@ def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
     else:
         try:
             python_type = np_to_python[dtype]
-        except KeyError as e:  # pragma: no cover
+        except KeyError:  # pragma: no cover
             # this should pretty much only happen in downstream/3rd-party interfaces
             # that use interface-specific types. those need to provide mappings back
             # to base python types (making this more streamlined is TODO)
             if dtype in np_to_python.values():
                 # it's already a python type
                 python_type = dtype
+            elif issubclass(dtype, BaseModel):
+                python_type = dtype
             else:
-                raise ValueError(
-                    "dtype given in model does not have a corresponding python base "
-                    "type - add one to the `maps.np_to_python` dict"
-                ) from e
+                # does this need a warning?
+                python_type = Any
 
         if python_type in _UNSUPPORTED_TYPES:
             array_type = core_schema.any_schema()

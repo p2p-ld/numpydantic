@@ -125,14 +125,10 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
             check_type_names(dtype, dtype_per_name)
         elif isinstance(dtype_candidate, tuple):  # pragma: no cover
             dtype = tuple([cls._get_dtype(dt) for dt in dtype_candidate])
-        else:  # pragma: no cover
-            raise InvalidArgumentsError(
-                f"Unexpected argument '{dtype_candidate}', expecting"
-                " Structure[<StructureExpression>]"
-                " or Literal[<StructureExpression>]"
-                " or a dtype"
-                " or typing.Any."
-            )
+        else:
+            # arbitrary dtype - allow failure elsewhere :)
+            dtype = dtype_candidate
+
         return dtype
 
     def _dtype_to_str(cls, dtype: Any) -> str:
