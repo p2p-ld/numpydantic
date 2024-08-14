@@ -2,6 +2,61 @@
 
 ## 1.*
 
+### 1.3.3 - 24-08-13 - Callable type annotations
+
+Problem, when you use a numpydantic `"wrap"` validator, it gives the annotation as a `handler` function. 
+
+So this is effectively what happens
+
+```python
+@field_validator("*", mode="wrap")
+@classmethod
+def cast_specified_columns(
+    cls, val: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
+) -> Any:
+    # where handler is the callable here
+    # so 
+    # return handler(val)
+    
+    return NDArray[Any, Any](val)
+```
+
+where `Any, Any` is whatever you had put in there. 
+
+So this makes it so you can use an annotation as a functional validator. it looks a little bit whacky but idk it makes sense as a PARAMETERIZED TYPE
+
+```python
+>>> from numpydantic import NDArray, Shape
+>>> import numpy as np
+
+>>> array = np.array([1,2,3], dtype=int)
+>>> validated = NDArray[Shape["3"], int](array)
+>>> assert validated is array
+True
+
+>>> bad_array = np.array([1,2,3,4], dtype=int)
+>>> _ = NDArray[Shape["3"], int](bad_array)
+    175 """
+    176 Raise a ShapeError if the shape is invalid.
+    177 
+    178 Raises:
+    179     :class:`~numpydantic.exceptions.ShapeError`
+    180 """
+    181 if not valid:
+--> 182     raise ShapeError(
+    183         f"Invalid shape! expected shape {self.shape.prepared_args}, "
+    184         f"got shape {shape}"
+    185     )
+
+ShapeError: Invalid shape! expected shape ['3'], got shape (4,)
+
+```
+
+**Performance:**
+- Don't import the pandas module if we don't have to, since we are not
+  using it. This shaves ~600ms off import time.
+
+
 ### 1.3.2 - 24-08-12 - Allow subclasses of dtypes
 
 (also when using objects for dtypes, subclasses of that object are allowed to validate)
