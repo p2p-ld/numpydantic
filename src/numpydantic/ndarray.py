@@ -29,7 +29,7 @@ from numpydantic.schema import (
     get_validate_interface,
     make_json_schema,
 )
-from numpydantic.types import DtypeType, ShapeType
+from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 from numpydantic.vendor.nptyping.ndarray import NDArrayMeta as _NDArrayMeta
 from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
@@ -53,6 +53,10 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
 
     if TYPE_CHECKING:  # pragma: no cover
         __getitem__ = SubscriptableMeta.__getitem__
+
+    def __call__(cls, val: NDArrayType) -> NDArrayType:
+        """Call ndarray as a validator function"""
+        return get_validate_interface(cls.__args__[0], cls.__args__[1])(val)
 
     def __instancecheck__(self, instance: Any):
         """

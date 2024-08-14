@@ -32,7 +32,9 @@ from numpydantic.vendor.nptyping.error import (
 )
 from numpydantic.vendor.nptyping.ndarray import NDArray
 from numpydantic.vendor.nptyping.package_info import __version__
-from numpydantic.vendor.nptyping.pandas_.dataframe import DataFrame
+
+# don't import unnecessarily since we don't use it
+# from numpydantic.vendor.nptyping.pandas_.dataframe import DataFrame
 from numpydantic.vendor.nptyping.recarray import RecArray
 from numpydantic.vendor.nptyping.shape import Shape
 from numpydantic.vendor.nptyping.shape_expression import (
