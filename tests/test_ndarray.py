@@ -350,3 +350,17 @@ def test_instancecheck():
         return array
 
     my_function(np.zeros((1, 2, 3), int))
+
+
+def test_callable():
+    """
+    NDArray objects are callable to validate and cast
+    Don't test validation here, just that we can be called
+    """
+    annotation = NDArray[Shape["3"], int]
+    array = np.array([1, 2, 3], dtype=int)
+    validated = annotation(array)
+    assert validated is array
+
+    with pytest.raises(DtypeError):
+        _ = annotation(np.zeros((1, 2, 3)))
