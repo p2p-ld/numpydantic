@@ -2,7 +2,17 @@
 
 ## 1.*
 
-### 1.5.0 - 24-09-02 - `str` support for HDF5
+### 1.5.*
+
+#### 1.5.1 - 24-09-03 - Fix revalidation with proxy classes
+
+Bugfix:
+- [#14](https://github.com/p2p-ld/numpydantic/pull/14): Allow revalidation of proxied arrays
+
+Tests:
+- Add test module for tests against all interfaces, test for above bug
+
+#### 1.5.0 - 24-09-02 - `str` support for HDF5
 
 Strings in hdf5 are tricky! HDF5 doesn't have native support for unicode, 
 but it can be persuaded to store data in ASCII or virtualized utf-8 under somewhat obscure conditions.
@@ -36,7 +46,9 @@ instance[0,0] = 'hey'
 assert instance[0,0] == 'hey'
 ```
 
-### 1.4.1 - 24-09-02 - `len()` support and dunder method testing
+### 1.4.*
+
+#### 1.4.1 - 24-09-02 - `len()` support and dunder method testing
 
 It's pretty natural to want to do `len(array)` as a shorthand for `array.shape[0]`, 
 but since some of the numpydantic classes are passthrough proxy objects, 
@@ -52,7 +64,7 @@ There is a certain combinatoric explosion when we start testing across all inter
 for all input types, for all dtype and all shape cases, 
 but for now numpydantic is fast enough that this doesn't matter <3.
 
-### 1.4.0 - 24-09-02 - HDF5 Compound Dtype Support
+#### 1.4.0 - 24-09-02 - HDF5 Compound Dtype Support
 
 HDF5 can have compound dtypes like:
 
@@ -107,7 +119,9 @@ my_model = MyModel(
 np.dtype('int64')
 ```
 
-### 1.3.3 - 24-08-13 - Callable type annotations
+### 1.3.*
+
+#### 1.3.3 - 24-08-13 - Callable type annotations
 
 Problem, when you use a numpydantic `"wrap"` validator, it gives the annotation as a `handler` function. 
 
@@ -162,11 +176,11 @@ ShapeError: Invalid shape! expected shape ['3'], got shape (4,)
   using it. This shaves ~600ms off import time.
 
 
-### 1.3.2 - 24-08-12 - Allow subclasses of dtypes
+#### 1.3.2 - 24-08-12 - Allow subclasses of dtypes
 
 (also when using objects for dtypes, subclasses of that object are allowed to validate)
 
-### 1.3.1 - 24-08-12 - Allow arbitrary dtypes, pydantic models as dtypes
+#### 1.3.1 - 24-08-12 - Allow arbitrary dtypes, pydantic models as dtypes
 
 Previously we would only allow dtypes if we knew for sure that there was some
 python base type to generate a schema with. 
@@ -183,7 +197,7 @@ Only one substantial change, and that is a `get_object_dtype` method which
 interfaces can override if there is some fancy way they have of getting 
 types/items from an object array.
 
-### 1.3.0 - 24-08-05 - Better string dtype handling
+#### 1.3.0 - 24-08-05 - Better string dtype handling
 
 API Changes:
 - Split apart the validation methods into smaller chunks to better support
@@ -194,7 +208,9 @@ Bugfix:
 - [#4](https://github.com/p2p-ld/numpydantic/issues/4) - Support dtype checking
   for strings in zarr and numpy arrays
 
-### 1.2.3 - 24-07-31 - Vendor `nptyping`
+### 1.2.*
+
+#### 1.2.3 - 24-07-31 - Vendor `nptyping`
 
 `nptyping` vendored into `numpydantic.vendor.nptyping` - 
 `nptyping` is no longer maintained, and pins `numpy<2`.
@@ -221,22 +237,24 @@ Tidying:
 - Remove `monkeypatch` module! we don't need it anymore!
   everything has either been upstreamed or vendored.
 
-### 1.2.2 - 24-07-31
+#### 1.2.2 - 24-07-31
 
 Add `datetime` map to numpy's :class:`numpy.datetime64` type
 
-### 1.2.1 - 24-06-27
+#### 1.2.1 - 24-06-27
 
 Fix a minor bug where {class}`~numpydantic.exceptions.DtypeError` would not cause
 pydantic to throw a {class}`pydantic.ValidationError` because custom validator functions
 need to raise either `AssertionError` or `ValueError` - made `DtypeError` also
 inherit from `ValueError` because that is also technically true.
 
-### 1.2.0 - 24-06-13 - Shape ranges
+#### 1.2.0 - 24-06-13 - Shape ranges
 
 - Add ability to specify shapes as ranges - see [shape ranges](shape-ranges)
 
-### 1.1.0 - 24-05-24 - Instance Checking
+### 1.1.*
+
+#### 1.1.0 - 24-05-24 - Instance Checking
 
 https://github.com/p2p-ld/numpydantic/pull/1
 
