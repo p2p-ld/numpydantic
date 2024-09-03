@@ -1,7 +1,7 @@
 [project]
 name = "numpydantic"
 version = "1.5.0"
-description = "Type and shape validation and serialization for numpy arrays in pydantic models"
+description = "Type and shape validation and serialization for arbitrary array types in pydantic models"
 authors = [
     {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
 ]
@@ -10,11 +10,42 @@ dependencies = [
     "numpy>=1.24.0",
     "typing-extensions>=4.11.0;python_version<'3.11'"
 ]
-homepage = "https://numpydantic.readthedocs.io"
 requires-python = "<4.0,>=3.9"
 readme = "README.md"
 repository = "https://github.com/p2p-ld/numpydantic"
 license = {text = "MIT"}
+keywords = [
+    "arrays",
+    "validation",
+    "serialization",
+    "numpy",
+    "pydantic",
+]
+classifiers = [
+    "Framework :: Pydantic",
+    "Framework :: Pydantic :: 2",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: File Formats :: JSON :: JSON Schema",
+    "Topic :: Utilities"
+]
+
+[project.urls]
+homepage = "https://numpydantic.readthedocs.io"
+documentation = "https://numpydantic.readthedocs.io"
+repository = "https://github.com/p2p-ld/numpydantic"
+changelog = "https://numpydantic.readthedocs.io/en/latest/changelog.html"
 
 
 [project.optional-dependencies]
