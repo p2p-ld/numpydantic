@@ -157,11 +157,12 @@ def test_compound_dtype(tmp_path):
     assert all(instance.array[1] == 2)
 
 
-def test_strings(hdf5_array):
+@pytest.mark.parametrize("compound", [True, False])
+def test_strings(hdf5_array, compound):
     """
     HDF5 proxy can get and set strings just like any other dtype
     """
-    array = hdf5_array((10, 10), str)
+    array = hdf5_array((10, 10), str, compound=compound)
 
     class MyModel(BaseModel):
         array: NDArray[Shape["10, 10"], str]

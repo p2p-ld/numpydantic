@@ -124,8 +124,13 @@ class H5Proxy:
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
             if self.field is not None:
-                if h5py.h5t.check_string_dtype(obj.dtype[self.field]):
-                    obj = obj.fields(self.field).asstr()
+                if encoding := h5py.h5t.check_string_dtype(obj.dtype[self.field]):
+                    if isinstance(item, tuple):
+                        item = (*item, self.field)
+                    else:
+                        item = (item, self.field)
+
+                    return obj[item].decode(encoding.encoding)
                 else:
                     obj = obj.fields(self.field)
             else:
