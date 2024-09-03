@@ -2,8 +2,6 @@
 Needs to be refactored to DRY, but works for now
 """
 
-import pdb
-
 import numpy as np
 import pytest
 
@@ -15,37 +13,6 @@ from pydantic import BaseModel, ValidationError
 from numpydantic import NDArray, Shape
 from numpydantic import dtype as dt
 from numpydantic.interface.video import VideoProxy
-
-
-@pytest.fixture(scope="function")
-def avi_video(tmp_path):
-    video_path = tmp_path / "test.avi"
-
-    def _make_video(shape=(100, 50), frames=10, is_color=True) -> Path:
-        writer = cv2.VideoWriter(
-            str(video_path),
-            cv2.VideoWriter_fourcc(*"RGBA"),  # raw video for testing purposes
-            30,
-            (shape[1], shape[0]),
-            is_color,
-        )
-        if is_color:
-            shape = (*shape, 3)
-
-        for i in range(frames):
-            # make fresh array every time bc opencv eats them
-            array = np.zeros(shape, dtype=np.uint8)
-            if not is_color:
-                array[i, i] = i
-            else:
-                array[i, i, :] = i
-            writer.write(array)
-        writer.release()
-        return video_path
-
-    yield _make_video
-
-    video_path.unlink(missing_ok=True)
 
 
 @pytest.mark.parametrize("input_type", [str, Path])

@@ -180,6 +180,10 @@ class VideoProxy:
     def __getattr__(self, item: str):
         return getattr(self.video, item)
 
+    def __len__(self) -> int:
+        """Number of frames in the video"""
+        return self.shape[0]
+
 
 class VideoInterface(Interface):
     """

@@ -121,6 +121,10 @@ class H5Proxy:
                 else:
                     obj[key, self.field] = value
 
+    def __len__(self) -> int:
+        """self.shape[0]"""
+        return self.shape[0]
+
     def open(self, mode: str = "r") -> "h5py.Dataset":
         """
         Return the opened :class:`h5py.Dataset` object
