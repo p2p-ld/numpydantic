@@ -1,10 +1,12 @@
 import pytest
 
+from typing import Tuple, Callable
 import numpy as np
 import dask.array as da
 import zarr
+from pydantic import BaseModel
 
-from numpydantic import interface
+from numpydantic import interface, NDArray
 
 
 @pytest.fixture(
@@ -17,6 +19,7 @@ from numpydantic import interface
         (zarr.ones((10, 10)), interface.ZarrInterface),
         ("zarr_nested_array", interface.ZarrInterface),
         ("zarr_array", interface.ZarrInterface),
+        ("avi_video", interface.VideoInterface),
     ],
     ids=[
         "numpy_list",
@@ -26,9 +29,10 @@ from numpydantic import interface
         "zarr_memory",
         "zarr_nested",
         "zarr_array",
+        "video",
     ],
 )
-def interface_type(request):
+def interface_type(request) -> Tuple[NDArray, interface.Interface]:
     """
     Test cases for each interface's ``check`` method - each input should match the
     provided interface and that interface only
@@ -37,3 +41,20 @@ def interface_type(request):
         return (request.getfixturevalue(request.param[0]), request.param[1])
     else:
         return request.param
+
+
+@pytest.fixture()
+def all_interfaces(interface_type) -> BaseModel:
+    """
+    An instantiated version of each interface within a basemodel,
+    with the array in an `array` field
+    """
+    array, interface = interface_type
+    if isinstance(array, Callable):
+        array = array()
+
+    class MyModel(BaseModel):
+        array: NDArray
+
+    instance = MyModel(array=array)
+    return instance

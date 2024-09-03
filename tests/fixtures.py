@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from pydantic import BaseModel, Field
 import zarr
+import cv2
 
 from numpydantic.interface.hdf5 import H5ArrayPath
 from numpydantic.interface.zarr import ZarrArrayPath
@@ -150,3 +151,34 @@ def zarr_array(tmp_output_dir_func) -> Path:
     array = zarr.open(str(file), mode="w", shape=(100, 100), chunks=(10, 10))
     array[:] = 0
     return file
+
+
+@pytest.fixture(scope="function")
+def avi_video(tmp_path) -> Callable[[Tuple[int, int], int, bool], Path]:
+    video_path = tmp_path / "test.avi"
+
+    def _make_video(shape=(100, 50), frames=10, is_color=True) -> Path:
+        writer = cv2.VideoWriter(
+            str(video_path),
+            cv2.VideoWriter_fourcc(*"RGBA"),  # raw video for testing purposes
+            30,
+            (shape[1], shape[0]),
+            is_color,
+        )
+        if is_color:
+            shape = (*shape, 3)
+
+        for i in range(frames):
+            # make fresh array every time bc opencv eats them
+            array = np.zeros(shape, dtype=np.uint8)
+            if not is_color:
+                array[i, i] = i
+            else:
+                array[i, i, :] = i
+            writer.write(array)
+        writer.release()
+        return video_path
+
+    yield _make_video
+
+    video_path.unlink(missing_ok=True)
