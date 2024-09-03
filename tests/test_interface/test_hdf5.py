@@ -150,3 +150,10 @@ def test_compound_dtype(tmp_path):
     assert instance.array.dtype == np.dtype("int64")
     assert instance.array.shape == (10, 20)
     assert instance.array[0, 0] == 0
+
+    # set values too
+    instance.array[0, :] = 1
+    assert all(instance.array[0, :] == 1)
+    assert all(instance.array[1, :] == 0)
+    instance.array[1] = 2
+    assert all(instance.array[1] == 2)

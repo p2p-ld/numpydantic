@@ -112,9 +112,13 @@ class H5Proxy:
     ):
         with h5py.File(self.file, "r+", locking=True) as h5f:
             obj = h5f.get(self.path)
-            if self.field is not None:
-                obj = obj.fields(self.field)
-            obj[key] = value
+            if self.field is None:
+                obj[key] = value
+            else:
+                if isinstance(key, tuple):
+                    obj[*key, self.field] = value
+                else:
+                    obj[key, self.field] = value
 
     def open(self, mode: str = "r") -> "h5py.Dataset":
         """
