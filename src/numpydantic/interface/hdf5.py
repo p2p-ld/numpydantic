@@ -130,7 +130,10 @@ class H5Proxy:
                     else:
                         item = (item, self.field)
 
-                    return obj[item].decode(encoding.encoding)
+                    try:
+                        return obj[item].decode(encoding.encoding)
+                    except AttributeError:
+                        return np.strings.decode(obj[item], encoding=encoding.encoding)
                 else:
                     obj = obj.fields(self.field)
             else:
@@ -262,12 +265,7 @@ class H5Interface(Interface):
 
         Subclasses to correctly handle
         """
-        if hasattr(array.dtype, "type") and array.dtype.type is np.object_:
-            if h5py.h5t.check_string_dtype(array.dtype):
-                return str
-            else:
-                return self.get_object_dtype(array)
-        elif h5py.h5t.check_string_dtype(array.dtype):
+        if h5py.h5t.check_string_dtype(array.dtype):
             return str
         else:
             return array.dtype

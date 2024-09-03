@@ -171,3 +171,6 @@ def test_strings(hdf5_array, compound):
     instance.array[0, 0] = "hey"
     assert instance.array[0, 0] == "hey"
     assert isinstance(instance.array[0, 1], str)
+
+    instance.array[1] = "sup"
+    assert all(instance.array[1] == "sup")
