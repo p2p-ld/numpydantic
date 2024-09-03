@@ -2,6 +2,22 @@
 
 ## 1.*
 
+### 1.4.1 - 24-09-02 - `len()` support and dunder method testing
+
+It's pretty natural to want to do `len(array)` as a shorthand for `array.shape[0]`, 
+but since some of the numpydantic classes are passthrough proxy objects, 
+they don't implement all the dunder methods of the classes they wrap 
+(though they should attempt to via `__getattr__`). 
+
+This PR adds `__len__` to the two interfaces that are missing it, 
+and adds fixtures and makes a testing module specifically for testing dunder methods 
+that should be true across all interfaces. 
+Previously we have had fixtures that test all of a set of dtype and shape cases for each interface,
+but we haven't had a way of asserting that something should be true for all interfaces. 
+There is a certain combinatoric explosion when we start testing across all interfaces, 
+for all input types, for all dtype and all shape cases, 
+but for now numpydantic is fast enough that this doesn't matter <3.
+
 ### 1.4.0 - 24-09-02 - HDF5 Compound Dtype Support
 
 HDF5 can have compound dtypes like:
