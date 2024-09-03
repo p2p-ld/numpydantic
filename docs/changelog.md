@@ -2,6 +2,40 @@
 
 ## 1.*
 
+### 1.5.0 - 24-09-02 - `str` support for HDF5
+
+Strings in hdf5 are tricky! HDF5 doesn't have native support for unicode, 
+but it can be persuaded to store data in ASCII or virtualized utf-8 under somewhat obscure conditions.
+
+This PR uses h5py's string methods to expose string datasets (compound or not) 
+via the h5proxy with the `asstr()` view method. 
+This also allows us to set strings with normal python strings,
+although hdf5 datasets can only be created with `bytes` or other non-unicode encodings.
+
+Since numpydantic isn't necessarily a tool for *creating* hdf5 files 
+(nobody should be doing that), but rather an interface to them, 
+tests are included for reading and validating (unskip the existing string tests) 
+as well as setting/getting.
+
+```python
+import h5py
+import numpy as np
+from pydantic import BaseModel
+from numpydantic import NDArray
+from typing import Any
+
+class MyModel(BaseModel):
+  array: NDArray[Any, str]
+
+h5f = h5py.File('my_data.h5', 'w')
+data = np.random.random((10,10)).astype(bytes)
+_ = h5f.create_dataset('/dataset', data=data)
+
+instance = MyModel(array=('my_data.h5', '/dataset'))
+instance[0,0] = 'hey'
+assert instance[0,0] == 'hey'
+```
+
 ### 1.4.1 - 24-09-02 - `len()` support and dunder method testing
 
 It's pretty natural to want to do `len(array)` as a shorthand for `array.shape[0]`, 

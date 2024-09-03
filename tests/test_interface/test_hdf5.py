@@ -78,8 +78,6 @@ def test_hdf5_shape(shape_cases, hdf5_array, compound):
 
 @pytest.mark.parametrize("compound", [True, False])
 def test_hdf5_dtype(dtype_cases, hdf5_array, compound):
-    if dtype_cases.dtype is str:
-        pytest.skip("hdf5 cant do string arrays")
     _test_hdf5_case(dtype_cases, hdf5_array, compound)
 
 
@@ -157,3 +155,22 @@ def test_compound_dtype(tmp_path):
     assert all(instance.array[1, :] == 0)
     instance.array[1] = 2
     assert all(instance.array[1] == 2)
+
+
+@pytest.mark.parametrize("compound", [True, False])
+def test_strings(hdf5_array, compound):
+    """
+    HDF5 proxy can get and set strings just like any other dtype
+    """
+    array = hdf5_array((10, 10), str, compound=compound)
+
+    class MyModel(BaseModel):
+        array: NDArray[Shape["10, 10"], str]
+
+    instance = MyModel(array=array)
+    instance.array[0, 0] = "hey"
+    assert instance.array[0, 0] == "hey"
+    assert isinstance(instance.array[0, 1], str)
+
+    instance.array[1] = "sup"
+    assert all(instance.array[1] == "sup")

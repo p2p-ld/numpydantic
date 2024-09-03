@@ -126,7 +126,10 @@ class Interface(ABC, Generic[T]):
         if isinstance(self.dtype, tuple):
             valid = dtype in self.dtype
         elif self.dtype is np.str_:
-            valid = getattr(dtype, "type", None) is np.str_ or dtype is np.str_
+            valid = getattr(dtype, "type", None) in (np.str_, str) or dtype in (
+                np.str_,
+                str,
+            )
         else:
             # try to match as any subclass, if self.dtype is a class
             try:

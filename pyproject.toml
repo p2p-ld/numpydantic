@@ -1,6 +1,6 @@
 [project]
 name = "numpydantic"
-version = "1.4.1"
+version = "1.5.0"
 description = "Type and shape validation and serialization for numpy arrays in pydantic models"
 authors = [
     {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
