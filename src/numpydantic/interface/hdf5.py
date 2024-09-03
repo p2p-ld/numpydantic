@@ -1,5 +1,27 @@
 """
 Interfaces for HDF5 Datasets
+
+.. note::
+
+    HDF5 arrays are accessed through a proxy class :class:`.H5Proxy` .
+    Getting/setting values should work as normal, **except** that setting
+    values on nested views is impossible - 
+    
+    Specifically this doesn't work:
+    
+    .. code-block:: python
+    
+        my_model.array[0][0] = 1
+    
+    But this does work:
+    
+    .. code-block:: python
+    
+        my_model.array[0,0] = 1
+        
+    To have direct access to the hdf5 dataset, use the
+    :meth:`.H5Proxy.open` method.
+    
 """
 
 import sys
@@ -10,7 +32,7 @@ import numpy as np
 from pydantic import SerializationInfo
 
 from numpydantic.interface.interface import Interface
-from numpydantic.types import NDArrayType
+from numpydantic.types import DtypeType, NDArrayType
 
 try:
     import h5py
@@ -102,7 +124,14 @@ class H5Proxy:
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
             if self.field is not None:
-                obj = obj.fields(self.field)
+                if h5py.h5t.check_string_dtype(obj.dtype[self.field]):
+                    obj = obj.fields(self.field).asstr()
+                else:
+                    obj = obj.fields(self.field)
+            else:
+                if h5py.h5t.check_string_dtype(obj.dtype):
+                    obj = obj.asstr()
+
             return obj[item]
 
     def __setitem__(
@@ -221,6 +250,22 @@ class H5Interface(Interface):
             )
 
         return array
+
+    def get_dtype(self, array: NDArrayType) -> DtypeType:
+        """
+        Get the dtype from the input array
+
+        Subclasses to correctly handle
+        """
+        if hasattr(array.dtype, "type") and array.dtype.type is np.object_:
+            if h5py.h5t.check_string_dtype(array.dtype):
+                return str
+            else:
+                return self.get_object_dtype(array)
+        elif h5py.h5t.check_string_dtype(array.dtype):
+            return str
+        else:
+            return array.dtype
 
     @classmethod
     def to_json(cls, array: H5Proxy, info: Optional[SerializationInfo] = None) -> dict:
