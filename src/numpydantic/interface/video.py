@@ -190,7 +190,7 @@ class VideoInterface(Interface):
     OpenCV interface to treat videos as arrays.
     """
 
-    input_types = (str, Path, VideoCapture)
+    input_types = (str, Path, VideoCapture, VideoProxy)
     return_type = VideoProxy
 
     @classmethod
@@ -204,7 +204,9 @@ class VideoInterface(Interface):
         Check if array is a string or Path with a supported video extension,
         or an opened VideoCapture object
         """
-        if VideoCapture is not None and isinstance(array, VideoCapture):
+        if (VideoCapture is not None and isinstance(array, VideoCapture)) or isinstance(
+            array, VideoProxy
+        ):
             return True
 
         if isinstance(array, str):
@@ -220,6 +222,8 @@ class VideoInterface(Interface):
         """Get a :class:`.VideoProxy` object for this video"""
         if isinstance(array, VideoCapture):
             proxy = VideoProxy(video=array)
+        elif isinstance(array, VideoProxy):
+            proxy = array
         else:
             proxy = VideoProxy(path=array)
         return proxy
