@@ -179,6 +179,4 @@ def avi_video(tmp_path) -> Callable[[Tuple[int, int], int, bool], Path]:
         writer.release()
         return video_path
 
-    yield _make_video
-
-    video_path.unlink(missing_ok=True)
+    return _make_video
