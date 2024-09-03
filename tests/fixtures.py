@@ -122,8 +122,12 @@ def hdf5_array(
         compound: bool = False,
     ) -> H5ArrayPath:
         array_path = "/" + "_".join([str(s) for s in shape]) + "__" + dtype.__name__
+
         if not compound:
-            data = np.random.random(shape).astype(dtype)
+            if dtype is str:
+                data = np.random.random(shape).astype(bytes)
+            else:
+                data = np.random.random(shape).astype(dtype)
             _ = hdf5_file.create_dataset(array_path, data=data)
             return H5ArrayPath(Path(hdf5_file.filename), array_path)
         else:

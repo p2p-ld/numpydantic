@@ -9,7 +9,8 @@ but it can be persuaded to store data in ASCII or virtualized utf-8 under somewh
 
 This PR uses h5py's string methods to expose string datasets (compound or not) 
 via the h5proxy with the `asstr()` view method. 
-This also allows us to set strings with normal python strings. 
+This also allows us to set strings with normal python strings,
+although hdf5 datasets can only be created with `bytes` or other non-unicode encodings.
 
 Since numpydantic isn't necessarily a tool for *creating* hdf5 files 
 (nobody should be doing that), but rather an interface to them, 
@@ -27,7 +28,7 @@ class MyModel(BaseModel):
   array: NDArray[Any, str]
 
 h5f = h5py.File('my_data.h5', 'w')
-data = np.random.random((10,10)).astype(str)
+data = np.random.random((10,10)).astype(bytes)
 _ = h5f.create_dataset('/dataset', data=data)
 
 instance = MyModel(array=('my_data.h5', '/dataset'))
