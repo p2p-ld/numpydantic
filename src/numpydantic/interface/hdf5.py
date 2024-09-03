@@ -131,9 +131,12 @@ class H5Proxy:
                         item = (item, self.field)
 
                     try:
+                        # single string
                         return obj[item].decode(encoding.encoding)
                     except AttributeError:
-                        return np.strings.decode(obj[item], encoding=encoding.encoding)
+                        # numpy array of bytes
+                        return np.char.decode(obj[item], encoding=encoding.encoding)
+
                 else:
                     obj = obj.fields(self.field)
             else:
