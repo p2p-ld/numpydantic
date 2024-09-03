@@ -2,6 +2,61 @@
 
 ## 1.*
 
+### 1.4.0 - 24-09-02 - HDF5 Compound Dtype Support
+
+HDF5 can have compound dtypes like:
+
+```python
+import numpy as np
+import h5py
+
+dtype = np.dtype([("data", "i8"), ("extra", "f8")])
+data = np.zeros((10, 20), dtype=dtype)
+with h5py.File('mydata.h5', "w") as h5f:
+    dset = h5f.create_dataset("/dataset", data=data)
+
+```
+
+```python
+>>> dset[0:1]
+array([[(0, 0.), (0, 0.), (0, 0.), (0, 0.), (0, 0.), (0, 0.), (0, 0.),
+        (0, 0.), (0, 0.), (0, 0.), (0, 0.), (0, 0.), (0, 0.), (0, 0.),
+        (0, 0.), (0, 0.), (0, 0.), (0, 0.), (0, 0.), (0, 0.)]],
+      dtype=[('data', '<i8'), ('extra', '<f8')])
+```
+
+Sometimes we want to split those out to separate fields like this:
+
+```python
+class MyModel(BaseModel):
+    data: NDArray[Any, np.int64]
+    extra: NDArray[Any, np.float64]
+```
+
+So that's what 1.4.0 allows, using an additional field in the H5ArrayPath:
+
+```python
+from numpydantic.interfaces.hdf5 import H5ArrayPath
+
+my_model = MyModel(
+    data = H5ArrayPath(file='mydata.h5', path="/dataset", field="data"),
+    extra = H5ArrayPath(file='mydata.h5', path="/dataset", field="extra"),
+)
+
+# or just with tuples
+my_model = MyModel(
+    data = ('mydata.h5', "/dataset", "data"),
+    extra = ('mydata.h5', "/dataset", "extra"),
+)
+```
+
+```python
+>>> my_model.data[0,0]
+0
+>>> my_model.data.dtype
+np.dtype('int64')
+```
+
 ### 1.3.3 - 24-08-13 - Callable type annotations
 
 Problem, when you use a numpydantic `"wrap"` validator, it gives the annotation as a `handler` function. 

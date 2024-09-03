@@ -116,12 +116,20 @@ def hdf5_array(
 ) -> Callable[[Tuple[int, ...], Union[np.dtype, type]], H5ArrayPath]:
 
     def _hdf5_array(
-        shape: Tuple[int, ...] = (10, 10), dtype: Union[np.dtype, type] = float
+        shape: Tuple[int, ...] = (10, 10),
+        dtype: Union[np.dtype, type] = float,
+        compound: bool = False,
     ) -> H5ArrayPath:
         array_path = "/" + "_".join([str(s) for s in shape]) + "__" + dtype.__name__
-        data = np.random.random(shape).astype(dtype)
-        _ = hdf5_file.create_dataset(array_path, data=data)
-        return H5ArrayPath(Path(hdf5_file.filename), array_path)
+        if not compound:
+            data = np.random.random(shape).astype(dtype)
+            _ = hdf5_file.create_dataset(array_path, data=data)
+            return H5ArrayPath(Path(hdf5_file.filename), array_path)
+        else:
+            dt = np.dtype([("data", dtype), ("extra", "i8")])
+            data = np.zeros(shape, dtype=dt)
+            _ = hdf5_file.create_dataset(array_path, data=data)
+            return H5ArrayPath(Path(hdf5_file.filename), array_path, "data")
 
     return _hdf5_array
 

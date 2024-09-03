@@ -1,17 +1,22 @@
-import pdb
 import json
+
+import h5py
 import pytest
 
 from pydantic import BaseModel, ValidationError
 
+import numpy as np
+from numpydantic import NDArray, Shape
 from numpydantic.interface import H5Interface
-from numpydantic.interface.hdf5 import H5ArrayPath
+from numpydantic.interface.hdf5 import H5ArrayPath, H5Proxy
 from numpydantic.exceptions import DtypeError, ShapeError
 
 from tests.conftest import ValidationCase
 
 
-def hdf5_array_case(case: ValidationCase, array_func) -> H5ArrayPath:
+def hdf5_array_case(
+    case: ValidationCase, array_func, compound: bool = False
+) -> H5ArrayPath:
     """
     Args:
         case:
@@ -22,11 +27,11 @@ def hdf5_array_case(case: ValidationCase, array_func) -> H5ArrayPath:
     """
     if issubclass(case.dtype, BaseModel):
         pytest.skip("hdf5 cant support arbitrary python objects")
-    return array_func(case.shape, case.dtype)
+    return array_func(case.shape, case.dtype, compound)
 
 
-def _test_hdf5_case(case: ValidationCase, array_func):
-    array = hdf5_array_case(case, array_func)
+def _test_hdf5_case(case: ValidationCase, array_func, compound: bool = False) -> None:
+    array = hdf5_array_case(case, array_func, compound)
     if case.passes:
         case.model(array=array)
     else:
@@ -66,14 +71,16 @@ def test_hdf5_check_not_hdf5(tmp_path):
     assert not H5Interface.check(spec)
 
 
-def test_hdf5_shape(shape_cases, hdf5_array):
-    _test_hdf5_case(shape_cases, hdf5_array)
+@pytest.mark.parametrize("compound", [True, False])
+def test_hdf5_shape(shape_cases, hdf5_array, compound):
+    _test_hdf5_case(shape_cases, hdf5_array, compound)
 
 
-def test_hdf5_dtype(dtype_cases, hdf5_array):
+@pytest.mark.parametrize("compound", [True, False])
+def test_hdf5_dtype(dtype_cases, hdf5_array, compound):
     if dtype_cases.dtype is str:
         pytest.skip("hdf5 cant do string arrays")
-    _test_hdf5_case(dtype_cases, hdf5_array)
+    _test_hdf5_case(dtype_cases, hdf5_array, compound)
 
 
 def test_hdf5_dataset_not_exists(hdf5_array, model_blank):
@@ -116,3 +123,37 @@ def test_to_json(hdf5_array, array_model):
     assert json_dict["path"] == str(array.path)
     assert json_dict["attrs"] == {}
     assert json_dict["array"] == instance.array[:].tolist()
+
+
+def test_compound_dtype(tmp_path):
+    """
+    hdf5 proxy indexes compound dtypes as single fields when field is given
+    """
+    h5f_path = tmp_path / "test.h5"
+    dataset_path = "/dataset"
+    field = "data"
+    dtype = np.dtype([(field, "i8"), ("extra", "f8")])
+    data = np.zeros((10, 20), dtype=dtype)
+    with h5py.File(h5f_path, "w") as h5f:
+        dset = h5f.create_dataset(dataset_path, data=data)
+        assert dset.dtype == dtype
+
+    proxy = H5Proxy(h5f_path, dataset_path, field=field)
+    assert proxy.dtype == np.dtype("int64")
+    assert proxy.shape == (10, 20)
+    assert proxy[0, 0] == 0
+
+    class MyModel(BaseModel):
+        array: NDArray[Shape["10, 20"], np.int64]
+
+    instance = MyModel(array=(h5f_path, dataset_path, field))
+    assert instance.array.dtype == np.dtype("int64")
+    assert instance.array.shape == (10, 20)
+    assert instance.array[0, 0] == 0
+
+    # set values too
+    instance.array[0, :] = 1
+    assert all(instance.array[0, :] == 1)
+    assert all(instance.array[1, :] == 0)
+    instance.array[1] = 2
+    assert all(instance.array[1] == 2)

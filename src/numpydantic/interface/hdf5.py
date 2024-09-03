@@ -4,7 +4,7 @@ Interfaces for HDF5 Datasets
 
 import sys
 from pathlib import Path
-from typing import Any, NamedTuple, Optional, Tuple, Union
+from typing import Any, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 from pydantic import SerializationInfo
@@ -32,6 +32,8 @@ class H5ArrayPath(NamedTuple):
     """Location of HDF5 file"""
     path: str
     """Path within the HDF5 file"""
+    field: Optional[Union[str, List[str]]] = None
+    """Refer to a specific field within a compound dtype"""
 
 
 class H5Proxy:
@@ -51,12 +53,20 @@ class H5Proxy:
     Args:
         file (pathlib.Path | str): Location of hdf5 file on filesystem
         path (str): Path to array within hdf5 file
+        field (str, list[str]): Optional - refer to a specific field within
+            a compound dtype
     """
 
-    def __init__(self, file: Union[Path, str], path: str):
+    def __init__(
+        self,
+        file: Union[Path, str],
+        path: str,
+        field: Optional[Union[str, List[str]]] = None,
+    ):
         self._h5f = None
         self.file = Path(file)
         self.path = path
+        self.field = field
 
     def array_exists(self) -> bool:
         """Check that there is in fact an array at :attr:`.path` within :attr:`.file`"""
@@ -67,22 +77,49 @@ class H5Proxy:
     @classmethod
     def from_h5array(cls, h5array: H5ArrayPath) -> "H5Proxy":
         """Instantiate using :class:`.H5ArrayPath`"""
-        return H5Proxy(file=h5array.file, path=h5array.path)
+        return H5Proxy(file=h5array.file, path=h5array.path, field=h5array.field)
+
+    @property
+    def dtype(self) -> np.dtype:
+        """
+        Get dtype of array, using :attr:`.field` if present
+        """
+        with h5py.File(self.file, "r") as h5f:
+            obj = h5f.get(self.path)
+            if self.field is None:
+                return obj.dtype
+            else:
+                return obj.dtype[self.field]
 
     def __getattr__(self, item: str):
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
             return getattr(obj, item)
 
-    def __getitem__(self, item: Union[int, slice]) -> np.ndarray:
+    def __getitem__(
+        self, item: Union[int, slice, Tuple[Union[int, slice], ...]]
+    ) -> np.ndarray:
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
+            if self.field is not None:
+                obj = obj.fields(self.field)
             return obj[item]
 
-    def __setitem__(self, key: Union[int, slice], value: Union[int, float, np.ndarray]):
+    def __setitem__(
+        self,
+        key: Union[int, slice, Tuple[Union[int, slice], ...]],
+        value: Union[int, float, np.ndarray],
+    ):
         with h5py.File(self.file, "r+", locking=True) as h5f:
             obj = h5f.get(self.path)
-            obj[key] = value
+            if self.field is None:
+                obj[key] = value
+            else:
+                if isinstance(key, tuple):
+                    key = (*key, self.field)
+                    obj[key] = value
+                else:
+                    obj[key, self.field] = value
 
     def open(self, mode: str = "r") -> "h5py.Dataset":
         """
@@ -133,7 +170,7 @@ class H5Interface(Interface):
         if isinstance(array, H5ArrayPath):
             return True
 
-        if isinstance(array, (tuple, list)) and len(array) == 2:
+        if isinstance(array, (tuple, list)) and len(array) in (2, 3):
             # check that the first arg is an hdf5 file
             try:
                 file = Path(array[0])
@@ -163,6 +200,8 @@ class H5Interface(Interface):
             array = H5Proxy.from_h5array(h5array=array)
         elif isinstance(array, (tuple, list)) and len(array) == 2:  # pragma: no cover
             array = H5Proxy(file=array[0], path=array[1])
+        elif isinstance(array, (tuple, list)) and len(array) == 3:
+            array = H5Proxy(file=array[0], path=array[1], field=array[2])
         else:  # pragma: no cover
             # this should never happen really since `check` confirms this before
             # we'd reach here, but just to complete the if else...
