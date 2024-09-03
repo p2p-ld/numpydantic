@@ -1,8 +1,9 @@
 import json
+from datetime import datetime, timezone
+from typing import Any
 
 import h5py
 import pytest
-
 from pydantic import BaseModel, ValidationError
 
 import numpy as np
@@ -174,3 +175,26 @@ def test_strings(hdf5_array, compound):
 
     instance.array[1] = "sup"
     assert all(instance.array[1] == "sup")
+
+
+@pytest.mark.parametrize("compound", [True, False])
+def test_datetime(hdf5_array, compound):
+    """
+    We can treat S32 byte arrays as datetimes if our type annotation
+    says to, including validation, setting and getting values
+    """
+    array = hdf5_array((10, 10), datetime, compound=compound)
+
+    class MyModel(BaseModel):
+        array: NDArray[Any, datetime]
+
+    instance = MyModel(array=array)
+    assert isinstance(instance.array[0, 0], np.datetime64)
+    assert instance.array[0:5].dtype.type is np.datetime64
+
+    now = datetime.now()
+
+    instance.array[0, 0] = now
+    assert instance.array[0, 0] == now
+    instance.array[0] = now
+    assert all(instance.array[0] == now)

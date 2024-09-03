@@ -166,7 +166,11 @@ def _hash_schema(schema: CoreSchema) -> str:
     to produce the same hash.
     """
     schema_str = json.dumps(
-        schema, sort_keys=True, indent=None, separators=(",", ":")
+        schema,
+        sort_keys=True,
+        indent=None,
+        separators=(",", ":"),
+        default=lambda x: None,
     ).encode("utf-8")
     hasher = hashlib.blake2b(digest_size=8)
     hasher.update(schema_str)

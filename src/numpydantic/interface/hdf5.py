@@ -25,8 +25,9 @@ Interfaces for HDF5 Datasets
 """
 
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Any, List, NamedTuple, Optional, Tuple, Union
+from typing import Any, Iterable, List, NamedTuple, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 from pydantic import SerializationInfo
@@ -45,6 +46,8 @@ else:
     from typing_extensions import TypeAlias
 
 H5Arraylike: TypeAlias = Tuple[Union[Path, str], str]
+
+T = TypeVar("T")
 
 
 class H5ArrayPath(NamedTuple):
@@ -77,6 +80,7 @@ class H5Proxy:
         path (str): Path to array within hdf5 file
         field (str, list[str]): Optional - refer to a specific field within
             a compound dtype
+        annotation_dtype (dtype): Optional - the dtype of our type annotation
     """
 
     def __init__(
@@ -84,11 +88,13 @@ class H5Proxy:
         file: Union[Path, str],
         path: str,
         field: Optional[Union[str, List[str]]] = None,
+        annotation_dtype: Optional[DtypeType] = None,
     ):
         self._h5f = None
         self.file = Path(file)
         self.path = path
         self.field = field
+        self._annotation_dtype = annotation_dtype
 
     def array_exists(self) -> bool:
         """Check that there is in fact an array at :attr:`.path` within :attr:`.file`"""
@@ -120,10 +126,12 @@ class H5Proxy:
 
     def __getitem__(
         self, item: Union[int, slice, Tuple[Union[int, slice], ...]]
-    ) -> np.ndarray:
+    ) -> Union[np.ndarray, DtypeType]:
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
+            # handle compound dtypes
             if self.field is not None:
+                # handle compound string dtype
                 if encoding := h5py.h5t.check_string_dtype(obj.dtype[self.field]):
                     if isinstance(item, tuple):
                         item = (*item, self.field)
@@ -132,24 +140,41 @@ class H5Proxy:
 
                     try:
                         # single string
-                        return obj[item].decode(encoding.encoding)
+                        val = obj[item].decode(encoding.encoding)
+                        if self._annotation_dtype is np.datetime64:
+                            return np.datetime64(val)
+                        else:
+                            return val
                     except AttributeError:
                         # numpy array of bytes
-                        return np.char.decode(obj[item], encoding=encoding.encoding)
-
+                        val = np.char.decode(obj[item], encoding=encoding.encoding)
+                        if self._annotation_dtype is np.datetime64:
+                            return val.astype(np.datetime64)
+                        else:
+                            return val
+                # normal compound type
                 else:
                     obj = obj.fields(self.field)
             else:
                 if h5py.h5t.check_string_dtype(obj.dtype):
                     obj = obj.asstr()
 
-            return obj[item]
+            val = obj[item]
+            if self._annotation_dtype is np.datetime64:
+                if isinstance(val, str):
+                    return np.datetime64(val)
+                else:
+                    return val.astype(np.datetime64)
+            else:
+                return val
 
     def __setitem__(
         self,
         key: Union[int, slice, Tuple[Union[int, slice], ...]],
-        value: Union[int, float, np.ndarray],
+        value: Union[int, float, datetime, np.ndarray],
     ):
+        # TODO: Make a generalized value serdes system instead of ad-hoc type conversion
+        value = self._serialize_datetime(value)
         with h5py.File(self.file, "r+", locking=True) as h5f:
             obj = h5f.get(self.path)
             if self.field is None:
@@ -183,6 +208,16 @@ class H5Proxy:
         if self._h5f is not None:
             self._h5f.close()
         self._h5f = None
+
+    def _serialize_datetime(self, v: Union[T, datetime]) -> Union[T, bytes]:
+        """
+        Convert a datetime into a bytestring
+        """
+        if self._annotation_dtype is np.datetime64:
+            if not isinstance(v, Iterable):
+                v = [v]
+            v = np.array(v).astype("S32")
+        return v
 
 
 class H5Interface(Interface):
@@ -253,6 +288,7 @@ class H5Interface(Interface):
                 "Need to specify a file and a path within an HDF5 file to use the HDF5 "
                 "Interface"
             )
+        array._annotation_dtype = self.dtype
 
         if not array.array_exists():
             raise ValueError(
@@ -269,7 +305,14 @@ class H5Interface(Interface):
         Subclasses to correctly handle
         """
         if h5py.h5t.check_string_dtype(array.dtype):
-            return str
+            # check for datetimes
+            try:
+                if array[0].dtype.type is np.datetime64:
+                    return np.datetime64
+                else:
+                    return str
+            except (AttributeError, ValueError, TypeError):
+                return str
         else:
             return array.dtype
 
