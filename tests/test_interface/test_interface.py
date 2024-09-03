@@ -151,3 +151,10 @@ def test_interface_recursive(interfaces):
     assert issubclass(interfaces.interface3, interfaces.interface1)
     assert issubclass(interfaces.interface1, Interface)
     assert interfaces.interface4 in ifaces
+
+
+def test_interface_revalidate(all_interfaces):
+    """
+    An interface should revalidate with the output of its initial validation
+    """
+    _ = type(all_interfaces)(array=all_interfaces.array)
