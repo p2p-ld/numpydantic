@@ -1,5 +1,11 @@
-import pytest
+"""
+Tests for the interface base model,
+for tests that should apply to all interfaces, use ``test_interfaces.py``
+"""
 
+import gc
+
+import pytest
 import numpy as np
 
 from numpydantic.interface import Interface
@@ -8,6 +14,7 @@ from numpydantic.interface import Interface
 @pytest.fixture(scope="module")
 def interfaces():
     """Define test interfaces in this module, and delete afterwards"""
+    interfaces_enabled = True
 
     class Interface1(Interface):
         input_types = (list,)
@@ -24,7 +31,7 @@ def interfaces():
 
         @classmethod
         def enabled(cls) -> bool:
-            return True
+            return interfaces_enabled
 
     Interface2 = type("Interface2", Interface1.__bases__, dict(Interface1.__dict__))
     Interface2.checked = False
@@ -44,7 +51,7 @@ def interfaces():
 
         @classmethod
         def enabled(cls) -> bool:
-            return True
+            return interfaces_enabled
 
     class Interfaces:
         interface1 = Interface1
@@ -55,9 +62,13 @@ def interfaces():
     yield Interfaces
     # Interface.__subclasses__().remove(Interface1)
     # Interface.__subclasses__().remove(Interface2)
+    del Interfaces
     del Interface1
     del Interface2
     del Interface3
+    del Interface4
+    interfaces_enabled = False
+    gc.collect()
 
 
 def test_interface_match_error(interfaces):

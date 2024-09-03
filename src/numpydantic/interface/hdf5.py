@@ -194,10 +194,7 @@ class H5Interface(Interface):
     passthrough numpy-like interface to the dataset.
     """
 
-    input_types = (
-        H5ArrayPath,
-        H5Arraylike,
-    )
+    input_types = (H5ArrayPath, H5Arraylike, H5Proxy)
     return_type = H5Proxy
 
     @classmethod
@@ -211,7 +208,7 @@ class H5Interface(Interface):
         Check that the given array is a :class:`.H5ArrayPath` or something that
         resembles one.
         """
-        if isinstance(array, H5ArrayPath):
+        if isinstance(array, (H5ArrayPath, H5Proxy)):
             return True
 
         if isinstance(array, (tuple, list)) and len(array) in (2, 3):
@@ -242,6 +239,9 @@ class H5Interface(Interface):
         """Create an :class:`.H5Proxy` to use throughout validation"""
         if isinstance(array, H5ArrayPath):
             array = H5Proxy.from_h5array(h5array=array)
+        elif isinstance(array, H5Proxy):
+            # nothing to do, already proxied
+            pass
         elif isinstance(array, (tuple, list)) and len(array) == 2:  # pragma: no cover
             array = H5Proxy(file=array[0], path=array[1])
         elif isinstance(array, (tuple, list)) and len(array) == 3:
