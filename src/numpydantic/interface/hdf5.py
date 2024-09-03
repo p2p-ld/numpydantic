@@ -20,7 +20,7 @@ except ImportError:  # pragma: no cover
 if sys.version_info.minor >= 10:
     from typing import TypeAlias
 else:
-    from typing_extensions import TypeAlias, Unpack
+    from typing_extensions import TypeAlias
 
 H5Arraylike: TypeAlias = Tuple[Union[Path, str], str]
 
@@ -116,10 +116,8 @@ class H5Proxy:
                 obj[key] = value
             else:
                 if isinstance(key, tuple):
-                    if sys.version_info.minor >= 10:
-                        obj[*key, self.field] = value
-                    else:
-                        obj[Unpack[key], self.field] = value
+                    key = (*key, self.field)
+                    obj[key] = value
                 else:
                     obj[key, self.field] = value
 
