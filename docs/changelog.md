@@ -4,6 +4,11 @@
 
 ### 1.5.*
 
+#### 1.5.3 - 24-09-03 - Bugfix, type checking for empty HDF5 datasets
+
+- [#16](https://github.com/p2p-ld/numpydantic/pull/16): Empty HDF5 datasets shouldn't break validation
+  if the NDArray spec allows Any shaped arrays.
+
 #### 1.5.2 - 24-09-03 - `datetime` support for HDF5
 
 - [#15](https://github.com/p2p-ld/numpydantic/pull/15): Datetimes are supported as 
