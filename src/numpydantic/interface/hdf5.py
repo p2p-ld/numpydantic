@@ -39,6 +39,7 @@ as ``S32`` isoformatted byte strings (timezones optional) like:
     
 """
 
+import pdb
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -321,13 +322,22 @@ class H5Interface(Interface):
         """
         if h5py.h5t.check_string_dtype(array.dtype):
             # check for datetimes
+            pdb.set_trace()
             try:
                 if array[0].dtype.type is np.datetime64:
                     return np.datetime64
                 else:
                     return str
-            except (AttributeError, ValueError, TypeError):  # pragma: no cover
+            except (AttributeError, TypeError):  # pragma: no cover
+                # it's not a datetime, but it is some kind of string
                 return str
+            except (IndexError, ValueError):
+                # if the dataset is empty, we can't tell if something is a datetime
+                # or not, so we just tell the validation method what it wants to hear
+                if self.dtype in (np.datetime64, str):
+                    return self.dtype
+                else:
+                    return str
         else:
             return array.dtype
 

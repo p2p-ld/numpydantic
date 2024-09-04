@@ -198,3 +198,23 @@ def test_datetime(hdf5_array, compound):
     assert instance.array[0, 0] == now
     instance.array[0] = now
     assert all(instance.array[0] == now)
+
+
+@pytest.mark.parametrize("dtype", [int, float, str, datetime])
+def test_empty_dataset(dtype, tmp_path):
+    """
+    Empty datasets shouldn't choke us during validation
+    """
+    array_path = tmp_path / "test.h5"
+    if dtype in (str, datetime):
+        np_dtype = "S32"
+    else:
+        np_dtype = dtype
+
+    with h5py.File(array_path, "w") as h5f:
+        _ = h5f.create_dataset(name="/data", dtype=np_dtype)
+
+    class MyModel(BaseModel):
+        array: NDArray[Any, dtype]
+
+    _ = MyModel(array=(array_path, "/data"))
