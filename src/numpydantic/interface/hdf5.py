@@ -326,8 +326,16 @@ class H5Interface(Interface):
                     return np.datetime64
                 else:
                     return str
-            except (AttributeError, ValueError, TypeError):  # pragma: no cover
+            except (AttributeError, TypeError):  # pragma: no cover
+                # it's not a datetime, but it is some kind of string
                 return str
+            except (IndexError, ValueError):
+                # if the dataset is empty, we can't tell if something is a datetime
+                # or not, so we just tell the validation method what it wants to hear
+                if self.dtype in (np.datetime64, str):
+                    return self.dtype
+                else:
+                    return str
         else:
             return array.dtype
 
