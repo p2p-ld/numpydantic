@@ -22,6 +22,21 @@ Interfaces for HDF5 Datasets
     To have direct access to the hdf5 dataset, use the
     :meth:`.H5Proxy.open` method.
     
+Datetimes 
+---------
+
+Datetimes are supported as a dtype annotation, but currently they must be stored
+as ``S32`` isoformatted byte strings (timezones optional) like:    
+
+.. code-block:: python
+
+    import h5py
+    from datetime import datetime
+    import numpy as np
+    data = np.array([datetime.now().isoformat().encode('utf-8')], dtype="S32")
+    h5f = h5py.File('test.hdf5', 'w')
+    h5f.create_dataset('data', data=data)
+    
 """
 
 import sys
@@ -311,7 +326,7 @@ class H5Interface(Interface):
                     return np.datetime64
                 else:
                     return str
-            except (AttributeError, ValueError, TypeError):
+            except (AttributeError, ValueError, TypeError):  # pragma: no cover
                 return str
         else:
             return array.dtype
