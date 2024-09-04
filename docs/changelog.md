@@ -4,6 +4,11 @@
 
 ### 1.5.*
 
+#### 1.5.2 - 24-09-03 - `datetime` support for HDF5
+
+- [#15](https://github.com/p2p-ld/numpydantic/pull/15): Datetimes are supported as 
+  dtype annotations for HDF5 arrays when encoded as `S32` isoformatted byte strings
+
 #### 1.5.1 - 24-09-03 - Fix revalidation with proxy classes
 
 Bugfix:

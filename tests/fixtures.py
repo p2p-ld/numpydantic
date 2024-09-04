@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Callable, Optional, Tuple, Type, Union
 from warnings import warn
+from datetime import datetime, timezone
 
 import h5py
 import numpy as np
@@ -126,15 +127,24 @@ def hdf5_array(
         if not compound:
             if dtype is str:
                 data = np.random.random(shape).astype(bytes)
+            elif dtype is datetime:
+                data = np.empty(shape, dtype="S32")
+                data.fill(datetime.now(timezone.utc).isoformat().encode("utf-8"))
             else:
                 data = np.random.random(shape).astype(dtype)
             _ = hdf5_file.create_dataset(array_path, data=data)
             return H5ArrayPath(Path(hdf5_file.filename), array_path)
         else:
-
             if dtype is str:
                 dt = np.dtype([("data", np.dtype("S10")), ("extra", "i8")])
                 data = np.array([("hey", 0)] * np.prod(shape), dtype=dt).reshape(shape)
+            elif dtype is datetime:
+                dt = np.dtype([("data", np.dtype("S32")), ("extra", "i8")])
+                data = np.array(
+                    [(datetime.now(timezone.utc).isoformat().encode("utf-8"), 0)]
+                    * np.prod(shape),
+                    dtype=dt,
+                ).reshape(shape)
             else:
                 dt = np.dtype([("data", dtype), ("extra", "i8")])
                 data = np.zeros(shape, dtype=dt)
