@@ -81,7 +81,7 @@ print(model.model_dump_json())
 ```
 
 ```{code-cell}
-model = MyModel(array="docs/data/test.avi")
+model = MyModel(array="data/test.avi")
 print(model.model_dump_json())
 ```
 
@@ -138,12 +138,12 @@ When possible, the full content of the array is omitted in favor
 of the path to the file that provided it.
 
 ```{code-cell}
-model = MyModel(array="docs/data/test.avi")
+model = MyModel(array="data/test.avi")
 print_json(model.model_dump_json(round_trip=True))
 ```
 
 ```{code-cell}
-model = MyModel(array=("docs/data/test.h5", "/data"))
+model = MyModel(array=("data/test.h5", "/data"))
 print_json(model.model_dump_json(round_trip=True))
 ```
 
@@ -169,7 +169,7 @@ you might want to serialize relative to each of them:
 print_json(
   model.model_dump_json(
     round_trip=True, 
-    context={"relative_to": Path('./docs/data')}
+    context={"relative_to": Path('./data')}
   ))
 ```
 
@@ -261,7 +261,7 @@ Supported interfaces:
 - (all)
 
 ```{code-cell}
-model = MyModel(array=("docs/data/test.h5", "/data"))
+model = MyModel(array=("data/test.h5", "/data"))
 data = model.model_dump_json(
     round_trip=True, 
     context={"absolute_paths": True}
@@ -278,7 +278,7 @@ Supported interfaces:
 - (all)
 
 ```{code-cell}
-model = MyModel(array=("docs/data/test.h5", "/data"))
+model = MyModel(array=("data/test.h5", "/data"))
 data = model.model_dump_json(
     round_trip=True, 
     context={"relative_to": Path('../')}
@@ -294,7 +294,7 @@ Supported interfaces:
 - {class}`.ZarrInterface`
 
 ```{code-cell}
-model = MyModel(array=("docs/data/test.zarr",))
+model = MyModel(array=("data/test.zarr",))
 data = model.model_dump_json(
     round_trip=True, 
     context={"dump_array": True}
