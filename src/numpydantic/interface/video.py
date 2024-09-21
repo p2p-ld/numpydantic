@@ -69,6 +69,9 @@ class VideoProxy:
                     "and it cant be reopened since source path cant be gotten "
                     "from VideoCapture objects"
                 )
+            if not self.path.exists():
+                raise FileNotFoundError(f"Video file {self.path} does not exist!")
+
             self._video = VideoCapture(str(self.path))
         return self._video
 
@@ -159,9 +162,6 @@ class VideoProxy:
         return self[:]
 
     def __getitem__(self, item: Union[int, slice, tuple]) -> np.ndarray:
-        if not self.path.exists():
-            raise FileNotFoundError(f"Video file {self.path} does not exist!")
-
         if isinstance(item, int):
             # want a single frame
             return self._get_frame(item)
