@@ -134,10 +134,17 @@ class H5Proxy:
             else:
                 return obj.dtype[self.field]
 
+    def __array__(self) -> np.ndarray:
+        """To a numpy array"""
+        with h5py.File(self.file, "r") as h5f:
+            obj = h5f.get(self.path)
+            return obj[:]
+
     def __getattr__(self, item: str):
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
-            return getattr(obj, item)
+            val = getattr(obj, item)
+            return val
 
     def __getitem__(
         self, item: Union[int, slice, Tuple[Union[int, slice], ...]]

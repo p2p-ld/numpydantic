@@ -137,6 +137,10 @@ class VideoProxy:
             slice_ = slice(0, slice_.stop, slice_.step)
         return slice_
 
+    def __array__(self) -> np.ndarray:
+        """Whole video as a numpy array"""
+        return self[:]
+
     def __getitem__(self, item: Union[int, slice, tuple]) -> np.ndarray:
         if isinstance(item, int):
             # want a single frame

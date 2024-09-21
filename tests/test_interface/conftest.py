@@ -1,6 +1,6 @@
 import pytest
 
-from typing import Tuple, Callable
+from typing import Callable, Tuple, Type
 import numpy as np
 import dask.array as da
 import zarr
@@ -32,7 +32,7 @@ from numpydantic import interface, NDArray
         "video",
     ],
 )
-def interface_type(request) -> Tuple[NDArray, interface.Interface]:
+def interface_type(request) -> Tuple[NDArray, Type[interface.Interface]]:
     """
     Test cases for each interface's ``check`` method - each input should match the
     provided interface and that interface only
