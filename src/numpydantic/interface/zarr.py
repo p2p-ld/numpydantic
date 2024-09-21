@@ -170,19 +170,21 @@ class ZarrInterface(Interface):
     ) -> list | ZarrJsonDict:
         """
         Dump a Zarr Array to JSON
-        
+
         If ``info.round_trip == False``, dump the array as a list of lists.
         This may be a memory-intensive operation.
-        
-        Otherwise, dump the metadata for an array from :meth:`zarr.core.Array.info_items`
+
+        Otherwise, dump the metadata for an array from
+        :meth:`zarr.core.Array.info_items`
         plus the :meth:`zarr.core.Array.hexdigest` as a :class:`.ZarrJsonDict`
-        
+
         If either the ``zarr_dump_array`` value in the context dictionary is ``True``
         or the zarr array is an in-memory array, dump the array as well
-        (since without a persistent array it would be impossible to roundtrip and 
-        dumping to JSON would be meaningless) 
+        (since without a persistent array it would be impossible to roundtrip and
+        dumping to JSON would be meaningless)
 
-        Passing ``'zarr_dump_array': True`` to the serialization ``context`` looks like this::
+        Passing ``'zarr_dump_array': True`` to the serialization ``context``
+        looks like this::
 
             model.model_dump_json(context={'zarr_dump_array': True})
         """
