@@ -2,12 +2,15 @@
 Base Interface metaclass
 """
 
+import inspect
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
+from importlib.metadata import PackageNotFoundError, version
 from operator import attrgetter
-from typing import Any, Generic, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Generic, Tuple, Type, TypedDict, TypeVar, Union
 
 import numpy as np
-from pydantic import SerializationInfo
+from pydantic import SerializationInfo, TypeAdapter, ValidationError
 
 from numpydantic.exceptions import (
     DtypeError,
@@ -21,6 +24,60 @@ from numpydantic.types import DtypeType, NDArrayType, ShapeType
 T = TypeVar("T", bound=NDArrayType)
 
 
+class InterfaceMark(TypedDict):
+    """JSON-able mark to be able to round-trip json dumps"""
+
+    module: str
+    cls: str
+    version: str
+
+
+@dataclass(kw_only=True)
+class JsonDict:
+    """
+    Representation of array when dumped with round_trip == True.
+
+    Using a dataclass rather than a pydantic model to not tempt
+    us to use more sophisticated types than can be serialized to json.
+    """
+
+    type: str
+
+    @abstractmethod
+    def to_array_input(self) -> Any:
+        """
+        Convert this roundtrip specifier to the relevant input class
+        (one of the ``input_types`` of an interface).
+        """
+
+    def to_dict(self) -> dict:
+        """
+        Convenience method for casting dataclass to dict,
+        removing None-valued items
+        """
+        return {k: v for k, v in asdict(self).items() if v is not None}
+
+    @classmethod
+    def get_adapter(cls) -> TypeAdapter:
+        """Convenience method to get a typeadapter for this class"""
+        return TypeAdapter(cls)
+
+    @classmethod
+    def is_valid(cls, val: dict) -> bool:
+        """
+        Check whether a given dictionary matches this JsonDict specification
+
+        Returns:
+            bool - true if valid, false if not
+        """
+        adapter = cls.get_adapter()
+        try:
+            _ = adapter.validate_python(val)
+            return True
+        except ValidationError:
+            return False
+
+
 class Interface(ABC, Generic[T]):
     """
     Abstract parent class for interfaces to different array formats
@@ -30,7 +87,7 @@ class Interface(ABC, Generic[T]):
     return_type: Type[T]
     priority: int = 0
 
-    def __init__(self, shape: ShapeType, dtype: DtypeType) -> None:
+    def __init__(self, shape: ShapeType = Any, dtype: DtypeType = Any) -> None:
         self.shape = shape
         self.dtype = dtype
 
@@ -86,6 +143,7 @@ class Interface(ABC, Generic[T]):
         self.raise_for_shape(shape_valid, shape)
 
         array = self.after_validation(array)
+
         return array
 
     def before_validation(self, array: Any) -> NDArrayType:
@@ -117,8 +175,6 @@ class Interface(ABC, Generic[T]):
         """
         Validate the dtype of the given array, returning
         ``True`` if valid, ``False`` if not.
-
-
         """
         if self.dtype is Any:
             return True
@@ -196,6 +252,13 @@ class Interface(ABC, Generic[T]):
         """
         return array
 
+    def mark_input(self, array: Any) -> Any:
+        """
+        Preserve metadata about the interface and passed input when dumping with
+        ``round_trip``
+        """
+        return array
+
     @classmethod
     @abstractmethod
     def check(cls, array: Any) -> bool:
@@ -211,17 +274,40 @@ class Interface(ABC, Generic[T]):
         installed, etc.)
         """
 
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """
+        Short name for this interface
+        """
+
     @classmethod
-    def to_json(
-        cls, array: Type[T], info: Optional[SerializationInfo] = None
-    ) -> Union[list, dict]:
+    @abstractmethod
+    def to_json(cls, array: Type[T], info: SerializationInfo) -> Union[list, JsonDict]:
         """
         Convert an array of :attr:`.return_type` to a JSON-compatible format using
         base python types
         """
-        if not isinstance(array, np.ndarray):  # pragma: no cover
-            array = np.array(array)
-        return array.tolist()
+
+    @classmethod
+    def mark_json(cls, array: Union[list, dict]) -> dict:
+        """
+        When using ``model_dump_json`` with ``mark_interface: True`` in the ``context``,
+        add additional annotations that would allow the serialized array to be
+        roundtripped.
+
+        Default is just to add an :class:`.InterfaceMark`
+
+        Examples:
+
+            >>> from pprint import pprint
+            >>> pprint(Interface.mark_json([1.0, 2.0]))
+            {'interface': {'cls': 'Interface',
+                           'module': 'numpydantic.interface.interface',
+                           'version': '1.2.2'},
+             'value': [1.0, 2.0]}
+        """
+        return {"interface": cls.mark_interface(), "value": array}
 
     @classmethod
     def interfaces(
@@ -335,3 +421,24 @@ class Interface(ABC, Generic[T]):
             raise NoMatchError(f"No matching interfaces found for output {array}")
         else:
             return matches[0]
+
+    @classmethod
+    def mark_interface(cls) -> InterfaceMark:
+        """
+        Create an interface mark indicating this interface for validation after
+        JSON serialization with ``round_trip==True``
+        """
+        interface_module = inspect.getmodule(cls)
+        interface_module = (
+            None if interface_module is None else interface_module.__name__
+        )
+        try:
+            v = (
+                None
+                if interface_module is None
+                else version(interface_module.split(".")[0])
+            )
+        except PackageNotFoundError:
+            v = None
+        interface_name = cls.__name__
+        return InterfaceMark(module=interface_module, cls=interface_name, version=v)

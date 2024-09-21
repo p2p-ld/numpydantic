@@ -2,11 +2,14 @@
 Interface to support treating videos like arrays using OpenCV
 """
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
+from pydantic_core.core_schema import SerializationInfo
 
+from numpydantic.interface import JsonDict
 from numpydantic.interface.interface import Interface
 
 try:
@@ -17,6 +20,20 @@ except ImportError:  # pragma: no cover
     VideoCapture = None
 
 VIDEO_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
+
+
+@dataclass(kw_only=True)
+class VideoJsonDict(JsonDict):
+    """Json-able roundtrip representation of a video file"""
+
+    type: Literal["video"]
+    file: str
+
+    def to_array_input(self) -> "VideoProxy":
+        """
+        Construct a :class:`.VideoProxy`
+        """
+        return VideoProxy(path=Path(self.file))
 
 
 class VideoProxy:
@@ -184,6 +201,12 @@ class VideoProxy:
     def __getattr__(self, item: str):
         return getattr(self.video, item)
 
+    def __eq__(self, other: "VideoProxy") -> bool:
+        """Check if this is a proxy to the same video file"""
+        if not isinstance(other, VideoProxy):
+            raise TypeError("Can only compare equality of two VideoProxies")
+        return self.path == other.path
+
     def __len__(self) -> int:
         """Number of frames in the video"""
         return self.shape[0]
@@ -194,6 +217,7 @@ class VideoInterface(Interface):
     OpenCV interface to treat videos as arrays.
     """
 
+    name = "video"
     input_types = (str, Path, VideoCapture, VideoProxy)
     return_type = VideoProxy
 
@@ -213,6 +237,9 @@ class VideoInterface(Interface):
         ):
             return True
 
+        if isinstance(array, dict):
+            array = array.get("file", "")
+
         if isinstance(array, str):
             try:
                 array = Path(array)
@@ -224,10 +251,22 @@ class VideoInterface(Interface):
 
     def before_validation(self, array: Any) -> VideoProxy:
         """Get a :class:`.VideoProxy` object for this video"""
-        if isinstance(array, VideoCapture):
+        if isinstance(array, dict):
+            proxy = VideoJsonDict(**array).to_array_input()
+        elif isinstance(array, VideoCapture):
             proxy = VideoProxy(video=array)
         elif isinstance(array, VideoProxy):
             proxy = array
         else:
             proxy = VideoProxy(path=array)
         return proxy
+
+    @classmethod
+    def to_json(
+        cls, array: VideoProxy, info: SerializationInfo
+    ) -> Union[list, VideoJsonDict]:
+        """Return a json-representation of a video"""
+        if info.round_trip:
+            return VideoJsonDict(type=cls.name, file=str(array.path))
+        else:
+            return np.array(array).tolist()

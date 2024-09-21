@@ -101,7 +101,8 @@ def test_assignment(hdf5_array, model_blank):
     assert (model.array[1:3, 2:4] == 10).all()
 
 
-def test_to_json(hdf5_array, array_model):
+@pytest.mark.parametrize("round_trip", (True, False))
+def test_to_json(hdf5_array, array_model, round_trip):
     """
     Test serialization of HDF5 arrays to JSON
     Args:
@@ -115,13 +116,13 @@ def test_to_json(hdf5_array, array_model):
 
     instance = model(array=array)  # type: BaseModel
 
-    json_str = instance.model_dump_json()
-    json_dict = json.loads(json_str)["array"]
-
-    assert json_dict["file"] == str(array.file)
-    assert json_dict["path"] == str(array.path)
-    assert json_dict["attrs"] == {}
-    assert json_dict["array"] == instance.array[:].tolist()
+    json_str = instance.model_dump_json(round_trip=round_trip)
+    json_dumped = json.loads(json_str)["array"]
+    if round_trip:
+        assert json_dumped["file"] == str(array.file)
+        assert json_dumped["path"] == str(array.path)
+    else:
+        assert json_dumped == instance.array[:].tolist()
 
 
 def test_compound_dtype(tmp_path):

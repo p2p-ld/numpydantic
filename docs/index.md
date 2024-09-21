@@ -473,6 +473,7 @@ dumped = instance.model_dump_json(context={'zarr_dump_array': True})
 
 design
 syntax
+serialization
 interfaces
 todo
 changelog
@@ -489,7 +490,6 @@ api/dtype
 api/ndarray
 api/maps
 api/meta
-api/monkeypatch
 api/schema
 api/shape
 api/types

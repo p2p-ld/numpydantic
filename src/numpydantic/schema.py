@@ -13,19 +13,24 @@ from pydantic_core import CoreSchema, core_schema
 from pydantic_core.core_schema import ListSchema, ValidationInfo
 
 from numpydantic import dtype as dt
-from numpydantic.interface import Interface
+from numpydantic.interface import Interface, JsonDict
 from numpydantic.maps import np_to_python
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.vendor.nptyping.structure import StructureMeta
 
 if TYPE_CHECKING:  # pragma: no cover
+    from pydantic._internal._schema_generation_shared import (
+        CallbackGetCoreSchemaHandler,
+    )
+
     from numpydantic import Shape
 
-_handler_type = Callable[[Any], core_schema.CoreSchema]
 _UNSUPPORTED_TYPES = (complex,)
 
 
-def _numeric_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
+def _numeric_dtype(
+    dtype: DtypeType, _handler: "CallbackGetCoreSchemaHandler"
+) -> CoreSchema:
     """Make a numeric dtype that respects min/max values from extended numpy types"""
     if dtype in (np.number,):
         dtype = float
@@ -36,14 +41,19 @@ def _numeric_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
     elif issubclass(dtype, np.integer):
         info = np.iinfo(dtype)
         schema = core_schema.int_schema(le=int(info.max), ge=int(info.min))
-
+    elif dtype is float:
+        schema = core_schema.float_schema()
+    elif dtype is int:
+        schema = core_schema.int_schema()
     else:
         schema = _handler.generate_schema(dtype)
 
     return schema
 
 
-def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
+def _lol_dtype(
+    dtype: DtypeType, _handler: "CallbackGetCoreSchemaHandler"
+) -> CoreSchema:
     """Get the innermost dtype schema to use in the generated pydantic schema"""
     if isinstance(dtype, StructureMeta):  # pragma: no cover
         raise NotImplementedError("Structured dtypes are currently unsupported")
@@ -84,6 +94,10 @@ def _lol_dtype(dtype: DtypeType, _handler: _handler_type) -> CoreSchema:
             # TODO: warn and log here
         elif python_type in (float, int):
             array_type = _numeric_dtype(dtype, _handler)
+        elif python_type is bool:
+            array_type = core_schema.bool_schema()
+        elif python_type is Any:
+            array_type = core_schema.any_schema()
         else:
             array_type = _handler.generate_schema(python_type)
 
@@ -208,13 +222,23 @@ def _unbounded_shape(
 
 
 def make_json_schema(
-    shape: ShapeType, dtype: DtypeType, _handler: _handler_type
+    shape: ShapeType, dtype: DtypeType, _handler: "CallbackGetCoreSchemaHandler"
 ) -> ListSchema:
     """
-    Make a list of list JSON schema from a shape and a dtype.
+    Make a list of list pydantic core schema for an array from a shape and a dtype.
+    Used to generate JSON schema in the containing model, but not for validation,
+    which is handled by interfaces.
 
     First resolves the dtype into a pydantic ``CoreSchema`` ,
     and then uses that with :func:`.list_of_lists_schema` .
+
+    .. admonition:: Potentially Fragile
+
+        Uses a private method from the handler to flatten out nested definitions
+        (e.g. when dtype is a pydantic model)
+        so that they are present in the generated schema directly rather than
+        as references. Otherwise, at the time __get_pydantic_json_schema__ is called,
+        the definition references are lost.
 
     Args:
         shape ( ShapeType ): Specification of a shape, as a tuple or
@@ -233,6 +257,8 @@ def make_json_schema(
         # list_schema = core_schema.list_schema(core_schema.any_schema())
     else:
         list_schema = list_of_lists_schema(shape, dtype_schema)
+
+    list_schema = _handler._generate_schema.clean_schema(list_schema)
 
     return list_schema
 
@@ -257,4 +283,11 @@ def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
 def _jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
     """Use an interface class to render an array as JSON"""
     interface_cls = Interface.match_output(value)
-    return interface_cls.to_json(value, info)
+    array = interface_cls.to_json(value, info)
+    if isinstance(array, JsonDict):
+        array = array.to_dict()
+
+    if info.context and info.context.get("mark_interface", False):
+        array = interface_cls.mark_json(array)
+
+    return array

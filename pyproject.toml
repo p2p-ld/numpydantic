@@ -109,6 +109,12 @@ filterwarnings = [
     # nptyping's alias warnings
     'ignore:.*deprecated alias.*Deprecated NumPy 1\.24.*'
 ]
+markers = [
+    "dtype: mark test related to dtype validation",
+    "shape: mark test related to shape validation",
+    "json_schema: mark test related to json schema generation",
+    "serialization: mark test related to serialization"
+]
 
 [tool.ruff]
 target-version = "py311"

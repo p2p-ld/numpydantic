@@ -2,18 +2,50 @@
 Interface for Dask arrays
 """
 
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any, Iterable, Literal, Optional
 
 import numpy as np
 from pydantic import SerializationInfo
 
-from numpydantic.interface.interface import Interface
+from numpydantic.interface.interface import Interface, JsonDict
 from numpydantic.types import DtypeType, NDArrayType
 
 try:
+    from dask.array import from_array
     from dask.array.core import Array as DaskArray
 except ImportError:  # pragma: no cover
     DaskArray = None
+
+
+def _as_tuple(a_list: list | Any) -> tuple:
+    """Make a list of list into a tuple of tuples"""
+    return tuple(
+        [_as_tuple(item) if isinstance(item, list) else item for item in a_list]
+    )
+
+
+@dataclass(kw_only=True)
+class DaskJsonDict(JsonDict):
+    """
+    Round-trip json serialized form of a dask array
+    """
+
+    type: Literal["dask"]
+    name: str
+    chunks: Iterable[tuple[int, ...]]
+    dtype: str
+    array: list
+
+    def to_array_input(self) -> DaskArray:
+        """Construct a dask array"""
+        np_array = np.array(self.array, dtype=self.dtype)
+        array = from_array(
+            np_array,
+            name=self.name,
+            chunks=_as_tuple(self.chunks),
+        )
+        return array
 
 
 class DaskInterface(Interface):
@@ -21,7 +53,8 @@ class DaskInterface(Interface):
     Interface for Dask :class:`~dask.array.core.Array`
     """
 
-    input_types = (DaskArray,)
+    name = "dask"
+    input_types = (DaskArray, dict)
     return_type = DaskArray
 
     @classmethod
@@ -29,7 +62,24 @@ class DaskInterface(Interface):
         """
         check if array is a dask array
         """
-        return DaskArray is not None and isinstance(array, DaskArray)
+        if DaskArray is None:
+            return False
+        elif isinstance(array, DaskArray):
+            return True
+        elif isinstance(array, dict):
+            return DaskJsonDict.is_valid(array)
+        else:
+            return False
+
+    def before_validation(self, array: Any) -> DaskArray:
+        """
+        If given a dict (like that from ``model_dump_json(round_trip=True)`` ),
+        re-cast to dask array
+        """
+        if isinstance(array, dict):
+            array = DaskJsonDict(**array).to_array_input()
+
+        return array
 
     def get_object_dtype(self, array: NDArrayType) -> DtypeType:
         """Dask arrays require a compute() call to retrieve a single value"""
@@ -43,7 +93,7 @@ class DaskInterface(Interface):
     @classmethod
     def to_json(
         cls, array: DaskArray, info: Optional[SerializationInfo] = None
-    ) -> list:
+    ) -> list | DaskJsonDict:
         """
         Convert an array to a JSON serializable array by first converting to a numpy
         array and then to a list.
@@ -56,4 +106,14 @@ class DaskInterface(Interface):
             method of serialization here using the python object itself rather than
             its JSON representation.
         """
-        return np.array(array).tolist()
+        np_array = np.array(array)
+        as_json = np_array.tolist()
+        if info.round_trip:
+            as_json = DaskJsonDict(
+                type=cls.name,
+                array=as_json,
+                name=array.name,
+                chunks=array.chunks,
+                dtype=str(np_array.dtype),
+            )
+        return as_json
