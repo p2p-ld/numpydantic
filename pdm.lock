@@ -5,7 +5,7 @@
 groups = ["default", "arrays", "dask", "dev", "docs", "hdf5", "tests", "video", "zarr"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:607f6694faec9103ba99e8e51010e905ad9ce03612dfb492e0d3fbeb1cb4d562"
+content_hash = "sha256:cc2b0fb32896c6df0ad747ddb5dee89af22f5c4c4643ee7a52db47fef30da936"
 
 [[metadata.targets]]
 requires_python = "~=3.9"
@@ -68,7 +68,7 @@ files = [
 name = "asciitree"
 version = "0.3.3"
 summary = "Draws ASCII trees."
-groups = ["arrays", "dev", "tests", "zarr"]
+groups = ["arrays", "dev", "docs", "tests", "zarr"]
 files = [
     {file = "asciitree-0.3.3.tar.gz", hash = "sha256:4aa4b9b649f85e3fcb343363d97564aa1fb62e249677f2e18a96765145cc0f6e"},
 ]
@@ -355,7 +355,7 @@ name = "cloudpickle"
 version = "3.0.0"
 requires_python = ">=3.8"
 summary = "Pickler class to extend the standard pickle.Pickler functionality"
-groups = ["arrays", "dask", "dev", "tests"]
+groups = ["arrays", "dask", "dev", "docs", "tests"]
 files = [
     {file = "cloudpickle-3.0.0-py3-none-any.whl", hash = "sha256:246ee7d0c295602a036e86369c77fecda4ab17b506496730f2f576d9016fd9c7"},
     {file = "cloudpickle-3.0.0.tar.gz", hash = "sha256:996d9a482c6fb4f33c1a35335cf8afd065d2a56e973270364840712d9131a882"},
@@ -492,7 +492,7 @@ name = "dask"
 version = "2024.7.1"
 requires_python = ">=3.9"
 summary = "Parallel PyData with Task Scheduling"
-groups = ["arrays", "dask", "dev", "tests"]
+groups = ["arrays", "dask", "dev", "docs", "tests"]
 dependencies = [
     "click>=8.1",
     "cloudpickle>=1.5.0",
@@ -594,7 +594,7 @@ name = "fasteners"
 version = "0.19"
 requires_python = ">=3.6"
 summary = "A python package that provides useful locks"
-groups = ["arrays", "dev", "tests", "zarr"]
+groups = ["arrays", "dev", "docs", "tests", "zarr"]
 marker = "sys_platform != \"emscripten\""
 files = [
     {file = "fasteners-0.19-py3-none-any.whl", hash = "sha256:758819cb5d94cdedf4e836988b74de396ceacb8e2794d21f82d131fd9ee77237"},
@@ -616,7 +616,7 @@ name = "fsspec"
 version = "2024.6.1"
 requires_python = ">=3.8"
 summary = "File-system specification"
-groups = ["arrays", "dask", "dev", "tests"]
+groups = ["arrays", "dask", "dev", "docs", "tests"]
 files = [
     {file = "fsspec-2024.6.1-py3-none-any.whl", hash = "sha256:3cb443f8bcd2efb31295a5b9fdb02aee81d8452c80d28f97a6d0959e6cee101e"},
     {file = "fsspec-2024.6.1.tar.gz", hash = "sha256:fad7d7e209dd4c1208e3bbfda706620e0da5142bebbd9c384afb95b07e798e49"},
@@ -736,7 +736,7 @@ name = "h5py"
 version = "3.11.0"
 requires_python = ">=3.8"
 summary = "Read and write HDF5 files from Python"
-groups = ["arrays", "dev", "hdf5", "tests"]
+groups = ["arrays", "dev", "docs", "hdf5", "tests"]
 dependencies = [
     "numpy>=1.17.3",
 ]
@@ -981,7 +981,7 @@ name = "locket"
 version = "1.0.0"
 requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 summary = "File-based locks for Python on Linux and Windows"
-groups = ["arrays", "dask", "dev", "tests"]
+groups = ["arrays", "dask", "dev", "docs", "tests"]
 files = [
     {file = "locket-1.0.0-py2.py3-none-any.whl", hash = "sha256:b6c819a722f7b6bd955b80781788e4a66a55628b858d347536b7e81325a3a5e3"},
     {file = "locket-1.0.0.tar.gz", hash = "sha256:5c0d4c052a8bbbf750e056a8e65ccd309086f4f0f18a2eac306a8dfa4112a632"},
@@ -1204,7 +1204,7 @@ name = "numcodecs"
 version = "0.12.1"
 requires_python = ">=3.8"
 summary = "A Python package providing buffer compression and transformation codecs for use in data storage and communication applications."
-groups = ["arrays", "dev", "tests", "zarr"]
+groups = ["arrays", "dev", "docs", "tests", "zarr"]
 dependencies = [
     "numpy>=1.7",
 ]
@@ -1233,7 +1233,7 @@ name = "numpy"
 version = "2.0.1"
 requires_python = ">=3.9"
 summary = "Fundamental package for array computing in Python"
-groups = ["default", "arrays", "dev", "hdf5", "tests", "video", "zarr"]
+groups = ["default", "arrays", "dev", "docs", "hdf5", "tests", "video", "zarr"]
 files = [
     {file = "numpy-2.0.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0fbb536eac80e27a2793ffd787895242b7f18ef792563d742c2d673bfcb75134"},
     {file = "numpy-2.0.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:69ff563d43c69b1baba77af455dd0a839df8d25e8590e79c90fcbe1499ebde42"},
@@ -1287,7 +1287,7 @@ name = "opencv-python"
 version = "4.10.0.84"
 requires_python = ">=3.6"
 summary = "Wrapper package for OpenCV python bindings."
-groups = ["arrays", "dev", "tests", "video"]
+groups = ["arrays", "dev", "docs", "tests", "video"]
 dependencies = [
     "numpy>=1.13.3; python_version < \"3.7\"",
     "numpy>=1.17.0; python_version >= \"3.7\"",
@@ -1337,7 +1337,7 @@ name = "partd"
 version = "1.4.2"
 requires_python = ">=3.9"
 summary = "Appendable key-value storage"
-groups = ["arrays", "dask", "dev", "tests"]
+groups = ["arrays", "dask", "dev", "docs", "tests"]
 dependencies = [
     "locket",
     "toolz",
@@ -1850,6 +1850,22 @@ files = [
 ]
 
 [[package]]
+name = "rich"
+version = "13.8.1"
+requires_python = ">=3.7.0"
+summary = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
+groups = ["dev", "docs"]
+dependencies = [
+    "markdown-it-py>=2.2.0",
+    "pygments<3.0.0,>=2.13.0",
+    "typing-extensions<5.0,>=4.0.0; python_version < \"3.9\"",
+]
+files = [
+    {file = "rich-13.8.1-py3-none-any.whl", hash = "sha256:1760a3c0848469b97b558fc61c85233e3dafb69c7a071b4d60c38099d3cd4c06"},
+    {file = "rich-13.8.1.tar.gz", hash = "sha256:8260cda28e3db6bf04d2d1ef4dbc03ba80a824c88b0e7668a0f23126a424844a"},
+]
+
+[[package]]
 name = "rpds-py"
 version = "0.20.0"
 requires_python = ">=3.8"
@@ -2279,7 +2295,7 @@ name = "toolz"
 version = "0.12.1"
 requires_python = ">=3.7"
 summary = "List processing tools and functional utilities"
-groups = ["arrays", "dask", "dev", "tests"]
+groups = ["arrays", "dask", "dev", "docs", "tests"]
 files = [
     {file = "toolz-0.12.1-py3-none-any.whl", hash = "sha256:d22731364c07d72eea0a0ad45bafb2c2937ab6fd38a3507bf55eae8744aa7d85"},
     {file = "toolz-0.12.1.tar.gz", hash = "sha256:ecca342664893f177a13dac0e6b41cbd8ac25a358e5f215316d43e2100224f4d"},
@@ -2517,7 +2533,7 @@ name = "zarr"
 version = "2.18.2"
 requires_python = ">=3.9"
 summary = "An implementation of chunked, compressed, N-dimensional arrays for Python"
-groups = ["arrays", "dev", "tests", "zarr"]
+groups = ["arrays", "dev", "docs", "tests", "zarr"]
 dependencies = [
     "asciitree",
     "fasteners; sys_platform != \"emscripten\"",
