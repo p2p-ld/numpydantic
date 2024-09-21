@@ -5,15 +5,15 @@ Helper functions for use with :class:`~numpydantic.NDArray` - see the note in
 
 import hashlib
 import json
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import numpy as np
-from pydantic import BaseModel, SerializationInfo
+from pydantic import BaseModel
 from pydantic_core import CoreSchema, core_schema
 from pydantic_core.core_schema import ListSchema, ValidationInfo
 
 from numpydantic import dtype as dt
-from numpydantic.interface import Interface, JsonDict
+from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.vendor.nptyping.structure import StructureMeta
@@ -278,16 +278,3 @@ def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
         return value
 
     return validate_interface
-
-
-def _jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
-    """Use an interface class to render an array as JSON"""
-    interface_cls = Interface.match_output(value)
-    array = interface_cls.to_json(value, info)
-    if isinstance(array, JsonDict):
-        array = array.to_dict()
-
-    if info.context and info.context.get("mark_interface", False):
-        array = interface_cls.mark_json(array)
-
-    return array

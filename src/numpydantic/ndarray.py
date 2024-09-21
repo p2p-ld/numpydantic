@@ -24,10 +24,10 @@ from numpydantic.exceptions import InterfaceError
 from numpydantic.interface import Interface
 from numpydantic.maps import python_to_nptyping
 from numpydantic.schema import (
-    _jsonize_array,
     get_validate_interface,
     make_json_schema,
 )
+from numpydantic.serialization import jsonize_array
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 from numpydantic.vendor.nptyping.ndarray import NDArrayMeta as _NDArrayMeta
@@ -181,7 +181,7 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
         return core_schema.with_info_plain_validator_function(
             get_validate_interface(shape, dtype),
             serialization=core_schema.plain_serializer_function_ser_schema(
-                _jsonize_array, when_used="json", info_arg=True
+                jsonize_array, when_used="json", info_arg=True
             ),
             metadata=json_schema,
         )

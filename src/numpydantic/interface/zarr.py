@@ -178,12 +178,12 @@ class ZarrInterface(Interface):
         :meth:`zarr.core.Array.info_items`
         plus the :meth:`zarr.core.Array.hexdigest` as a :class:`.ZarrJsonDict`
 
-        If either the ``zarr_dump_array`` value in the context dictionary is ``True``
+        If either the ``dump_array`` value in the context dictionary is ``True``
         or the zarr array is an in-memory array, dump the array as well
         (since without a persistent array it would be impossible to roundtrip and
         dumping to JSON would be meaningless)
 
-        Passing ``'zarr_dump_array': True`` to the serialization ``context``
+        Passing ```dump_array': True`` to the serialization ``context``
         looks like this::
 
             model.model_dump_json(context={'zarr_dump_array': True})
@@ -193,7 +193,7 @@ class ZarrInterface(Interface):
         if info.round_trip:
             dump_array = False
             if info is not None and info.context is not None:
-                dump_array = info.context.get("zarr_dump_array", False)
+                dump_array = info.context.get("dump_array", False)
             is_file = False
 
             as_json = {"type": cls.name}

@@ -63,9 +63,14 @@ class JsonDict:
         return TypeAdapter(cls)
 
     @classmethod
-    def is_valid(cls, val: dict) -> bool:
+    def is_valid(cls, val: dict, raise_on_error: bool = False) -> bool:
         """
         Check whether a given dictionary matches this JsonDict specification
+
+        Args:
+            val (dict): The dictionary to check for validity
+            raise_on_error (bool): If ``True``, raise the validation error
+                rather than returning a bool. (default: ``False``)
 
         Returns:
             bool - true if valid, false if not
@@ -74,7 +79,9 @@ class JsonDict:
         try:
             _ = adapter.validate_python(val)
             return True
-        except ValidationError:
+        except ValidationError as e:
+            if raise_on_error:
+                raise e
             return False
 
 

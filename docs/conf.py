@@ -25,7 +25,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx_design",
     "sphinxcontrib.mermaid",
-    "myst_parser",
+    "myst_nb",
     "sphinx.ext.todo",
 ]
 
@@ -77,3 +77,8 @@ napoleon_attr_annotations = True
 # todo
 todo_include_todos = True
 todo_link_only = True
+
+# myst
+# myst-nb
+nb_render_markdown_format = "myst"
+nb_execution_show_tb = True
