@@ -1,3 +1,8 @@
+"""
+Serialization helpers for :func:`pydantic.BaseModel.model_dump`
+and :func:`pydantic.BaseModel.model_dump_json` .
+"""
+
 from pathlib import Path
 from typing import Any, Callable, TypeVar, Union
 
@@ -41,7 +46,7 @@ def _relativize_paths(value: dict, relative_to: str = ".") -> dict:
             if not path.exists():
                 return v
             return str(relative_path(path, relative_to))
-        except:
+        except (TypeError, ValueError):
             return v
 
     return _walk_and_apply(value, _r_path)
@@ -54,7 +59,7 @@ def _absolutize_paths(value: dict) -> dict:
             if not path.exists():
                 return v
             return str(path.resolve())
-        except:
+        except (TypeError, ValueError):
             return v
 
     return _walk_and_apply(value, _a_path)

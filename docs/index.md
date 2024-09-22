@@ -491,6 +491,7 @@ api/ndarray
 api/maps
 api/meta
 api/schema
+api/serialization
 api/shape
 api/types
 

@@ -141,7 +141,7 @@ def test_zarr_to_json(store, model_blank, roundtrip, dump_array):
     array = zarr.array(lol_array, store=store)
     instance = model_blank(array=array)
 
-    context = {"zarr_dump_array": dump_array}
+    context = {"dump_array": dump_array}
     as_json = json.loads(
         instance.model_dump_json(round_trip=roundtrip, context=context)
     )["array"]
