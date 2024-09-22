@@ -40,7 +40,6 @@ as ``S32`` isoformatted byte strings (timezones optional) like:
 """
 
 import sys
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, List, NamedTuple, Optional, Tuple, TypeVar, Union
@@ -77,7 +76,6 @@ class H5ArrayPath(NamedTuple):
     """Refer to a specific field within a compound dtype"""
 
 
-@dataclass
 class H5JsonDict(JsonDict):
     """Round-trip Json-able version of an HDF5 dataset"""
 
@@ -88,7 +86,7 @@ class H5JsonDict(JsonDict):
     def to_array_input(self) -> H5ArrayPath:
         """Construct an :class:`.H5ArrayPath`"""
         return H5ArrayPath(
-            **{k: v for k, v in self.to_dict().items() if k in H5ArrayPath._fields}
+            **{k: v for k, v in self.model_dump().items() if k in H5ArrayPath._fields}
         )
 
 
@@ -330,6 +328,8 @@ class H5Interface(Interface):
         """Create an :class:`.H5Proxy` to use throughout validation"""
         if isinstance(array, dict):
             array = H5JsonDict(**array).to_array_input()
+        elif isinstance(array, H5JsonDict):
+            array = array.to_array_input()
 
         if isinstance(array, H5ArrayPath):
             array = H5Proxy.from_h5array(h5array=array)

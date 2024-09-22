@@ -2,7 +2,6 @@
 Interface to support treating videos like arrays using OpenCV
 """
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, Optional, Tuple, Union
 
@@ -22,7 +21,6 @@ except ImportError:  # pragma: no cover
 VIDEO_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 
 
-@dataclass(kw_only=True)
 class VideoJsonDict(JsonDict):
     """Json-able roundtrip representation of a video file"""
 
@@ -256,6 +254,8 @@ class VideoInterface(Interface):
         """Get a :class:`.VideoProxy` object for this video"""
         if isinstance(array, dict):
             proxy = VideoJsonDict(**array).to_array_input()
+        elif isinstance(array, VideoJsonDict):
+            proxy = array.to_array_input()
         elif isinstance(array, VideoCapture):
             proxy = VideoProxy(video=array)
         elif isinstance(array, VideoProxy):

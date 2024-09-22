@@ -56,7 +56,6 @@ class ZarrArrayPath:
             raise ValueError("Only len 1-2 iterables can be used for a ZarrArrayPath")
 
 
-@dataclass(kw_only=True)
 class ZarrJsonDict(JsonDict):
     """Round-trip Json-able version of a Zarr Array"""
 
@@ -94,10 +93,12 @@ class ZarrInterface(Interface):
 
     @staticmethod
     def _get_array(
-        array: Union[ZarrArray, str, Path, ZarrArrayPath, Sequence]
+        array: Union[ZarrArray, str, dict, ZarrJsonDict, Path, ZarrArrayPath, Sequence]
     ) -> ZarrArray:
         if isinstance(array, dict):
             array = ZarrJsonDict(**array).to_array_input()
+        elif isinstance(array, ZarrJsonDict):
+            array = array.to_array_input()
 
         if isinstance(array, ZarrArray):
             return array

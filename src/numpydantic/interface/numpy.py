@@ -2,7 +2,6 @@
 Interface to numpy arrays
 """
 
-from dataclasses import dataclass
 from typing import Any, Literal, Union
 
 from pydantic import SerializationInfo
@@ -21,7 +20,6 @@ except ImportError:  # pragma: no cover
     np = None
 
 
-@dataclass
 class NumpyJsonDict(JsonDict):
     """
     JSON-able roundtrip representation of numpy array
@@ -78,6 +76,8 @@ class NumpyInterface(Interface):
         """
         if isinstance(array, dict):
             array = NumpyJsonDict(**array).to_array_input()
+        elif isinstance(array, NumpyJsonDict):
+            array = array.to_array_input()
 
         if not isinstance(array, ndarray):
             array = np.array(array)

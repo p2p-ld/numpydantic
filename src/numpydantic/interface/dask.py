@@ -2,7 +2,6 @@
 Interface for Dask arrays
 """
 
-from dataclasses import dataclass
 from typing import Any, Iterable, Literal, Optional
 
 import numpy as np
@@ -25,7 +24,6 @@ def _as_tuple(a_list: list | Any) -> tuple:
     )
 
 
-@dataclass(kw_only=True)
 class DaskJsonDict(JsonDict):
     """
     Round-trip json serialized form of a dask array
@@ -78,6 +76,8 @@ class DaskInterface(Interface):
         """
         if isinstance(array, dict):
             array = DaskJsonDict(**array).to_array_input()
+        elif isinstance(array, DaskJsonDict):
+            array = array.to_array_input()
 
         return array
 

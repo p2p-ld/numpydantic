@@ -4,13 +4,12 @@ Base Interface metaclass
 
 import inspect
 from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass
 from importlib.metadata import PackageNotFoundError, version
 from operator import attrgetter
 from typing import Any, Generic, Tuple, Type, TypedDict, TypeVar, Union
 
 import numpy as np
-from pydantic import SerializationInfo, TypeAdapter, ValidationError
+from pydantic import BaseModel, SerializationInfo, ValidationError
 
 from numpydantic.exceptions import (
     DtypeError,
@@ -32,13 +31,9 @@ class InterfaceMark(TypedDict):
     version: str
 
 
-@dataclass(kw_only=True)
-class JsonDict:
+class JsonDict(BaseModel):
     """
     Representation of array when dumped with round_trip == True.
-
-    Using a dataclass rather than a pydantic model to not tempt
-    us to use more sophisticated types than can be serialized to json.
     """
 
     type: str
@@ -49,18 +44,6 @@ class JsonDict:
         Convert this roundtrip specifier to the relevant input class
         (one of the ``input_types`` of an interface).
         """
-
-    def to_dict(self) -> dict:
-        """
-        Convenience method for casting dataclass to dict,
-        removing None-valued items
-        """
-        return {k: v for k, v in asdict(self).items() if v is not None}
-
-    @classmethod
-    def get_adapter(cls) -> TypeAdapter:
-        """Convenience method to get a typeadapter for this class"""
-        return TypeAdapter(cls)
 
     @classmethod
     def is_valid(cls, val: dict, raise_on_error: bool = False) -> bool:
@@ -75,9 +58,8 @@ class JsonDict:
         Returns:
             bool - true if valid, false if not
         """
-        adapter = cls.get_adapter()
         try:
-            _ = adapter.validate_python(val)
+            _ = cls.model_validate(val)
             return True
         except ValidationError as e:
             if raise_on_error:

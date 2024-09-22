@@ -19,7 +19,7 @@ def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
     interface_cls = Interface.match_output(value)
     array = interface_cls.to_json(value, info)
     if isinstance(array, JsonDict):
-        array = array.to_dict()
+        array = array.model_dump(exclude_none=True)
 
     if info.context:
         if info.context.get("mark_interface", False):
