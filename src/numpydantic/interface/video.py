@@ -221,6 +221,7 @@ class VideoInterface(Interface):
     name = "video"
     input_types = (str, Path, VideoCapture, VideoProxy)
     return_type = VideoProxy
+    json_model = VideoJsonDict
 
     @classmethod
     def enabled(cls) -> bool:
@@ -252,11 +253,7 @@ class VideoInterface(Interface):
 
     def before_validation(self, array: Any) -> VideoProxy:
         """Get a :class:`.VideoProxy` object for this video"""
-        if isinstance(array, dict):
-            proxy = VideoJsonDict(**array).to_array_input()
-        elif isinstance(array, VideoJsonDict):
-            proxy = array.to_array_input()
-        elif isinstance(array, VideoCapture):
+        if isinstance(array, VideoCapture):
             proxy = VideoProxy(video=array)
         elif isinstance(array, VideoProxy):
             proxy = array

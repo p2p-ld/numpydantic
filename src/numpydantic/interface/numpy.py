@@ -44,6 +44,7 @@ class NumpyInterface(Interface):
     name = "numpy"
     input_types = (ndarray, list)
     return_type = ndarray
+    json_model = NumpyJsonDict
     priority = -999
     """
     The numpy interface is usually the interface of last resort.
@@ -74,11 +75,6 @@ class NumpyInterface(Interface):
         Coerce to an ndarray. We have already checked if coercion is possible
         in :meth:`.check`
         """
-        if isinstance(array, dict):
-            array = NumpyJsonDict(**array).to_array_input()
-        elif isinstance(array, NumpyJsonDict):
-            array = array.to_array_input()
-
         if not isinstance(array, ndarray):
             array = np.array(array)
         return array

@@ -21,6 +21,9 @@ from numpydantic.shape import check_shape
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 
 T = TypeVar("T", bound=NDArrayType)
+U = TypeVar("U", bound="JsonDict")
+V = TypeVar("V")  # input type
+W = TypeVar("W")  # Any type in handle_input
 
 
 class InterfaceMark(TypedDict):
@@ -39,7 +42,7 @@ class JsonDict(BaseModel):
     type: str
 
     @abstractmethod
-    def to_array_input(self) -> Any:
+    def to_array_input(self) -> V:
         """
         Convert this roundtrip specifier to the relevant input class
         (one of the ``input_types`` of an interface).
@@ -66,6 +69,20 @@ class JsonDict(BaseModel):
                 raise e
             return False
 
+    @classmethod
+    def handle_input(cls: Type[U], value: Union[dict, U, W]) -> Union[V, W]:
+        """
+        Handle input that is the json serialized roundtrip version
+        (from :func:`~pydantic.BaseModel.model_dump` with ``round_trip=True``)
+        converting it to the input format with :meth:`.JsonDict.to_array_input`
+        or passing it through if not applicable
+        """
+        if isinstance(value, dict):
+            value = cls(**value).to_array_input()
+        elif isinstance(value, cls):
+            value = value.to_array_input()
+        return value
+
 
 class Interface(ABC, Generic[T]):
     """
@@ -86,6 +103,7 @@ class Interface(ABC, Generic[T]):
 
         Calls the methods, in order:
 
+        * array = :meth:`.deserialize` (array)
         * array = :meth:`.before_validation` (array)
         * dtype = :meth:`.get_dtype` (array) - get the dtype from the array,
             override if eg. the dtype is not contained in ``array.dtype``
@@ -120,6 +138,8 @@ class Interface(ABC, Generic[T]):
             :class:`.DtypeError` and :class:`.ShapeError` (both of which are children
             of :class:`.InterfaceError` )
         """
+        array = self.deserialize(array)
+
         array = self.before_validation(array)
 
         dtype = self.get_dtype(array)
@@ -134,6 +154,19 @@ class Interface(ABC, Generic[T]):
         array = self.after_validation(array)
 
         return array
+
+    def deserialize(self, array: Any) -> Union[V, Any]:
+        """
+        If given a JSON serialized version of the array,
+        deserialize it first
+
+        Args:
+            array:
+
+        Returns:
+
+        """
+        return self.json_model.handle_input(array)
 
     def before_validation(self, array: Any) -> NDArrayType:
         """
@@ -268,6 +301,14 @@ class Interface(ABC, Generic[T]):
     def name(self) -> str:
         """
         Short name for this interface
+        """
+
+    @property
+    @abstractmethod
+    def json_model(self) -> JsonDict:
+        """
+        The :class:`.JsonDict` model used for roundtripping
+        JSON serialization
         """
 
     @classmethod

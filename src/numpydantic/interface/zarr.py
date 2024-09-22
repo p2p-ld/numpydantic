@@ -85,6 +85,7 @@ class ZarrInterface(Interface):
     name = "zarr"
     input_types = (Path, ZarrArray, ZarrArrayPath)
     return_type = ZarrArray
+    json_model = ZarrJsonDict
 
     @classmethod
     def enabled(cls) -> bool:
@@ -95,11 +96,6 @@ class ZarrInterface(Interface):
     def _get_array(
         array: Union[ZarrArray, str, dict, ZarrJsonDict, Path, ZarrArrayPath, Sequence]
     ) -> ZarrArray:
-        if isinstance(array, dict):
-            array = ZarrJsonDict(**array).to_array_input()
-        elif isinstance(array, ZarrJsonDict):
-            array = array.to_array_input()
-
         if isinstance(array, ZarrArray):
             return array
 

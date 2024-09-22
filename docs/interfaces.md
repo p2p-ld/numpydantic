@@ -46,6 +46,11 @@ for interfaces to implement custom behavior that matches the array format.
 
 {meth}`.Interface.validate` calls the following methods, in order:
 
+A method to deserialize the array dumped with a {func}`~pydantic.BaseModel.model_dump_json`
+with `round_trip = True` (see [serialization](./serialization.md))
+ 
+- {meth}`.Interface.deserialize`
+
 An initial hook for modifying the input data before validation, eg.
 if it needs to be coerced or wrapped in some proxy class. This method
 should accept all and only the types specified in that interface's

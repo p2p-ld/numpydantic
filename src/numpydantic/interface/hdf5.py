@@ -278,6 +278,7 @@ class H5Interface(Interface):
     name = "hdf5"
     input_types = (H5ArrayPath, H5Arraylike, H5Proxy)
     return_type = H5Proxy
+    json_model = H5JsonDict
 
     @classmethod
     def enabled(cls) -> bool:
@@ -326,11 +327,6 @@ class H5Interface(Interface):
 
     def before_validation(self, array: Any) -> NDArrayType:
         """Create an :class:`.H5Proxy` to use throughout validation"""
-        if isinstance(array, dict):
-            array = H5JsonDict(**array).to_array_input()
-        elif isinstance(array, H5JsonDict):
-            array = array.to_array_input()
-
         if isinstance(array, H5ArrayPath):
             array = H5Proxy.from_h5array(h5array=array)
         elif isinstance(array, H5Proxy):

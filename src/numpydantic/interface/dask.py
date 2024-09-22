@@ -54,6 +54,7 @@ class DaskInterface(Interface):
     name = "dask"
     input_types = (DaskArray, dict)
     return_type = DaskArray
+    json_model = DaskJsonDict
 
     @classmethod
     def check(cls, array: Any) -> bool:
@@ -68,18 +69,6 @@ class DaskInterface(Interface):
             return DaskJsonDict.is_valid(array)
         else:
             return False
-
-    def before_validation(self, array: Any) -> DaskArray:
-        """
-        If given a dict (like that from ``model_dump_json(round_trip=True)`` ),
-        re-cast to dask array
-        """
-        if isinstance(array, dict):
-            array = DaskJsonDict(**array).to_array_input()
-        elif isinstance(array, DaskJsonDict):
-            array = array.to_array_input()
-
-        return array
 
     def get_object_dtype(self, array: NDArrayType) -> DtypeType:
         """Dask arrays require a compute() call to retrieve a single value"""
