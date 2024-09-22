@@ -65,7 +65,7 @@ class ZarrJsonDict(JsonDict):
     path: Optional[str] = None
     array: Optional[list] = None
 
-    def to_array_input(self) -> ZarrArray | ZarrArrayPath:
+    def to_array_input(self) -> Union[ZarrArray, ZarrArrayPath]:
         """
         Construct a ZarrArrayPath if file and path are present,
         otherwise a ZarrArray
@@ -168,7 +168,7 @@ class ZarrInterface(Interface):
         cls,
         array: Union[ZarrArray, str, Path, ZarrArrayPath, Sequence],
         info: Optional[SerializationInfo] = None,
-    ) -> list | ZarrJsonDict:
+    ) -> Union[list, ZarrJsonDict]:
         """
         Dump a Zarr Array to JSON
 

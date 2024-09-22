@@ -2,7 +2,7 @@
 Interface for Dask arrays
 """
 
-from typing import Any, Iterable, Literal, Optional
+from typing import Any, Iterable, List, Literal, Optional, Union
 
 import numpy as np
 from pydantic import SerializationInfo
@@ -17,7 +17,7 @@ except ImportError:  # pragma: no cover
     DaskArray = None
 
 
-def _as_tuple(a_list: list | Any) -> tuple:
+def _as_tuple(a_list: Any) -> tuple:
     """Make a list of list into a tuple of tuples"""
     return tuple(
         [_as_tuple(item) if isinstance(item, list) else item for item in a_list]
@@ -93,7 +93,7 @@ class DaskInterface(Interface):
     @classmethod
     def to_json(
         cls, array: DaskArray, info: Optional[SerializationInfo] = None
-    ) -> list | DaskJsonDict:
+    ) -> Union[List, DaskJsonDict]:
         """
         Convert an array to a JSON serializable array by first converting to a numpy
         array and then to a list.
