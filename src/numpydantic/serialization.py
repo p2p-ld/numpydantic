@@ -27,9 +27,9 @@ def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
 
         if info.context.get("absolute_paths", False):
             array = _absolutize_paths(array)
-        # else:
-        #     relative_to = info.context.get("relative_to", ".")
-        #     array = _relativize_paths(array, relative_to)
+        else:
+            relative_to = info.context.get("relative_to", ".")
+            array = _relativize_paths(array, relative_to)
 
     return array
 
@@ -97,4 +97,45 @@ def relative_path(target: Path, origin: Path) -> Path:
         return Path(target).resolve().relative_to(Path(origin).resolve())
     except ValueError:  # target does not start with origin
         # recursion with origin (eventually origin is root so try will succeed)
-        return Path("..").joinpath(relative_path(target, Path(origin).parent))
+        try:
+            return Path("..").joinpath(relative_path(target, Path(origin).parent))
+        except ValueError:
+            # break recursion in windows when
+            pass
+
+
+def relative_to(self: Path, other: Path, walk_up=True) -> Path:
+    """
+    "Backport" of :meth:`pathlib.Path.relative_to` with ``walk_up=True``
+    that's not available pre 3.12.
+
+    Return the relative path to another path identified by the passed
+    arguments.  If the operation is not possible (because this is not
+    related to the other path), raise ValueError.
+
+    The *walk_up* parameter controls whether `..` may be used to resolve
+    the path.
+    """
+    if not isinstance(other, Path):
+        other = self.with_segments(other)
+    anchor0, parts0 = self._stack
+    anchor1, parts1 = other._stack
+    if anchor0 != anchor1:
+        raise ValueError(
+            f"{self._raw_path!r} and {other._raw_path!r} have different anchors"
+        )
+    while parts0 and parts1 and parts0[-1] == parts1[-1]:
+        parts0.pop()
+        parts1.pop()
+    for part in parts1:
+        if not part or part == ".":
+            pass
+        elif not walk_up:
+            raise ValueError(
+                f"{self._raw_path!r} is not in the subpath of {other._raw_path!r}"
+            )
+        elif part == "..":
+            raise ValueError(f"'..' segment in {other._raw_path!r} cannot be walked")
+        else:
+            parts0.append("..")
+    return self.with_segments("", *reversed(parts0))
