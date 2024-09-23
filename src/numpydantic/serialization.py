@@ -89,7 +89,7 @@ def _walk_and_apply(value: T, f: Callable[[U], U]) -> T:
 #     """
 #     return path of target relative to origin, even if they're
 #     not in the same subpath
-# 
+#
 #     References:
 #         - https://stackoverflow.com/a/71874881
 #     """
@@ -121,11 +121,13 @@ def relative_path(self: Path, other: Path, walk_up: bool = True) -> Path:
     """
     if not isinstance(other, Path):
         other = self.with_segments(other)
-    anchor0, parts0 = self._stack
-    anchor1, parts1 = other._stack
+    self_parts = self.parts
+    other_parts = other.parts
+    anchor0, parts0 = self_parts[0], list(reversed(self_parts[1:]))
+    anchor1, parts1 = other_parts[0], list(reversed(other_parts[1:]))
     if anchor0 != anchor1:
         raise ValueError(
-            f"{self._raw_path!r} and {other._raw_path!r} have different anchors"
+            f"{self!r} and {other!r} have different anchors"
         )
     while parts0 and parts1 and parts0[-1] == parts1[-1]:
         parts0.pop()
@@ -135,10 +137,10 @@ def relative_path(self: Path, other: Path, walk_up: bool = True) -> Path:
             pass
         elif not walk_up:
             raise ValueError(
-                f"{self._raw_path!r} is not in the subpath of {other._raw_path!r}"
+                f"{self!r} is not in the subpath of {other!r}"
             )
         elif part == "..":
-            raise ValueError(f"'..' segment in {other._raw_path!r} cannot be walked")
+            raise ValueError(f"'..' segment in {other!r} cannot be walked")
         else:
             parts0.append("..")
     return self.with_segments("", *reversed(parts0))
