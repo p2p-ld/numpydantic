@@ -231,3 +231,29 @@ def test_empty_dataset(dtype, tmp_path):
         array: NDArray[Any, dtype]
 
     _ = MyModel(array=(array_path, "/data"))
+
+
+@pytest.mark.proxy
+@pytest.mark.parametrize(
+    "comparison,valid",
+    [
+        (H5Proxy(file="test_file.h5", path="/subpath", field="sup"), True),
+        (H5Proxy(file="test_file.h5", path="/subpath"), False),
+        (H5Proxy(file="different_file.h5", path="/subpath"), False),
+        (("different_file.h5", "/subpath", "sup"), ValueError),
+        ("not even a proxy-like thing", ValueError),
+    ],
+)
+def test_proxy_eq(comparison, valid):
+    """
+    test the __eq__ method of H5ArrayProxy matches proxies to the same
+    dataset (and path), or raises a ValueError
+    """
+    proxy_a = H5Proxy(file="test_file.h5", path="/subpath", field="sup")
+    if valid is True:
+        assert proxy_a == comparison
+    elif valid is False:
+        assert proxy_a != comparison
+    else:
+        with pytest.raises(valid):
+            assert proxy_a == comparison

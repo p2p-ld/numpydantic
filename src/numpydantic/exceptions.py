@@ -25,3 +25,7 @@ class NoMatchError(MatchError):
 
 class TooManyMatchesError(MatchError):
     """Too many matches found by :class:`.Interface.match`"""
+
+
+class MarkMismatchError(MatchError):
+    """A serialized :class:`.InterfaceMark` doesn't match the receiving interface"""

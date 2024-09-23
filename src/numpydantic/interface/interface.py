@@ -3,16 +3,19 @@ Base Interface metaclass
 """
 
 import inspect
+import warnings
 from abc import ABC, abstractmethod
+from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, version
 from operator import attrgetter
-from typing import Any, Generic, Tuple, Type, TypedDict, TypeVar, Union
+from typing import Any, Generic, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from pydantic import BaseModel, SerializationInfo, ValidationError
 
 from numpydantic.exceptions import (
     DtypeError,
+    MarkMismatchError,
     NoMatchError,
     ShapeError,
     TooManyMatchesError,
@@ -26,12 +29,48 @@ V = TypeVar("V")  # input type
 W = TypeVar("W")  # Any type in handle_input
 
 
-class InterfaceMark(TypedDict):
+class InterfaceMark(BaseModel):
     """JSON-able mark to be able to round-trip json dumps"""
 
     module: str
     cls: str
+    name: str
     version: str
+
+    def is_valid(self, cls: Type["Interface"], raise_on_error: bool = False) -> bool:
+        """
+        Check that a given interface matches the mark.
+
+        Args:
+            cls (Type): Interface type to check
+            raise_on_error (bool): Raise an ``MarkMismatchError`` when the match
+                is incorrect
+
+        Returns:
+            bool
+
+        Raises:
+            :class:`.MarkMismatchError` if requested by ``raise_on_error``
+            for an invalid match
+        """
+        mark = cls.mark_interface()
+        valid = self == mark
+        if not valid and raise_on_error:
+            raise MarkMismatchError(
+                "Mismatch between serialized mark and current interface, "
+                f"Serialized: {self}; current: {cls}"
+            )
+        return valid
+
+    def match_by_name(self) -> Optional[Type["Interface"]]:
+        """
+        Try to find a matching interface by its name, returning it if found,
+        or None if not found.
+        """
+        for i in Interface.interfaces(sort=False):
+            if i.name == self.name:
+                return i
+        return None
 
 
 class JsonDict(BaseModel):
@@ -81,6 +120,29 @@ class JsonDict(BaseModel):
             value = cls(**value).to_array_input()
         elif isinstance(value, cls):
             value = value.to_array_input()
+        return value
+
+
+class MarkedJson(BaseModel):
+    """
+    Model of JSON dumped with an additional interface mark
+    with ``model_dump_json({'mark_interface': True})``
+    """
+
+    interface: InterfaceMark
+    value: Union[list, dict]
+    """
+    Inner value of the array, we don't validate for JsonDict here, 
+    that should be downstream from us for performance reasons 
+    """
+
+    @classmethod
+    def try_cast(cls, value: Union[V, dict]) -> Union[V, "MarkedJson"]:
+        """
+        Try to cast to MarkedJson if applicable, otherwise return input
+        """
+        if isinstance(value, dict) and "interface" in value and "value" in value:
+            value = MarkedJson(**value)
         return value
 
 
@@ -158,14 +220,24 @@ class Interface(ABC, Generic[T]):
     def deserialize(self, array: Any) -> Union[V, Any]:
         """
         If given a JSON serialized version of the array,
-        deserialize it first
+        deserialize it first.
 
-        Args:
-            array:
+        If a roundtrip-serialized :class:`.JsonDict`,
+        pass to :meth:`.JsonDict.handle_input`.
 
-        Returns:
-
+        If a roundtrip-serialized :class:`.MarkedJson`,
+        unpack mark, check for validity, warn if not,
+        and try to continue with validation
         """
+        if isinstance(marked_array := MarkedJson.try_cast(array), MarkedJson):
+            try:
+                marked_array.interface.is_valid(self.__class__, raise_on_error=True)
+            except MarkMismatchError as e:
+                warnings.warn(
+                    str(e) + "\nAttempting to continue validation...", stacklevel=2
+                )
+            array = marked_array.value
+
         return self.json_model.handle_input(array)
 
     def before_validation(self, array: Any) -> NDArrayType:
@@ -274,13 +346,6 @@ class Interface(ABC, Generic[T]):
         """
         return array
 
-    def mark_input(self, array: Any) -> Any:
-        """
-        Preserve metadata about the interface and passed input when dumping with
-        ``round_trip``
-        """
-        return array
-
     @classmethod
     @abstractmethod
     def check(cls, array: Any) -> bool:
@@ -320,7 +385,7 @@ class Interface(ABC, Generic[T]):
         """
 
     @classmethod
-    def mark_json(cls, array: Union[list, dict]) -> dict:
+    def mark_json(cls, array: Union[list, dict]) -> MarkedJson:
         """
         When using ``model_dump_json`` with ``mark_interface: True`` in the ``context``,
         add additional annotations that would allow the serialized array to be
@@ -337,7 +402,7 @@ class Interface(ABC, Generic[T]):
                            'version': '1.2.2'},
              'value': [1.0, 2.0]}
         """
-        return {"interface": cls.mark_interface(), "value": array}
+        return MarkedJson.model_construct(interface=cls.mark_interface(), value=array)
 
     @classmethod
     def interfaces(
@@ -391,6 +456,28 @@ class Interface(ABC, Generic[T]):
         return tuple(in_types)
 
     @classmethod
+    def match_mark(cls, array: Any) -> Optional[Type["Interface"]]:
+        """
+        Match a marked JSON dump of this array to the interface that it indicates.
+
+        First find an interface that matches by name, and then run its
+        ``check`` method, because arrays can be dumped with a mark
+        but without ``round_trip == True`` (and thus can't necessarily
+        use the same interface that they were dumped with)
+
+        Returns:
+            Interface if match found, None otherwise
+        """
+        mark = MarkedJson.try_cast(array)
+        if not isinstance(mark, MarkedJson):
+            return None
+
+        interface = mark.interface.match_by_name()
+        if interface is not None and interface.check(mark.value):
+            return interface
+        return None
+
+    @classmethod
     def match(cls, array: Any, fast: bool = False) -> Type["Interface"]:
         """
         Find the interface that should be used for this array based on its input type
@@ -407,11 +494,18 @@ class Interface(ABC, Generic[T]):
               check each interface (as ordered by its ``priority`` , decreasing),
               and return on the first match.
         """
+        # Shortcircuit match if this is a marked json dump
+        array = MarkedJson.try_cast(array)
+        if (match := cls.match_mark(array)) is not None:
+            return match
+        elif isinstance(array, MarkedJson):
+            array = array.value
+
         # first try and find a non-numpy interface, since the numpy interface
         # will try and load the array into memory in its check method
         interfaces = cls.interfaces()
-        non_np_interfaces = [i for i in interfaces if i.__name__ != "NumpyInterface"]
-        np_interface = [i for i in interfaces if i.__name__ == "NumpyInterface"][0]
+        non_np_interfaces = [i for i in interfaces if i.name != "numpy"]
+        np_interface = [i for i in interfaces if i.name == "numpy"][0]
 
         if fast:
             matches = []
@@ -453,6 +547,7 @@ class Interface(ABC, Generic[T]):
             return matches[0]
 
     @classmethod
+    @lru_cache(maxsize=32)
     def mark_interface(cls) -> InterfaceMark:
         """
         Create an interface mark indicating this interface for validation after
@@ -470,5 +565,7 @@ class Interface(ABC, Generic[T]):
             )
         except PackageNotFoundError:
             v = None
-        interface_name = cls.__name__
-        return InterfaceMark(module=interface_module, cls=interface_name, version=v)
+
+        return InterfaceMark(
+            module=interface_module, cls=cls.__name__, name=cls.name, version=v
+        )

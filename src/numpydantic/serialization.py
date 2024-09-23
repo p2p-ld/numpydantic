@@ -23,7 +23,8 @@ def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
 
     if info.context:
         if info.context.get("mark_interface", False):
-            array = interface_cls.mark_json(array)
+            array = interface_cls.mark_json(array).model_dump()
+
         if info.context.get("absolute_paths", False):
             array = _absolutize_paths(array)
         else:

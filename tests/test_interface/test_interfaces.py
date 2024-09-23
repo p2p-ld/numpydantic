@@ -4,10 +4,38 @@ Tests that should be applied to all interfaces
 
 import pytest
 from typing import Callable
+from importlib.metadata import version
+import json
+
 import numpy as np
 import dask.array as da
 from zarr.core import Array as ZarrArray
-from numpydantic.interface import Interface
+from pydantic import BaseModel
+
+from numpydantic.interface import Interface, InterfaceMark, MarkedJson
+
+
+def _test_roundtrip(source: BaseModel, target: BaseModel, round_trip: bool):
+    """Test model equality for roundtrip tests"""
+    if round_trip:
+        assert type(target.array) is type(source.array)
+        if isinstance(source.array, (np.ndarray, ZarrArray)):
+            assert np.array_equal(target.array, np.array(source.array))
+        elif isinstance(source.array, da.Array):
+            assert np.all(da.equal(target.array, source.array))
+        else:
+            assert target.array == source.array
+
+        assert target.array.dtype == source.array.dtype
+    else:
+        assert np.array_equal(target.array, np.array(source.array))
+
+
+def test_dunder_len(all_interfaces):
+    """
+    Each interface or proxy type should support __len__
+    """
+    assert len(all_interfaces.array) == all_interfaces.array.shape[0]
 
 
 def test_interface_revalidate(all_interfaces):
@@ -52,24 +80,51 @@ def test_interface_roundtrip_json(all_interfaces, round_trip):
     """
     All interfaces should be able to roundtrip to and from json
     """
-    json = all_interfaces.model_dump_json(round_trip=round_trip)
-    model = all_interfaces.model_validate_json(json)
-    if round_trip:
-        assert type(model.array) is type(all_interfaces.array)
-        if isinstance(all_interfaces.array, (np.ndarray, ZarrArray)):
-            assert np.array_equal(model.array, np.array(all_interfaces.array))
-        elif isinstance(all_interfaces.array, da.Array):
-            assert np.all(da.equal(model.array, all_interfaces.array))
-        else:
-            assert model.array == all_interfaces.array
+    dumped_json = all_interfaces.model_dump_json(round_trip=round_trip)
+    model = all_interfaces.model_validate_json(dumped_json)
+    _test_roundtrip(all_interfaces, model, round_trip)
 
-        assert model.array.dtype == all_interfaces.array.dtype
+
+@pytest.mark.serialization
+@pytest.mark.parametrize("an_interface", Interface.interfaces())
+def test_interface_mark_interface(an_interface):
+    """
+    All interfaces should be able to mark the current version and interface info
+    """
+    mark = an_interface.mark_interface()
+    assert isinstance(mark, InterfaceMark)
+    assert mark.name == an_interface.name
+    assert mark.cls == an_interface.__name__
+    assert mark.module == an_interface.__module__
+    assert mark.version == version(mark.module.split(".")[0])
+
+
+@pytest.mark.serialization
+@pytest.mark.parametrize("valid", [True, False])
+@pytest.mark.parametrize("round_trip", [True, False])
+@pytest.mark.filterwarnings("ignore:Mismatch between serialized mark")
+def test_interface_mark_roundtrip(all_interfaces, valid, round_trip):
+    """
+    All interfaces should be able to roundtrip with the marked interface,
+    and a mismatch should raise a warning and attempt to proceed
+    """
+    dumped_json = all_interfaces.model_dump_json(
+        round_trip=round_trip, context={"mark_interface": True}
+    )
+
+    data = json.loads(dumped_json)
+
+    # ensure that we are a MarkedJson
+    _ = MarkedJson.model_validate_json(json.dumps(data["array"]))
+
+    if not valid:
+        # ruin the version
+        data["array"]["interface"]["version"] = "v99999999"
+        dumped_json = json.dumps(data)
+
+        with pytest.warns(match="Mismatch.*"):
+            model = all_interfaces.model_validate_json(dumped_json)
     else:
-        assert np.array_equal(model.array, np.array(all_interfaces.array))
+        model = all_interfaces.model_validate_json(dumped_json)
 
-
-def test_dunder_len(all_interfaces):
-    """
-    Each interface or proxy type should support __len__
-    """
-    assert len(all_interfaces.array) == all_interfaces.array.shape[0]
+    _test_roundtrip(all_interfaces, model, round_trip)

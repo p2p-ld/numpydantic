@@ -120,7 +120,7 @@ class H5Proxy:
         annotation_dtype: Optional[DtypeType] = None,
     ):
         self._h5f = None
-        self.file = Path(file)
+        self.file = Path(file).resolve()
         self.path = path
         self.field = field
         self._annotation_dtype = annotation_dtype
@@ -156,6 +156,9 @@ class H5Proxy:
             return obj[:]
 
     def __getattr__(self, item: str):
+        if item == "__name__":
+            # special case for H5Proxies that don't refer to a real file during testing
+            return "H5Proxy"
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
             val = getattr(obj, item)

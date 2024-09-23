@@ -164,3 +164,42 @@ def test_video_close(avi_video):
     assert instance.array._video is None
     # reopen
     assert isinstance(instance.array.video, cv2.VideoCapture)
+
+
+@pytest.mark.proxy
+def test_video_not_exists(tmp_path):
+    """
+    A video file that doesn't exist should raise an error
+    """
+    video = VideoProxy(tmp_path / "not_real.avi")
+    with pytest.raises(FileNotFoundError):
+        _ = video.video
+
+
+@pytest.mark.proxy
+@pytest.mark.parametrize(
+    "comparison,valid",
+    [
+        (VideoProxy("test_video.avi"), True),
+        (VideoProxy("not_real_video.avi"), False),
+        ("not even a video proxy", TypeError),
+    ],
+)
+def test_video_proxy_eq(comparison, valid):
+    """
+    Comparing a video proxy's equality should be valid if the path matches
+    Args:
+        comparison:
+        valid:
+
+    Returns:
+
+    """
+    proxy_a = VideoProxy("test_video.avi")
+    if valid is True:
+        assert proxy_a == comparison
+    elif valid is False:
+        assert proxy_a != comparison
+    else:
+        with pytest.raises(valid):
+            assert proxy_a == comparison

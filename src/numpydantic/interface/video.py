@@ -48,7 +48,7 @@ class VideoProxy:
             )
 
         if path is not None:
-            path = Path(path)
+            path = Path(path).resolve()
         self.path = path
 
         self._video = video  # type: Optional[VideoCapture]
@@ -200,6 +200,8 @@ class VideoProxy:
         raise NotImplementedError("Setting pixel values on videos is not supported!")
 
     def __getattr__(self, item: str):
+        if item == "__name__":
+            return "VideoProxy"
         return getattr(self.video, item)
 
     def __eq__(self, other: "VideoProxy") -> bool:
