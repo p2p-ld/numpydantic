@@ -120,15 +120,13 @@ def relative_path(self: Path, other: Path, walk_up: bool = True) -> Path:
         https://github.com/python/cpython/blob/8a2baedc4bcb606da937e4e066b4b3a18961cace/Lib/pathlib/_abc.py#L244-L270
     """
     if not isinstance(other, Path):
-        other = self.with_segments(other)
+        other = Path(other)
     self_parts = self.parts
     other_parts = other.parts
     anchor0, parts0 = self_parts[0], list(reversed(self_parts[1:]))
     anchor1, parts1 = other_parts[0], list(reversed(other_parts[1:]))
     if anchor0 != anchor1:
-        raise ValueError(
-            f"{self!r} and {other!r} have different anchors"
-        )
+        raise ValueError(f"{self!r} and {other!r} have different anchors")
     while parts0 and parts1 and parts0[-1] == parts1[-1]:
         parts0.pop()
         parts1.pop()
@@ -136,11 +134,9 @@ def relative_path(self: Path, other: Path, walk_up: bool = True) -> Path:
         if not part or part == ".":
             pass
         elif not walk_up:
-            raise ValueError(
-                f"{self!r} is not in the subpath of {other!r}"
-            )
+            raise ValueError(f"{self!r} is not in the subpath of {other!r}")
         elif part == "..":
             raise ValueError(f"'..' segment in {other!r} cannot be walked")
         else:
             parts0.append("..")
-    return self.with_segments("", *reversed(parts0))
+    return Path(*reversed(parts0))
