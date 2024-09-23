@@ -142,7 +142,11 @@ class MarkedJson(BaseModel):
         Try to cast to MarkedJson if applicable, otherwise return input
         """
         if isinstance(value, dict) and "interface" in value and "value" in value:
-            value = MarkedJson(**value)
+            try:
+                value = MarkedJson(**value)
+            except ValidationError:
+                # fine, just not a MarkedJson dict even if it looks like one
+                return value
         return value
 
 
@@ -385,7 +389,7 @@ class Interface(ABC, Generic[T]):
         """
 
     @classmethod
-    def mark_json(cls, array: Union[list, dict]) -> MarkedJson:
+    def mark_json(cls, array: Union[list, dict]) -> dict:
         """
         When using ``model_dump_json`` with ``mark_interface: True`` in the ``context``,
         add additional annotations that would allow the serialized array to be
@@ -402,7 +406,7 @@ class Interface(ABC, Generic[T]):
                            'version': '1.2.2'},
              'value': [1.0, 2.0]}
         """
-        return MarkedJson.model_construct(interface=cls.mark_interface(), value=array)
+        return {"interface": cls.mark_interface(), "value": array}
 
     @classmethod
     def interfaces(
