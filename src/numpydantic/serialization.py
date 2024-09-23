@@ -85,26 +85,26 @@ def _walk_and_apply(value: T, f: Callable[[U], U]) -> T:
     return value
 
 
-def relative_path(target: Path, origin: Path) -> Path:
-    """
-    return path of target relative to origin, even if they're
-    not in the same subpath
+# def relative_path(target: Path, origin: Path) -> Path:
+#     """
+#     return path of target relative to origin, even if they're
+#     not in the same subpath
+# 
+#     References:
+#         - https://stackoverflow.com/a/71874881
+#     """
+#     try:
+#         return Path(target).resolve().relative_to(Path(origin).resolve())
+#     except ValueError:  # target does not start with origin
+#         # recursion with origin (eventually origin is root so try will succeed)
+#         try:
+#             return Path("..").joinpath(relative_path(target, Path(origin).parent))
+#         except ValueError:
+#             # break recursion in windows when
+#             pass
 
-    References:
-        - https://stackoverflow.com/a/71874881
-    """
-    try:
-        return Path(target).resolve().relative_to(Path(origin).resolve())
-    except ValueError:  # target does not start with origin
-        # recursion with origin (eventually origin is root so try will succeed)
-        try:
-            return Path("..").joinpath(relative_path(target, Path(origin).parent))
-        except ValueError:
-            # break recursion in windows when
-            pass
 
-
-def relative_to(self: Path, other: Path, walk_up=True) -> Path:
+def relative_path(self: Path, other: Path, walk_up: bool = True) -> Path:
     """
     "Backport" of :meth:`pathlib.Path.relative_to` with ``walk_up=True``
     that's not available pre 3.12.
@@ -115,6 +115,9 @@ def relative_to(self: Path, other: Path, walk_up=True) -> Path:
 
     The *walk_up* parameter controls whether `..` may be used to resolve
     the path.
+
+    References:
+        https://github.com/python/cpython/blob/8a2baedc4bcb606da937e4e066b4b3a18961cace/Lib/pathlib/_abc.py#L244-L270
     """
     if not isinstance(other, Path):
         other = self.with_segments(other)
