@@ -5,6 +5,8 @@ from numpydantic.exceptions import DtypeError, ShapeError
 
 from tests.conftest import ValidationCase
 
+pytestmark = pytest.mark.numpy
+
 
 def numpy_array(case: ValidationCase) -> np.ndarray:
     if issubclass(case.dtype, BaseModel):
@@ -22,10 +24,12 @@ def _test_np_case(case: ValidationCase):
             case.model(array=array)
 
 
+@pytest.mark.shape
 def test_numpy_shape(shape_cases):
     _test_np_case(shape_cases)
 
 
+@pytest.mark.dtype
 def test_numpy_dtype(dtype_cases):
     _test_np_case(dtype_cases)
 

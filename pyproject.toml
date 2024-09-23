@@ -116,7 +116,13 @@ markers = [
     "dtype: mark test related to dtype validation",
     "shape: mark test related to shape validation",
     "json_schema: mark test related to json schema generation",
-    "serialization: mark test related to serialization"
+    "serialization: mark test related to serialization",
+    "proxy: test for proxy class in any interface",
+    "dask: dask interface",
+    "hdf5: hdf5 interface",
+    "numpy: numpy interface",
+    "video: video interface",
+    "zarr: zarr interface",
 ]
 
 [tool.ruff]

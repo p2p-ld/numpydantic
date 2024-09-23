@@ -66,3 +66,10 @@ def test_interface_roundtrip_json(all_interfaces, round_trip):
         assert model.array.dtype == all_interfaces.array.dtype
     else:
         assert np.array_equal(model.array, np.array(all_interfaces.array))
+
+
+def test_dunder_len(all_interfaces):
+    """
+    Each interface or proxy type should support __len__
+    """
+    assert len(all_interfaces.array) == all_interfaces.array.shape[0]

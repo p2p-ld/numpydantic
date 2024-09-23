@@ -41,6 +41,7 @@ def test_ndarray_type():
     instance = Model(array=np.zeros((2, 3)), array_any=np.ones((3, 4, 5)))
 
 
+@pytest.mark.dtype
 @pytest.mark.json_schema
 def test_schema_unsupported_type():
     """
@@ -57,10 +58,11 @@ def test_schema_unsupported_type():
     }
 
 
+@pytest.mark.dtype
 @pytest.mark.json_schema
 def test_schema_tuple():
     """
-    Types specified as tupled should have their schemas as a union
+    Types specified as tuples should have their schemas as a union
     """
 
     class Model(BaseModel):
@@ -75,6 +77,7 @@ def test_schema_tuple():
     assert all([i["minimum"] == 0 for i in conditions])
 
 
+@pytest.mark.dtype
 @pytest.mark.json_schema
 def test_schema_number():
     """
@@ -119,12 +122,12 @@ def test_ndarray_union():
         instance = Model(array=np.random.random((5, 10, 4, 6)))
 
 
+@pytest.mark.shape
+@pytest.mark.dtype
 @pytest.mark.parametrize("dtype", dtype.Number)
 def test_ndarray_unparameterized(dtype):
     """
     NDArray without any parameters is any shape, any type
-    Returns:
-
     """
 
     class Model(BaseModel):
@@ -138,6 +141,7 @@ def test_ndarray_unparameterized(dtype):
         _ = Model(array=np.zeros(dim_sizes, dtype=dtype))
 
 
+@pytest.mark.shape
 def test_ndarray_any():
     """
     using :class:`typing.Any` in for the shape means any shape
@@ -249,6 +253,7 @@ def test_json_schema_dtype_single(dtype, array_model):
 
 
 @pytest.mark.dtype
+@pytest.mark.json_schema
 @pytest.mark.parametrize(
     "dtype,expected",
     [

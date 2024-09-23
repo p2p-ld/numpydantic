@@ -6,12 +6,13 @@ import zarr
 from pydantic import BaseModel, ValidationError
 from numcodecs import Pickle
 
-
 from numpydantic.interface import ZarrInterface
 from numpydantic.interface.zarr import ZarrArrayPath
 from numpydantic.exceptions import DtypeError, ShapeError
 
 from tests.conftest import ValidationCase
+
+pytestmark = pytest.mark.zarr
 
 
 @pytest.fixture()
@@ -87,10 +88,12 @@ def test_zarr_check(interface_type):
         assert not ZarrInterface.check(interface_type[0])
 
 
+@pytest.mark.shape
 def test_zarr_shape(store, shape_cases):
     _test_zarr_case(shape_cases, store)
 
 
+@pytest.mark.dtype
 def test_zarr_dtype(dtype_cases, store):
     _test_zarr_case(dtype_cases, store)
 

@@ -9,6 +9,8 @@ import numpy as np
 
 from numpydantic import NDArray, Shape
 
+pytestmark = pytest.mark.shape
+
 
 @pytest.mark.parametrize(
     "shape,valid",

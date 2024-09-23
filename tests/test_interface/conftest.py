@@ -12,24 +12,44 @@ from numpydantic import interface, NDArray
 @pytest.fixture(
     scope="function",
     params=[
-        ([[1, 2], [3, 4]], interface.NumpyInterface),
-        (np.zeros((3, 4)), interface.NumpyInterface),
-        ("hdf5_array", interface.H5Interface),
-        (da.random.random((10, 10)), interface.DaskInterface),
-        (zarr.ones((10, 10)), interface.ZarrInterface),
-        ("zarr_nested_array", interface.ZarrInterface),
-        ("zarr_array", interface.ZarrInterface),
-        ("avi_video", interface.VideoInterface),
-    ],
-    ids=[
-        "numpy_list",
-        "numpy",
-        "H5ArrayPath",
-        "dask",
-        "zarr_memory",
-        "zarr_nested",
-        "zarr_array",
-        "video",
+        pytest.param(
+            ([[1, 2], [3, 4]], interface.NumpyInterface),
+            marks=pytest.mark.numpy,
+            id="numpy-list",
+        ),
+        pytest.param(
+            (np.zeros((3, 4)), interface.NumpyInterface),
+            marks=pytest.mark.numpy,
+            id="numpy",
+        ),
+        pytest.param(
+            ("hdf5_array", interface.H5Interface),
+            marks=pytest.mark.hdf5,
+            id="h5-array-path",
+        ),
+        pytest.param(
+            (da.random.random((10, 10)), interface.DaskInterface),
+            marks=pytest.mark.dask,
+            id="dask",
+        ),
+        pytest.param(
+            (zarr.ones((10, 10)), interface.ZarrInterface),
+            marks=pytest.mark.zarr,
+            id="zarr-memory",
+        ),
+        pytest.param(
+            ("zarr_nested_array", interface.ZarrInterface),
+            marks=pytest.mark.zarr,
+            id="zarr-nested",
+        ),
+        pytest.param(
+            ("zarr_array", interface.ZarrInterface),
+            marks=pytest.mark.zarr,
+            id="zarr-array",
+        ),
+        pytest.param(
+            ("avi_video", interface.VideoInterface), marks=pytest.mark.video, id="video"
+        ),
     ],
 )
 def interface_type(request) -> Tuple[NDArray, Type[interface.Interface]]:

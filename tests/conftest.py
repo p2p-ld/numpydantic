@@ -83,6 +83,7 @@ STRING: TypeAlias = NDArray[Shape["*, *, *"], str]
 MODEL: TypeAlias = NDArray[Shape["*, *, *"], BasicModel]
 
 
+@pytest.mark.shape
 @pytest.fixture(
     scope="module",
     params=[
@@ -120,6 +121,7 @@ def shape_cases(request) -> ValidationCase:
     return request.param
 
 
+@pytest.mark.dtype
 @pytest.fixture(
     scope="module",
     params=[

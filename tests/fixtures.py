@@ -104,6 +104,7 @@ def model_blank() -> Type[BaseModel]:
     return BlankModel
 
 
+@pytest.mark.hdf5
 @pytest.fixture(scope="function")
 def hdf5_file(tmp_output_dir_func) -> h5py.File:
     h5f_file = tmp_output_dir_func / "h5f.h5"
@@ -112,6 +113,7 @@ def hdf5_file(tmp_output_dir_func) -> h5py.File:
     h5f.close()
 
 
+@pytest.mark.hdf5
 @pytest.fixture(scope="function")
 def hdf5_array(
     hdf5_file, request
@@ -154,6 +156,7 @@ def hdf5_array(
     return _hdf5_array
 
 
+@pytest.mark.zarr
 @pytest.fixture(scope="function")
 def zarr_nested_array(tmp_output_dir_func) -> ZarrArrayPath:
     """Zarr array within a nested array"""
@@ -164,6 +167,7 @@ def zarr_nested_array(tmp_output_dir_func) -> ZarrArrayPath:
     return ZarrArrayPath(file=file, path=path)
 
 
+@pytest.mark.zarr
 @pytest.fixture(scope="function")
 def zarr_array(tmp_output_dir_func) -> Path:
     file = tmp_output_dir_func / "array.zarr"
@@ -172,6 +176,7 @@ def zarr_array(tmp_output_dir_func) -> Path:
     return file
 
 
+@pytest.mark.video
 @pytest.fixture(scope="function")
 def avi_video(tmp_path) -> Callable[[Tuple[int, int], int, bool], Path]:
     video_path = tmp_path / "test.avi"

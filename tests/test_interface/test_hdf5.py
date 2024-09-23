@@ -14,6 +14,8 @@ from numpydantic.exceptions import DtypeError, ShapeError
 
 from tests.conftest import ValidationCase
 
+pytestmark = pytest.mark.hdf5
+
 
 def hdf5_array_case(
     case: ValidationCase, array_func, compound: bool = False
@@ -72,11 +74,13 @@ def test_hdf5_check_not_hdf5(tmp_path):
     assert not H5Interface.check(spec)
 
 
+@pytest.mark.shape
 @pytest.mark.parametrize("compound", [True, False])
 def test_hdf5_shape(shape_cases, hdf5_array, compound):
     _test_hdf5_case(shape_cases, hdf5_array, compound)
 
 
+@pytest.mark.dtype
 @pytest.mark.parametrize("compound", [True, False])
 def test_hdf5_dtype(dtype_cases, hdf5_array, compound):
     _test_hdf5_case(dtype_cases, hdf5_array, compound)
@@ -90,6 +94,7 @@ def test_hdf5_dataset_not_exists(hdf5_array, model_blank):
         assert "no array found" in e
 
 
+@pytest.mark.proxy
 def test_assignment(hdf5_array, model_blank):
     array = hdf5_array()
 
@@ -101,6 +106,7 @@ def test_assignment(hdf5_array, model_blank):
     assert (model.array[1:3, 2:4] == 10).all()
 
 
+@pytest.mark.serialization
 @pytest.mark.parametrize("round_trip", (True, False))
 def test_to_json(hdf5_array, array_model, round_trip):
     """
@@ -125,6 +131,8 @@ def test_to_json(hdf5_array, array_model, round_trip):
         assert json_dumped == instance.array[:].tolist()
 
 
+@pytest.mark.dtype
+@pytest.mark.proxy
 def test_compound_dtype(tmp_path):
     """
     hdf5 proxy indexes compound dtypes as single fields when field is given
@@ -159,6 +167,8 @@ def test_compound_dtype(tmp_path):
     assert all(instance.array[1] == 2)
 
 
+@pytest.mark.dtype
+@pytest.mark.proxy
 @pytest.mark.parametrize("compound", [True, False])
 def test_strings(hdf5_array, compound):
     """
@@ -178,6 +188,8 @@ def test_strings(hdf5_array, compound):
     assert all(instance.array[1] == "sup")
 
 
+@pytest.mark.dtype
+@pytest.mark.proxy
 @pytest.mark.parametrize("compound", [True, False])
 def test_datetime(hdf5_array, compound):
     """

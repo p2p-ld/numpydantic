@@ -61,7 +61,7 @@ class DaskInterface(Interface):
         """
         check if array is a dask array
         """
-        if DaskArray is None:
+        if DaskArray is None:  # pragma: no cover - no tests for interface deps atm
             return False
         elif isinstance(array, DaskArray):
             return True
