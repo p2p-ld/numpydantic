@@ -9,7 +9,13 @@ from typing import Literal
 import pytest
 import numpy as np
 
-from numpydantic.interface import Interface, JsonDict
+from numpydantic.interface import (
+    Interface,
+    JsonDict,
+    InterfaceMark,
+    NumpyInterface,
+    MarkedJson,
+)
 from pydantic import ValidationError
 
 from numpydantic.interface.interface import V
@@ -210,3 +216,33 @@ def test_jsondict_handle_input():
     for item in (valid, instantiated):
         result = MyJsonDict.handle_input(item)
         assert result == expected
+
+
+@pytest.mark.serialization
+@pytest.mark.parametrize("interface", Interface.interfaces())
+def test_interface_mark_match_by_name(interface):
+    """
+    Interface mark should match an interface by its name
+    """
+    # other parts don't matter
+    mark = InterfaceMark(module="fake", cls="fake", version="fake", name=interface.name)
+    fake_mark = InterfaceMark(
+        module="fake", cls="fake", version="fake", name="also_fake"
+    )
+    assert mark.match_by_name() is interface
+    assert fake_mark.match_by_name() is None
+
+
+@pytest.mark.serialization
+def test_marked_json_try_cast():
+    """
+    MarkedJson.try_cast should try and cast to a markedjson!
+    returning the value unchanged if it's not a match
+    """
+    valid = {"interface": NumpyInterface.mark_interface(), "value": [[1, 2], [3, 4]]}
+    invalid = [1, 2, 3, 4, 5]
+    mimic = {"interface": "not really", "value": "still not really"}
+
+    assert isinstance(MarkedJson.try_cast(valid), MarkedJson)
+    assert MarkedJson.try_cast(invalid) is invalid
+    assert MarkedJson.try_cast(mimic) is mimic

@@ -30,6 +30,9 @@ def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
         else:
             relative_to = info.context.get("relative_to", ".")
             array = _relativize_paths(array, relative_to)
+    else:
+        # relativize paths by default
+        array = _relativize_paths(array, ".")
 
     return array
 
@@ -40,6 +43,7 @@ def _relativize_paths(value: dict, relative_to: str = ".") -> dict:
     ``relative_to`` directory, if provided in the context
     """
     relative_to = Path(relative_to).resolve()
+    # pdb.set_trace()
 
     def _r_path(v: Any) -> Any:
         try:
@@ -85,25 +89,6 @@ def _walk_and_apply(value: T, f: Callable[[U], U]) -> T:
     return value
 
 
-# def relative_path(target: Path, origin: Path) -> Path:
-#     """
-#     return path of target relative to origin, even if they're
-#     not in the same subpath
-#
-#     References:
-#         - https://stackoverflow.com/a/71874881
-#     """
-#     try:
-#         return Path(target).resolve().relative_to(Path(origin).resolve())
-#     except ValueError:  # target does not start with origin
-#         # recursion with origin (eventually origin is root so try will succeed)
-#         try:
-#             return Path("..").joinpath(relative_path(target, Path(origin).parent))
-#         except ValueError:
-#             # break recursion in windows when
-#             pass
-
-
 def relative_path(self: Path, other: Path, walk_up: bool = True) -> Path:
     """
     "Backport" of :meth:`pathlib.Path.relative_to` with ``walk_up=True``
@@ -119,7 +104,8 @@ def relative_path(self: Path, other: Path, walk_up: bool = True) -> Path:
     References:
         https://github.com/python/cpython/blob/8a2baedc4bcb606da937e4e066b4b3a18961cace/Lib/pathlib/_abc.py#L244-L270
     """
-    if not isinstance(other, Path):
+    # pdb.set_trace()
+    if not isinstance(other, Path):  # pragma: no cover - ripped from cpython
         other = Path(other)
     self_parts = self.parts
     other_parts = other.parts
@@ -130,7 +116,7 @@ def relative_path(self: Path, other: Path, walk_up: bool = True) -> Path:
     while parts0 and parts1 and parts0[-1] == parts1[-1]:
         parts0.pop()
         parts1.pop()
-    for part in parts1:
+    for part in parts1:  # pragma: no cover - not testing, ripped off from cpython
         if not part or part == ".":
             pass
         elif not walk_up:

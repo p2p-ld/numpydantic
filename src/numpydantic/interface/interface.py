@@ -567,7 +567,9 @@ class Interface(ABC, Generic[T]):
                 if interface_module is None
                 else version(interface_module.split(".")[0])
             )
-        except PackageNotFoundError:
+        except (
+            PackageNotFoundError
+        ):  # pragma: no cover - no tests for missing interface deps
             v = None
 
         return InterfaceMark(

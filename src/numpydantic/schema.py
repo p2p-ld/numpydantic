@@ -25,8 +25,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
     from numpydantic import Shape
 
-_UNSUPPORTED_TYPES = (complex,)
-
 
 def _numeric_dtype(
     dtype: DtypeType, _handler: "CallbackGetCoreSchemaHandler"
@@ -41,10 +39,6 @@ def _numeric_dtype(
     elif issubclass(dtype, np.integer):
         info = np.iinfo(dtype)
         schema = core_schema.int_schema(le=int(info.max), ge=int(info.min))
-    elif dtype is float:
-        schema = core_schema.float_schema()
-    elif dtype is int:
-        schema = core_schema.int_schema()
     else:
         schema = _handler.generate_schema(dtype)
 
@@ -89,10 +83,7 @@ def _lol_dtype(
                 # does this need a warning?
                 python_type = Any
 
-        if python_type in _UNSUPPORTED_TYPES:
-            array_type = core_schema.any_schema()
-            # TODO: warn and log here
-        elif python_type in (float, int):
+        if python_type in (float, int):
             array_type = _numeric_dtype(dtype, _handler)
         elif python_type is bool:
             array_type = core_schema.bool_schema()

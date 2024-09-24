@@ -122,7 +122,9 @@ def test_to_json(hdf5_array, array_model, round_trip):
 
     instance = model(array=array)  # type: BaseModel
 
-    json_str = instance.model_dump_json(round_trip=round_trip)
+    json_str = instance.model_dump_json(
+        round_trip=round_trip, context={"absolute_paths": True}
+    )
     json_dumped = json.loads(json_str)["array"]
     if round_trip:
         assert json_dumped["file"] == str(array.file)
