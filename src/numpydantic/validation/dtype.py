@@ -3,6 +3,7 @@ Helper functions for validation of dtype.
 
 For literal dtypes intended for use by end-users, see :mod:`numpydantic.dtype`
 """
+
 import sys
 from typing import Any, Union, get_args, get_origin
 
