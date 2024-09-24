@@ -172,6 +172,18 @@ def test_ndarray_coercion():
         amod = Model(array=["a", "b", "c"])
 
 
+@pytest.mark.shape
+def test_shape_ellipsis():
+    """
+    Test that ellipsis is a wildcard, rather than "repeat the last index"
+    """
+
+    class MyModel(BaseModel):
+        array: NDArray[Shape["1, 2, ..."], Number]
+
+    _ = MyModel(array=np.zeros((1, 2, 3, 4, 5)))
+
+
 @pytest.mark.serialization
 def test_ndarray_serialize():
     """

@@ -12,6 +12,8 @@ from typing import Callable
 import numpy as np
 import json
 
+pytestmark = pytest.mark.serialization
+
 
 @pytest.fixture(scope="module")
 def hdf5_at_path() -> Callable[[Path], None]:
