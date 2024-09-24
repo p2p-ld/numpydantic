@@ -473,6 +473,7 @@ dumped = instance.model_dump_json(context={'zarr_dump_array': True})
 
 design
 syntax
+dtype
 serialization
 interfaces
 ```
@@ -484,13 +485,13 @@ interfaces
 
 api/index
 api/interface/index
+api/validation/index
 api/dtype
 api/ndarray
 api/maps
 api/meta
 api/schema
 api/serialization
-api/shape
 api/types
 
 ```

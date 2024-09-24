@@ -20,8 +20,8 @@ from numpydantic.exceptions import (
     ShapeError,
     TooManyMatchesError,
 )
-from numpydantic.shape import check_shape
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
+from numpydantic.validation import validate_dtype, validate_shape
 
 T = TypeVar("T", bound=NDArrayType)
 U = TypeVar("U", bound="JsonDict")
@@ -76,6 +76,21 @@ class InterfaceMark(BaseModel):
 class JsonDict(BaseModel):
     """
     Representation of array when dumped with round_trip == True.
+
+    .. admonition:: Developer's Note
+
+        Any JsonDict that contains an actual array should be named ``value``
+        rather than array (or any other name), and nothing but the
+        array data should be named ``value`` .
+
+        During JSON serialization, it becomes ambiguous what contains an array
+        of data vs. an array of metadata. For the moment we would like to
+        reserve the ability to have lists of metadata, so until we rule that out,
+        we would like to be able to avoid iterating over every element of an array
+        in any context parameter transformation like relativizing/absolutizing paths.
+        To avoid that, it's good to agree on a single value name -- ``value`` --
+        and avoid using it for anything else.
+
     """
 
     type: str
@@ -274,25 +289,7 @@ class Interface(ABC, Generic[T]):
         Validate the dtype of the given array, returning
         ``True`` if valid, ``False`` if not.
         """
-        if self.dtype is Any:
-            return True
-
-        if isinstance(self.dtype, tuple):
-            valid = dtype in self.dtype
-        elif self.dtype is np.str_:
-            valid = getattr(dtype, "type", None) in (np.str_, str) or dtype in (
-                np.str_,
-                str,
-            )
-        else:
-            # try to match as any subclass, if self.dtype is a class
-            try:
-                valid = issubclass(dtype, self.dtype)
-            except TypeError:
-                # expected, if dtype or self.dtype is not a class
-                valid = dtype == self.dtype
-
-        return valid
+        return validate_dtype(dtype, self.dtype)
 
     def raise_for_dtype(self, valid: bool, dtype: DtypeType) -> None:
         """
@@ -326,7 +323,7 @@ class Interface(ABC, Generic[T]):
         if self.shape is Any:
             return True
 
-        return check_shape(shape, self.shape)
+        return validate_shape(shape, self.shape)
 
     def raise_for_shape(self, valid: bool, shape: Tuple[int, ...]) -> None:
         """

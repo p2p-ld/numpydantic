@@ -5,7 +5,7 @@ Helper functions for use with :class:`~numpydantic.NDArray` - see the note in
 
 import hashlib
 import json
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional, get_args
 
 import numpy as np
 from pydantic import BaseModel
@@ -16,6 +16,7 @@ from numpydantic import dtype as dt
 from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
+from numpydantic.validation.dtype import is_union
 from numpydantic.vendor.nptyping.structure import StructureMeta
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -51,7 +52,6 @@ def _lol_dtype(
     """Get the innermost dtype schema to use in the generated pydantic schema"""
     if isinstance(dtype, StructureMeta):  # pragma: no cover
         raise NotImplementedError("Structured dtypes are currently unsupported")
-
     if isinstance(dtype, tuple):
         # if it's a meta-type that refers to a generic float/int, just make that
         if dtype in (dt.Float, dt.Number):
@@ -66,7 +66,10 @@ def _lol_dtype(
             array_type = core_schema.union_schema(
                 [_lol_dtype(t, _handler) for t in types_]
             )
-
+    elif is_union(dtype):
+        array_type = core_schema.union_schema(
+            [_lol_dtype(t, _handler) for t in get_args(dtype)]
+        )
     else:
         try:
             python_type = np_to_python[dtype]
@@ -110,7 +113,7 @@ def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
         array_type ( :class:`pydantic_core.CoreSchema` ): The pre-rendered pydantic
             core schema to use in the innermost list entry
     """
-    from numpydantic.shape import _is_range
+    from numpydantic.validation.shape import _is_range
 
     shape_parts = [part.strip() for part in shape.__args__[0].split(",")]
     # labels, if present

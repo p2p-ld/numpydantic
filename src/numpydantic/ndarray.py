@@ -13,7 +13,7 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 
 """
 
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import TYPE_CHECKING, Any, Literal, Tuple, get_origin
 
 import numpy as np
 from pydantic import GetJsonSchemaHandler
@@ -29,6 +29,7 @@ from numpydantic.schema import (
 )
 from numpydantic.serialization import jsonize_array
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
+from numpydantic.validation.dtype import is_union
 from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 from numpydantic.vendor.nptyping.ndarray import NDArrayMeta as _NDArrayMeta
 from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
@@ -86,11 +87,18 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
         except InterfaceError:
             return False
 
+    def _is_literal_like(cls, item: Any) -> bool:
+        """
+        Changes from nptyping:
+        - doesn't just ducktype for literal but actually, yno, checks for being literal
+        """
+        return get_origin(item) is Literal
+
     def _get_shape(cls, dtype_candidate: Any) -> "Shape":
         """
         Override of base method to use our local definition of shape
         """
-        from numpydantic.shape import Shape
+        from numpydantic.validation.shape import Shape
 
         if dtype_candidate is Any or dtype_candidate is Shape:
             shape = Any
@@ -120,7 +128,7 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
 
         if dtype_candidate is Any:
             dtype = Any
-        elif is_dtype:
+        elif is_dtype or is_union(dtype_candidate):
             dtype = dtype_candidate
         elif issubclass(dtype_candidate, Structure):  # pragma: no cover
             dtype = dtype_candidate

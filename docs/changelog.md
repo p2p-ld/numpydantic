@@ -4,6 +4,33 @@
 
 ### 1.6.*
 
+#### 1.6.1 - 24-09-23 - Support Union Dtypes
+
+It's now possible to do this, like it always should have been
+
+```python
+class MyModel(BaseModel):
+    array: NDArray[Any, int | float]
+```
+
+**Features** 
+- Support for Union Dtypes
+
+**Structure**
+- New `validation` module containing `shape` and `dtype` convenience methods
+  to declutter main namespace and make a grouping for related code
+- Rename all serialized arrays within a container dict to `value` to be able
+  to identify them by convention and avoid long iteration - see perf below.
+
+**Perf**
+- Avoid iterating over every item in an array trying to convert it to a path for
+  a several order of magnitude perf improvement over `1.6.0` (oops)
+
+**Docs**
+- Page for `dtypes`, mostly stubs at the moment, but more explicit documentation
+  about what kind of dtypes we support.
+
+
 #### 1.6.0 - 24-09-23 - Roundtrip JSON Serialization
 
 Roundtrip JSON serialization is here - with serialization to list of lists,

@@ -2,7 +2,7 @@
 Declaration and validation functions for array shapes.
 
 Mostly a mildly modified version of nptyping's
-:func:`npytping.shape_expression.check_shape`
+:func:`npytping.shape_expression.validate_shape`
 and its internals to allow for extended syntax, including ranges of shapes.
 
 Modifications from nptyping:
@@ -105,7 +105,7 @@ def validate_shape_expression(shape_expression: Union[ShapeExpression, Any]) -> 
 
 
 @lru_cache
-def check_shape(shape: ShapeTuple, target: "Shape") -> bool:
+def validate_shape(shape: ShapeTuple, target: "Shape") -> bool:
     """
     Check whether the given shape corresponds to the given shape_expression.
     :param shape: the shape in question.

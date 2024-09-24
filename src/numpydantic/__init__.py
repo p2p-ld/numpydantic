@@ -4,7 +4,7 @@
 
 from numpydantic.ndarray import NDArray
 from numpydantic.meta import update_ndarray_stub
-from numpydantic.shape import Shape
+from numpydantic.validation.shape import Shape
 
 update_ndarray_stub()
 

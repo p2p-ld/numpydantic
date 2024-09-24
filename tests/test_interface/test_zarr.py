@@ -151,7 +151,7 @@ def test_zarr_to_json(store, model_blank, roundtrip, dump_array):
 
     if roundtrip:
         if dump_array:
-            assert as_json["array"] == lol_array
+            assert as_json["value"] == lol_array
         else:
             if as_json.get("file", False):
                 assert "array" not in as_json

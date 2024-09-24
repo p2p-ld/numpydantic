@@ -4,7 +4,7 @@ and :func:`pydantic.BaseModel.model_dump_json` .
 """
 
 from pathlib import Path
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, Callable, Iterable, TypeVar, Union
 
 from pydantic_core.core_schema import SerializationInfo
 
@@ -16,6 +16,9 @@ U = TypeVar("U")
 
 def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
     """Use an interface class to render an array as JSON"""
+    # perf: keys to skip in generation - anything named "value" is array data.
+    skip = ["value"]
+
     interface_cls = Interface.match_output(value)
     array = interface_cls.to_json(value, info)
     if isinstance(array, JsonDict):
@@ -25,19 +28,37 @@ def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
         if info.context.get("mark_interface", False):
             array = interface_cls.mark_json(array)
 
+        if isinstance(array, list):
+            return array
+
+        # ---- Perf Barrier ------------------------------------------------------
+        # put context args intended to **wrap** the array above
+        # put context args intended to **modify** the array below
+        #
+        # above, we assume that a list is **data** not to be modified.
+        # below, we must mark whenever the data is in the line of fire
+        # to avoid an expensive iteration.
+
         if info.context.get("absolute_paths", False):
-            array = _absolutize_paths(array)
+            array = _absolutize_paths(array, skip)
         else:
             relative_to = info.context.get("relative_to", ".")
-            array = _relativize_paths(array, relative_to)
+            array = _relativize_paths(array, relative_to, skip)
     else:
-        # relativize paths by default
-        array = _relativize_paths(array, ".")
+        if isinstance(array, list):
+            return array
+
+        # ---- Perf Barrier ------------------------------------------------------
+        # same as above, ensure any keys that contain array values are skipped right now
+
+        array = _relativize_paths(array, ".", skip)
 
     return array
 
 
-def _relativize_paths(value: dict, relative_to: str = ".") -> dict:
+def _relativize_paths(
+    value: dict, relative_to: str = ".", skip: Iterable = tuple()
+) -> dict:
     """
     Make paths relative to either the current directory or the provided
     ``relative_to`` directory, if provided in the context
@@ -46,6 +67,8 @@ def _relativize_paths(value: dict, relative_to: str = ".") -> dict:
     # pdb.set_trace()
 
     def _r_path(v: Any) -> Any:
+        if not isinstance(v, (str, Path)):
+            return v
         try:
             path = Path(v)
             if not path.exists():
@@ -54,10 +77,10 @@ def _relativize_paths(value: dict, relative_to: str = ".") -> dict:
         except (TypeError, ValueError):
             return v
 
-    return _walk_and_apply(value, _r_path)
+    return _walk_and_apply(value, _r_path, skip)
 
 
-def _absolutize_paths(value: dict) -> dict:
+def _absolutize_paths(value: dict, skip: Iterable = tuple()) -> dict:
     def _a_path(v: Any) -> Any:
         try:
             path = Path(v)
@@ -67,23 +90,25 @@ def _absolutize_paths(value: dict) -> dict:
         except (TypeError, ValueError):
             return v
 
-    return _walk_and_apply(value, _a_path)
+    return _walk_and_apply(value, _a_path, skip)
 
 
-def _walk_and_apply(value: T, f: Callable[[U], U]) -> T:
+def _walk_and_apply(value: T, f: Callable[[U, bool], U], skip: Iterable = tuple()) -> T:
     """
     Walk an object, applying a function
     """
     if isinstance(value, dict):
         for k, v in value.items():
+            if k in skip:
+                continue
             if isinstance(v, dict):
-                _walk_and_apply(v, f)
+                _walk_and_apply(v, f, skip)
             elif isinstance(v, list):
-                value[k] = [_walk_and_apply(sub_v, f) for sub_v in v]
+                value[k] = [_walk_and_apply(sub_v, f, skip) for sub_v in v]
             else:
                 value[k] = f(v)
     elif isinstance(value, list):
-        value = [_walk_and_apply(v, f) for v in value]
+        value = [_walk_and_apply(v, f, skip) for v in value]
     else:
         value = f(value)
     return value
