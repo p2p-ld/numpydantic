@@ -114,7 +114,7 @@ to {func}`~pydantic.BaseModel.model_dump_json`.
 
 All the following should return an equivalent array from the same
 file/etc. as the source array when using 
-`{func}`~pydantic.BaseModel.model_validate_json`` .
+{func}`~pydantic.BaseModel.model_validate_json` .
 
 ```{code-cell}
 print_json(model.model_dump_json(round_trip=True))
