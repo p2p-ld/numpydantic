@@ -3,8 +3,6 @@ Test serialization-specific functionality that doesn't need to be
 applied across every interface (use test_interface/test_interfaces for that
 """
 
-import pdb
-
 import h5py
 import pytest
 from pathlib import Path

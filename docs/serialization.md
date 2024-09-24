@@ -110,14 +110,17 @@ as `int` ({class}`numpy.int64`) or `float` ({class}`numpy.float64`)
 ## Roundtripping
 
 To roundtrip make arrays round-trippable, use the `round_trip` argument
-to {func}`~pydantic.BaseModel.model_dump_json`
+to {func}`~pydantic.BaseModel.model_dump_json`.
 
+All the following should return an equivalent array from the same
+file/etc. as the source array when using 
+`{func}`~pydantic.BaseModel.model_validate_json`` .
 
 ```{code-cell}
 print_json(model.model_dump_json(round_trip=True))
 ```
 
-Each interface should[^notenforced] implement a dataclass that describes a
+Each interface must implement a dataclass that describes a
 json-able roundtrip form (see {class}`.interface.JsonDict`).
 
 That dataclass then has a {meth}`JsonDict.is_valid` method that checks
@@ -220,11 +223,33 @@ print_json(
     ))
 ```
 
+When an array marked with the interface is deserialized,
+it short-circuits the {meth}`.Interface.match` method,
+attempting to directly return the indicated interface as long as the
+array dumped in `value` still satisfies that interface's {meth}`.Interface.check`
+method. Arrays dumped *without* `round_trip=True` might *not* validate with
+the originating model, even when marked -- eg. an array dumped without `round_trip`
+will be revalidated as a numpy array for the same reasons it is everywhere else,
+since all connection to the source file is lost.
+
+```{todo}
+Currently, the version of the package the interface is from (usually `numpydantic`)
+will be stored, but there is no means of resolving it on the fly. 
+If there is a mismatch between the marked interface description and the interface
+that was matched on revalidation, a warning is emitted, but validation
+attempts to proceed as normal.
+
+This feature is for extra-verbose provenance, rather than airtight serialization
+and deserialization, but PRs welcome if you would like to make it be that way.
+```
+
 ```{todo}
 We will also add a separate `mark_version` parameter for marking
 the specific version of the relevant interface package, like `zarr`, or `numpy`,
 patience.
 ```
+
+
 
 ## Context parameters
 
@@ -305,9 +330,3 @@ print_json(data)
 
 
 [^normalstyle]: o ya we're posting JSON [normal style](https://normal.style)
-[^notenforced]: This is only *functionally* enforced at the moment, where 
-  a roundtrip test confirms that dtype and type are preserved,
-  but there is no formal test for each interface having its own serialization class
-
-
-
