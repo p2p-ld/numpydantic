@@ -109,7 +109,7 @@ as `int` ({class}`numpy.int64`) or `float` ({class}`numpy.float64`)
 
 ## Roundtripping
 
-To roundtrip make arrays round-trippable, use the `round_trip` argument
+To make arrays round-trippable, use the `round_trip` argument
 to {func}`~pydantic.BaseModel.model_dump_json`.
 
 All the following should return an equivalent array from the same
@@ -213,7 +213,7 @@ print_json(
 Numpydantic tries to be [stable](./development.md#api-stability),
 but we're not perfect. To preserve the full information about the
 interface that's needed to load the data referred to by the value,
-use the `mark_interface` contest parameter:
+use the `mark_interface` context parameter:
 
 ```{code-cell}
 print_json(
