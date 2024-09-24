@@ -93,7 +93,7 @@ def _absolutize_paths(value: dict, skip: Iterable = tuple()) -> dict:
     return _walk_and_apply(value, _a_path, skip)
 
 
-def _walk_and_apply(value: T, f: Callable[[U], U], skip: Iterable = tuple()) -> T:
+def _walk_and_apply(value: T, f: Callable[[U, bool], U], skip: Iterable = tuple()) -> T:
     """
     Walk an object, applying a function
     """
