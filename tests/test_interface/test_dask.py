@@ -1,5 +1,3 @@
-import pdb
-
 import pytest
 import json
 
@@ -10,6 +8,8 @@ from numpydantic.interface import DaskInterface
 from numpydantic.exceptions import DtypeError, ShapeError
 
 from tests.conftest import ValidationCase
+
+pytestmark = pytest.mark.dask
 
 
 def dask_array(case: ValidationCase) -> da.Array:
@@ -42,14 +42,17 @@ def test_dask_check(interface_type):
         assert not DaskInterface.check(interface_type[0])
 
 
+@pytest.mark.shape
 def test_dask_shape(shape_cases):
     _test_dask_case(shape_cases)
 
 
+@pytest.mark.dtype
 def test_dask_dtype(dtype_cases):
     _test_dask_case(dtype_cases)
 
 
+@pytest.mark.serialization
 def test_dask_to_json(array_model):
     array_list = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     array = da.array(array_list)

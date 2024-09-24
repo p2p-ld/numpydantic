@@ -24,11 +24,10 @@ from numpydantic.exceptions import InterfaceError
 from numpydantic.interface import Interface
 from numpydantic.maps import python_to_nptyping
 from numpydantic.schema import (
-    _handler_type,
-    _jsonize_array,
     get_validate_interface,
     make_json_schema,
 )
+from numpydantic.serialization import jsonize_array
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 from numpydantic.vendor.nptyping.ndarray import NDArrayMeta as _NDArrayMeta
@@ -41,6 +40,9 @@ from numpydantic.vendor.nptyping.typing_ import (
 
 if TYPE_CHECKING:  # pragma: no cover
     from nptyping.base_meta_classes import SubscriptableMeta
+    from pydantic._internal._schema_generation_shared import (
+        CallbackGetCoreSchemaHandler,
+    )
 
     from numpydantic import Shape
 
@@ -164,33 +166,34 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
     def __get_pydantic_core_schema__(
         cls,
         _source_type: "NDArray",
-        _handler: _handler_type,
+        _handler: "CallbackGetCoreSchemaHandler",
     ) -> core_schema.CoreSchema:
         shape, dtype = _source_type.__args__
         shape: ShapeType
         dtype: DtypeType
 
-        # get pydantic core schema as a list of lists for JSON schema
-        list_schema = make_json_schema(shape, dtype, _handler)
+        # make core schema for json schema, store it and any model definitions
+        # note that there is a big of fragility in this function,
+        # as we need to access a private method of _handler to
+        # flatten out the json schema. See help(make_json_schema)
+        json_schema = make_json_schema(shape, dtype, _handler)
 
-        return core_schema.json_or_python_schema(
-            json_schema=list_schema,
-            python_schema=core_schema.with_info_plain_validator_function(
-                get_validate_interface(shape, dtype)
-            ),
+        return core_schema.with_info_plain_validator_function(
+            get_validate_interface(shape, dtype),
             serialization=core_schema.plain_serializer_function_ser_schema(
-                _jsonize_array, when_used="json", info_arg=True
+                jsonize_array, when_used="json", info_arg=True
             ),
+            metadata=json_schema,
         )
 
     @classmethod
     def __get_pydantic_json_schema__(
         cls, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
     ) -> core_schema.JsonSchema:
-        json_schema = handler(schema)
+        shape, dtype = cls.__args__
+        json_schema = handler(schema["metadata"])
         json_schema = handler.resolve_ref_schema(json_schema)
 
-        dtype = cls.__args__[1]
         if not isinstance(dtype, tuple) and dtype.__module__ not in (
             "builtins",
             "typing",

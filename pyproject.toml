@@ -1,6 +1,6 @@
 [project]
 name = "numpydantic"
-version = "1.5.3"
+version = "1.6.0"
 description = "Type and shape validation and serialization for arbitrary array types in pydantic models"
 authors = [
     {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
@@ -73,12 +73,15 @@ tests = [
     "coveralls<4.0.0,>=3.3.1",
 ]
 docs = [
+    "numpydantic[arrays]",
     "sphinx<8.0.0,>=7.2.6",
     "furo>=2024.1.29",
     "myst-parser<3.0.0,>=2.0.0",
     "autodoc-pydantic<3.0.0,>=2.0.1",
     "sphinx-design<1.0.0,>=0.5.0",
     "sphinxcontrib-mermaid>=0.9.2",
+    "myst-nb>=1.1.1",
+    "rich>=13.8.1",
 ]
 dev = [
     "numpydantic[tests,docs]",
@@ -108,6 +111,18 @@ testpaths = [
 filterwarnings = [
     # nptyping's alias warnings
     'ignore:.*deprecated alias.*Deprecated NumPy 1\.24.*'
+]
+markers = [
+    "dtype: mark test related to dtype validation",
+    "shape: mark test related to shape validation",
+    "json_schema: mark test related to json schema generation",
+    "serialization: mark test related to serialization",
+    "proxy: test for proxy class in any interface",
+    "dask: dask interface",
+    "hdf5: hdf5 interface",
+    "numpy: numpy interface",
+    "video: video interface",
+    "zarr: zarr interface",
 ]
 
 [tool.ruff]

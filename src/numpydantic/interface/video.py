@@ -3,10 +3,12 @@ Interface to support treating videos like arrays using OpenCV
 """
 
 from pathlib import Path
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
+from pydantic_core.core_schema import SerializationInfo
 
+from numpydantic.interface import JsonDict
 from numpydantic.interface.interface import Interface
 
 try:
@@ -17,6 +19,19 @@ except ImportError:  # pragma: no cover
     VideoCapture = None
 
 VIDEO_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
+
+
+class VideoJsonDict(JsonDict):
+    """Json-able roundtrip representation of a video file"""
+
+    type: Literal["video"]
+    file: str
+
+    def to_array_input(self) -> "VideoProxy":
+        """
+        Construct a :class:`.VideoProxy`
+        """
+        return VideoProxy(path=Path(self.file))
 
 
 class VideoProxy:
@@ -33,7 +48,7 @@ class VideoProxy:
             )
 
         if path is not None:
-            path = Path(path)
+            path = Path(path).resolve()
         self.path = path
 
         self._video = video  # type: Optional[VideoCapture]
@@ -52,6 +67,9 @@ class VideoProxy:
                     "and it cant be reopened since source path cant be gotten "
                     "from VideoCapture objects"
                 )
+            if not self.path.exists():
+                raise FileNotFoundError(f"Video file {self.path} does not exist!")
+
             self._video = VideoCapture(str(self.path))
         return self._video
 
@@ -137,6 +155,10 @@ class VideoProxy:
             slice_ = slice(0, slice_.stop, slice_.step)
         return slice_
 
+    def __array__(self) -> np.ndarray:
+        """Whole video as a numpy array"""
+        return self[:]
+
     def __getitem__(self, item: Union[int, slice, tuple]) -> np.ndarray:
         if isinstance(item, int):
             # want a single frame
@@ -178,7 +200,15 @@ class VideoProxy:
         raise NotImplementedError("Setting pixel values on videos is not supported!")
 
     def __getattr__(self, item: str):
+        if item == "__name__":
+            return "VideoProxy"
         return getattr(self.video, item)
+
+    def __eq__(self, other: "VideoProxy") -> bool:
+        """Check if this is a proxy to the same video file"""
+        if not isinstance(other, VideoProxy):
+            raise TypeError("Can only compare equality of two VideoProxies")
+        return self.path == other.path
 
     def __len__(self) -> int:
         """Number of frames in the video"""
@@ -190,8 +220,10 @@ class VideoInterface(Interface):
     OpenCV interface to treat videos as arrays.
     """
 
+    name = "video"
     input_types = (str, Path, VideoCapture, VideoProxy)
     return_type = VideoProxy
+    json_model = VideoJsonDict
 
     @classmethod
     def enabled(cls) -> bool:
@@ -208,6 +240,9 @@ class VideoInterface(Interface):
             array, VideoProxy
         ):
             return True
+
+        if isinstance(array, dict):
+            array = array.get("file", "")
 
         if isinstance(array, str):
             try:
@@ -227,3 +262,13 @@ class VideoInterface(Interface):
         else:
             proxy = VideoProxy(path=array)
         return proxy
+
+    @classmethod
+    def to_json(
+        cls, array: VideoProxy, info: SerializationInfo
+    ) -> Union[list, VideoJsonDict]:
+        """Return a json-representation of a video"""
+        if info.round_trip:
+            return VideoJsonDict(type=cls.name, file=str(array.path))
+        else:
+            return np.array(array).tolist()

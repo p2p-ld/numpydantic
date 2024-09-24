@@ -2,9 +2,11 @@
 Interface to numpy arrays
 """
 
-from typing import Any
+from typing import Any, Literal, Union
 
-from numpydantic.interface.interface import Interface
+from pydantic import SerializationInfo
+
+from numpydantic.interface.interface import Interface, JsonDict
 
 try:
     import numpy as np
@@ -18,13 +20,31 @@ except ImportError:  # pragma: no cover
     np = None
 
 
+class NumpyJsonDict(JsonDict):
+    """
+    JSON-able roundtrip representation of numpy array
+    """
+
+    type: Literal["numpy"]
+    dtype: str
+    array: list
+
+    def to_array_input(self) -> ndarray:
+        """
+        Construct a numpy array
+        """
+        return np.array(self.array, dtype=self.dtype)
+
+
 class NumpyInterface(Interface):
     """
     Numpy :class:`~numpy.ndarray` s!
     """
 
+    name = "numpy"
     input_types = (ndarray, list)
     return_type = ndarray
+    json_model = NumpyJsonDict
     priority = -999
     """
     The numpy interface is usually the interface of last resort.
@@ -41,6 +61,8 @@ class NumpyInterface(Interface):
         """
         if isinstance(array, ndarray):
             return True
+        elif isinstance(array, dict):
+            return NumpyJsonDict.is_valid(array)
         else:
             try:
                 _ = np.array(array)
@@ -61,3 +83,22 @@ class NumpyInterface(Interface):
     def enabled(cls) -> bool:
         """Check that numpy is present in the environment"""
         return ENABLED
+
+    @classmethod
+    def to_json(
+        cls, array: ndarray, info: SerializationInfo = None
+    ) -> Union[list, JsonDict]:
+        """
+        Convert an array of :attr:`.return_type` to a JSON-compatible format using
+        base python types
+        """
+        if not isinstance(array, np.ndarray):  # pragma: no cover
+            array = np.array(array)
+
+        json_array = array.tolist()
+
+        if info.round_trip:
+            json_array = NumpyJsonDict(
+                type=cls.name, dtype=str(array.dtype), array=json_array
+            )
+        return json_array

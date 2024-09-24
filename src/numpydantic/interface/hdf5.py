@@ -47,7 +47,7 @@ from typing import Any, Iterable, List, NamedTuple, Optional, Tuple, TypeVar, Un
 import numpy as np
 from pydantic import SerializationInfo
 
-from numpydantic.interface.interface import Interface
+from numpydantic.interface.interface import Interface, JsonDict
 from numpydantic.types import DtypeType, NDArrayType
 
 try:
@@ -74,6 +74,20 @@ class H5ArrayPath(NamedTuple):
     """Path within the HDF5 file"""
     field: Optional[Union[str, List[str]]] = None
     """Refer to a specific field within a compound dtype"""
+
+
+class H5JsonDict(JsonDict):
+    """Round-trip Json-able version of an HDF5 dataset"""
+
+    file: str
+    path: str
+    field: Optional[str] = None
+
+    def to_array_input(self) -> H5ArrayPath:
+        """Construct an :class:`.H5ArrayPath`"""
+        return H5ArrayPath(
+            **{k: v for k, v in self.model_dump().items() if k in H5ArrayPath._fields}
+        )
 
 
 class H5Proxy:
@@ -106,10 +120,11 @@ class H5Proxy:
         annotation_dtype: Optional[DtypeType] = None,
     ):
         self._h5f = None
-        self.file = Path(file)
+        self.file = Path(file).resolve()
         self.path = path
         self.field = field
         self._annotation_dtype = annotation_dtype
+        self._h5arraypath = H5ArrayPath(self.file, self.path, self.field)
 
     def array_exists(self) -> bool:
         """Check that there is in fact an array at :attr:`.path` within :attr:`.file`"""
@@ -134,10 +149,20 @@ class H5Proxy:
             else:
                 return obj.dtype[self.field]
 
-    def __getattr__(self, item: str):
+    def __array__(self) -> np.ndarray:
+        """To a numpy array"""
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
-            return getattr(obj, item)
+            return obj[:]
+
+    def __getattr__(self, item: str):
+        if item == "__name__":
+            # special case for H5Proxies that don't refer to a real file during testing
+            return "H5Proxy"
+        with h5py.File(self.file, "r") as h5f:
+            obj = h5f.get(self.path)
+            val = getattr(obj, item)
+            return val
 
     def __getitem__(
         self, item: Union[int, slice, Tuple[Union[int, slice], ...]]
@@ -205,6 +230,15 @@ class H5Proxy:
         """self.shape[0]"""
         return self.shape[0]
 
+    def __eq__(self, other: "H5Proxy") -> bool:
+        """
+        Check that we are referring to the same hdf5 array
+        """
+        if isinstance(other, H5Proxy):
+            return self._h5arraypath == other._h5arraypath
+        else:
+            raise ValueError("Can only compare equality of two H5Proxies")
+
     def open(self, mode: str = "r") -> "h5py.Dataset":
         """
         Return the opened :class:`h5py.Dataset` object
@@ -244,8 +278,10 @@ class H5Interface(Interface):
     passthrough numpy-like interface to the dataset.
     """
 
+    name = "hdf5"
     input_types = (H5ArrayPath, H5Arraylike, H5Proxy)
     return_type = H5Proxy
+    json_model = H5JsonDict
 
     @classmethod
     def enabled(cls) -> bool:
@@ -260,6 +296,13 @@ class H5Interface(Interface):
         """
         if isinstance(array, (H5ArrayPath, H5Proxy)):
             return True
+
+        if isinstance(array, dict):
+            if array.get("type", False) == cls.name:
+                return True
+            # continue checking if dict contains an hdf5 file
+            file = array.get("file", "")
+            array = (file, "")
 
         if isinstance(array, (tuple, list)) and len(array) in (2, 3):
             # check that the first arg is an hdf5 file
@@ -342,21 +385,27 @@ class H5Interface(Interface):
     @classmethod
     def to_json(cls, array: H5Proxy, info: Optional[SerializationInfo] = None) -> dict:
         """
-        Dump to a dictionary containing
+        Render HDF5 array as JSON
+
+        If ``round_trip == True``, we dump just the proxy info, a dictionary like:
 
         * ``file``: :attr:`.file`
         * ``path``: :attr:`.path`
         * ``attrs``: Any HDF5 attributes on the dataset
         * ``array``: The array as a list of lists
+
+        Otherwise, we dump the array as a list of lists
         """
-        try:
-            dset = array.open()
-            meta = {
-                "file": array.file,
-                "path": array.path,
-                "attrs": dict(dset.attrs),
-                "array": dset[:].tolist(),
+        if info.round_trip:
+            as_json = {
+                "type": cls.name,
             }
-            return meta
-        finally:
-            array.close()
+            as_json.update(array._h5arraypath._asdict())
+        else:
+            try:
+                dset = array.open()
+                as_json = dset[:].tolist()
+            finally:
+                array.close()
+
+        return as_json

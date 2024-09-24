@@ -14,6 +14,8 @@ from numpydantic.exceptions import DtypeError, ShapeError
 
 from tests.conftest import ValidationCase
 
+pytestmark = pytest.mark.hdf5
+
 
 def hdf5_array_case(
     case: ValidationCase, array_func, compound: bool = False
@@ -72,11 +74,13 @@ def test_hdf5_check_not_hdf5(tmp_path):
     assert not H5Interface.check(spec)
 
 
+@pytest.mark.shape
 @pytest.mark.parametrize("compound", [True, False])
 def test_hdf5_shape(shape_cases, hdf5_array, compound):
     _test_hdf5_case(shape_cases, hdf5_array, compound)
 
 
+@pytest.mark.dtype
 @pytest.mark.parametrize("compound", [True, False])
 def test_hdf5_dtype(dtype_cases, hdf5_array, compound):
     _test_hdf5_case(dtype_cases, hdf5_array, compound)
@@ -90,6 +94,7 @@ def test_hdf5_dataset_not_exists(hdf5_array, model_blank):
         assert "no array found" in e
 
 
+@pytest.mark.proxy
 def test_assignment(hdf5_array, model_blank):
     array = hdf5_array()
 
@@ -101,7 +106,9 @@ def test_assignment(hdf5_array, model_blank):
     assert (model.array[1:3, 2:4] == 10).all()
 
 
-def test_to_json(hdf5_array, array_model):
+@pytest.mark.serialization
+@pytest.mark.parametrize("round_trip", (True, False))
+def test_to_json(hdf5_array, array_model, round_trip):
     """
     Test serialization of HDF5 arrays to JSON
     Args:
@@ -115,15 +122,19 @@ def test_to_json(hdf5_array, array_model):
 
     instance = model(array=array)  # type: BaseModel
 
-    json_str = instance.model_dump_json()
-    json_dict = json.loads(json_str)["array"]
+    json_str = instance.model_dump_json(
+        round_trip=round_trip, context={"absolute_paths": True}
+    )
+    json_dumped = json.loads(json_str)["array"]
+    if round_trip:
+        assert json_dumped["file"] == str(array.file)
+        assert json_dumped["path"] == str(array.path)
+    else:
+        assert json_dumped == instance.array[:].tolist()
 
-    assert json_dict["file"] == str(array.file)
-    assert json_dict["path"] == str(array.path)
-    assert json_dict["attrs"] == {}
-    assert json_dict["array"] == instance.array[:].tolist()
 
-
+@pytest.mark.dtype
+@pytest.mark.proxy
 def test_compound_dtype(tmp_path):
     """
     hdf5 proxy indexes compound dtypes as single fields when field is given
@@ -158,6 +169,8 @@ def test_compound_dtype(tmp_path):
     assert all(instance.array[1] == 2)
 
 
+@pytest.mark.dtype
+@pytest.mark.proxy
 @pytest.mark.parametrize("compound", [True, False])
 def test_strings(hdf5_array, compound):
     """
@@ -177,6 +190,8 @@ def test_strings(hdf5_array, compound):
     assert all(instance.array[1] == "sup")
 
 
+@pytest.mark.dtype
+@pytest.mark.proxy
 @pytest.mark.parametrize("compound", [True, False])
 def test_datetime(hdf5_array, compound):
     """
@@ -218,3 +233,29 @@ def test_empty_dataset(dtype, tmp_path):
         array: NDArray[Any, dtype]
 
     _ = MyModel(array=(array_path, "/data"))
+
+
+@pytest.mark.proxy
+@pytest.mark.parametrize(
+    "comparison,valid",
+    [
+        (H5Proxy(file="test_file.h5", path="/subpath", field="sup"), True),
+        (H5Proxy(file="test_file.h5", path="/subpath"), False),
+        (H5Proxy(file="different_file.h5", path="/subpath"), False),
+        (("different_file.h5", "/subpath", "sup"), ValueError),
+        ("not even a proxy-like thing", ValueError),
+    ],
+)
+def test_proxy_eq(comparison, valid):
+    """
+    test the __eq__ method of H5ArrayProxy matches proxies to the same
+    dataset (and path), or raises a ValueError
+    """
+    proxy_a = H5Proxy(file="test_file.h5", path="/subpath", field="sup")
+    if valid is True:
+        assert proxy_a == comparison
+    elif valid is False:
+        assert proxy_a != comparison
+    else:
+        with pytest.raises(valid):
+            assert proxy_a == comparison

@@ -86,8 +86,8 @@ isinstance(np.zeros((1,2,3), dtype=float), array_type)
   and a simple extension system to make it work with whatever else you want! Provides
   a uniform and transparent interface so you can both use common indexing operations
   and also access any special features of a given array library.
-- **Serialization** - Dump an array as a JSON-compatible array-of-arrays with enough metadata to be able to 
-  recreate the model in the native format
+- [**Serialization**](./serialization.md) - Dump an array as a JSON-compatible array-of-arrays with enough metadata to be able to 
+  recreate the model in the native format. Full roundtripping is supported :)
 - **Schema Generation** - Correct JSON Schema for arrays, complete with shape and dtype constraints, to
   make your models interoperable 
 
@@ -473,9 +473,8 @@ dumped = instance.model_dump_json(context={'zarr_dump_array': True})
 
 design
 syntax
+serialization
 interfaces
-todo
-changelog
 ```
 
 ```{toctree}
@@ -489,11 +488,21 @@ api/dtype
 api/ndarray
 api/maps
 api/meta
-api/monkeypatch
 api/schema
+api/serialization
 api/shape
 api/types
 
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Meta
+:hidden: true
+
+changelog
+development
+todo
 ```
 
 ## See Also

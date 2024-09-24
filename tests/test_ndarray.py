@@ -1,5 +1,3 @@
-import pdb
-
 import pytest
 
 from typing import Union, Optional, Any
@@ -15,6 +13,7 @@ from numpydantic import dtype
 from numpydantic.dtype import Number
 
 
+@pytest.mark.json_schema
 def test_ndarray_type():
     class Model(BaseModel):
         array: NDArray[Shape["2 x, * y"], Number]
@@ -40,6 +39,8 @@ def test_ndarray_type():
     instance = Model(array=np.zeros((2, 3)), array_any=np.ones((3, 4, 5)))
 
 
+@pytest.mark.dtype
+@pytest.mark.json_schema
 def test_schema_unsupported_type():
     """
     Complex numbers should just be made with an `any` schema
@@ -55,9 +56,11 @@ def test_schema_unsupported_type():
     }
 
 
+@pytest.mark.dtype
+@pytest.mark.json_schema
 def test_schema_tuple():
     """
-    Types specified as tupled should have their schemas as a union
+    Types specified as tuples should have their schemas as a union
     """
 
     class Model(BaseModel):
@@ -72,6 +75,8 @@ def test_schema_tuple():
     assert all([i["minimum"] == 0 for i in conditions])
 
 
+@pytest.mark.dtype
+@pytest.mark.json_schema
 def test_schema_number():
     """
     np.numeric should just be the float schema
@@ -115,12 +120,12 @@ def test_ndarray_union():
         instance = Model(array=np.random.random((5, 10, 4, 6)))
 
 
+@pytest.mark.shape
+@pytest.mark.dtype
 @pytest.mark.parametrize("dtype", dtype.Number)
 def test_ndarray_unparameterized(dtype):
     """
     NDArray without any parameters is any shape, any type
-    Returns:
-
     """
 
     class Model(BaseModel):
@@ -134,6 +139,7 @@ def test_ndarray_unparameterized(dtype):
         _ = Model(array=np.zeros(dim_sizes, dtype=dtype))
 
 
+@pytest.mark.shape
 def test_ndarray_any():
     """
     using :class:`typing.Any` in for the shape means any shape
@@ -164,6 +170,19 @@ def test_ndarray_coercion():
         amod = Model(array=["a", "b", "c"])
 
 
+@pytest.mark.shape
+def test_shape_ellipsis():
+    """
+    Test that ellipsis is a wildcard, rather than "repeat the last index"
+    """
+
+    class MyModel(BaseModel):
+        array: NDArray[Shape["1, 2, ..."], Number]
+
+    _ = MyModel(array=np.zeros((1, 2, 3, 4, 5)))
+
+
+@pytest.mark.serialization
 def test_ndarray_serialize():
     """
     Arrays should be dumped to a list when using json, but kept as ndarray otherwise
@@ -188,6 +207,7 @@ _json_schema_types = [
 ]
 
 
+@pytest.mark.json_schema
 def test_json_schema_basic(array_model):
     """
     NDArray types should correctly generate a list of lists JSON schema
@@ -210,6 +230,8 @@ def test_json_schema_basic(array_model):
     assert inner["items"]["type"] == "number"
 
 
+@pytest.mark.dtype
+@pytest.mark.json_schema
 @pytest.mark.parametrize("dtype", [*dtype.Integer, *dtype.Float])
 def test_json_schema_dtype_single(dtype, array_model):
     """
@@ -240,6 +262,8 @@ def test_json_schema_dtype_single(dtype, array_model):
     )
 
 
+@pytest.mark.dtype
+@pytest.mark.json_schema
 @pytest.mark.parametrize(
     "dtype,expected",
     [
@@ -266,6 +290,8 @@ def test_json_schema_dtype_builtin(dtype, expected, array_model):
         assert inner_type["type"] == expected
 
 
+@pytest.mark.dtype
+@pytest.mark.json_schema
 def test_json_schema_dtype_model():
     """
     Pydantic models can be used in arrays as dtypes
@@ -314,6 +340,8 @@ def _recursive_array(schema):
     assert any_of[1]["minimum"] == 0
 
 
+@pytest.mark.shape
+@pytest.mark.json_schema
 def test_json_schema_ellipsis():
     """
     NDArray types should create a recursive JSON schema for any-shaped arrays

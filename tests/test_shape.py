@@ -1,5 +1,3 @@
-import pdb
-
 import pytest
 
 from typing import Any
@@ -8,6 +6,8 @@ from pydantic import BaseModel, ValidationError
 import numpy as np
 
 from numpydantic import NDArray, Shape
+
+pytestmark = pytest.mark.shape
 
 
 @pytest.mark.parametrize(

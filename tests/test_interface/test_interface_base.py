@@ -4,11 +4,32 @@ for tests that should apply to all interfaces, use ``test_interfaces.py``
 """
 
 import gc
+from typing import Literal
 
 import pytest
 import numpy as np
 
-from numpydantic.interface import Interface
+from numpydantic.interface import (
+    Interface,
+    JsonDict,
+    InterfaceMark,
+    NumpyInterface,
+    MarkedJson,
+)
+from pydantic import ValidationError
+
+from numpydantic.interface.interface import V
+
+
+class MyJsonDict(JsonDict):
+    type: Literal["my_json_dict"]
+    field: str
+    number: int
+
+    def to_array_input(self) -> V:
+        dumped = self.model_dump()
+        dumped["extra_input_param"] = True
+        return dumped
 
 
 @pytest.fixture(scope="module")
@@ -162,3 +183,66 @@ def test_interface_recursive(interfaces):
     assert issubclass(interfaces.interface3, interfaces.interface1)
     assert issubclass(interfaces.interface1, Interface)
     assert interfaces.interface4 in ifaces
+
+
+@pytest.mark.serialization
+def test_jsondict_is_valid():
+    """
+    A JsonDict should return a bool true/false if it is valid or not,
+    and raise an error when requested
+    """
+    invalid = {"doesnt": "have", "the": "props"}
+    valid = {"type": "my_json_dict", "field": "a_field", "number": 1}
+    assert MyJsonDict.is_valid(valid)
+    assert not MyJsonDict.is_valid(invalid)
+    with pytest.raises(ValidationError):
+        assert not MyJsonDict.is_valid(invalid, raise_on_error=True)
+
+
+@pytest.mark.serialization
+def test_jsondict_handle_input():
+    """
+    JsonDict should be able to parse a valid dict and return it to the input format
+    """
+    valid = {"type": "my_json_dict", "field": "a_field", "number": 1}
+    instantiated = MyJsonDict(**valid)
+    expected = {
+        "type": "my_json_dict",
+        "field": "a_field",
+        "number": 1,
+        "extra_input_param": True,
+    }
+
+    for item in (valid, instantiated):
+        result = MyJsonDict.handle_input(item)
+        assert result == expected
+
+
+@pytest.mark.serialization
+@pytest.mark.parametrize("interface", Interface.interfaces())
+def test_interface_mark_match_by_name(interface):
+    """
+    Interface mark should match an interface by its name
+    """
+    # other parts don't matter
+    mark = InterfaceMark(module="fake", cls="fake", version="fake", name=interface.name)
+    fake_mark = InterfaceMark(
+        module="fake", cls="fake", version="fake", name="also_fake"
+    )
+    assert mark.match_by_name() is interface
+    assert fake_mark.match_by_name() is None
+
+
+@pytest.mark.serialization
+def test_marked_json_try_cast():
+    """
+    MarkedJson.try_cast should try and cast to a markedjson!
+    returning the value unchanged if it's not a match
+    """
+    valid = {"interface": NumpyInterface.mark_interface(), "value": [[1, 2], [3, 4]]}
+    invalid = [1, 2, 3, 4, 5]
+    mimic = {"interface": "not really", "value": "still not really"}
+
+    assert isinstance(MarkedJson.try_cast(valid), MarkedJson)
+    assert MarkedJson.try_cast(invalid) is invalid
+    assert MarkedJson.try_cast(mimic) is mimic

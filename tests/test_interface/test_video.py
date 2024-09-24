@@ -14,6 +14,8 @@ from numpydantic import NDArray, Shape
 from numpydantic import dtype as dt
 from numpydantic.interface.video import VideoProxy
 
+pytestmark = pytest.mark.video
+
 
 @pytest.mark.parametrize("input_type", [str, Path])
 def test_video_validation(avi_video, input_type):
@@ -49,6 +51,7 @@ def test_video_from_videocapture(avi_video):
         opened_vid.release()
 
 
+@pytest.mark.shape
 def test_video_wrong_shape(avi_video):
     shape = (100, 50)
 
@@ -65,6 +68,7 @@ def test_video_wrong_shape(avi_video):
         instance = MyModel(array=vid)
 
 
+@pytest.mark.proxy
 def test_video_getitem(avi_video):
     """
     Should be able to get individual frames and slices as if it were a normal array
@@ -127,6 +131,7 @@ def test_video_getitem(avi_video):
         instance.array[5] = 10
 
 
+@pytest.mark.proxy
 def test_video_attrs(avi_video):
     """Should be able to access opencv properties"""
     shape = (100, 50)
@@ -142,6 +147,7 @@ def test_video_attrs(avi_video):
     assert int(instance.array.get(cv2.CAP_PROP_POS_FRAMES)) == 5
 
 
+@pytest.mark.proxy
 def test_video_close(avi_video):
     """Should close and reopen video file if needed"""
     shape = (100, 50)
@@ -158,3 +164,42 @@ def test_video_close(avi_video):
     assert instance.array._video is None
     # reopen
     assert isinstance(instance.array.video, cv2.VideoCapture)
+
+
+@pytest.mark.proxy
+def test_video_not_exists(tmp_path):
+    """
+    A video file that doesn't exist should raise an error
+    """
+    video = VideoProxy(tmp_path / "not_real.avi")
+    with pytest.raises(FileNotFoundError):
+        _ = video.video
+
+
+@pytest.mark.proxy
+@pytest.mark.parametrize(
+    "comparison,valid",
+    [
+        (VideoProxy("test_video.avi"), True),
+        (VideoProxy("not_real_video.avi"), False),
+        ("not even a video proxy", TypeError),
+    ],
+)
+def test_video_proxy_eq(comparison, valid):
+    """
+    Comparing a video proxy's equality should be valid if the path matches
+    Args:
+        comparison:
+        valid:
+
+    Returns:
+
+    """
+    proxy_a = VideoProxy("test_video.avi")
+    if valid is True:
+        assert proxy_a == comparison
+    elif valid is False:
+        assert proxy_a != comparison
+    else:
+        with pytest.raises(valid):
+            assert proxy_a == comparison

@@ -5,12 +5,12 @@ Interface to zarr arrays
 import contextlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Literal, Optional, Sequence, Union
 
 import numpy as np
 from pydantic import SerializationInfo
 
-from numpydantic.interface.interface import Interface
+from numpydantic.interface.interface import Interface, JsonDict
 from numpydantic.types import DtypeType
 
 try:
@@ -56,13 +56,36 @@ class ZarrArrayPath:
             raise ValueError("Only len 1-2 iterables can be used for a ZarrArrayPath")
 
 
+class ZarrJsonDict(JsonDict):
+    """Round-trip Json-able version of a Zarr Array"""
+
+    info: dict[str, str]
+    type: Literal["zarr"]
+    file: Optional[str] = None
+    path: Optional[str] = None
+    array: Optional[list] = None
+
+    def to_array_input(self) -> Union[ZarrArray, ZarrArrayPath]:
+        """
+        Construct a ZarrArrayPath if file and path are present,
+        otherwise a ZarrArray
+        """
+        if self.file:
+            array = ZarrArrayPath(file=self.file, path=self.path)
+        else:
+            array = zarr.array(self.array)
+        return array
+
+
 class ZarrInterface(Interface):
     """
     Interface to in-memory or on-disk zarr arrays
     """
 
+    name = "zarr"
     input_types = (Path, ZarrArray, ZarrArrayPath)
     return_type = ZarrArray
+    json_model = ZarrJsonDict
 
     @classmethod
     def enabled(cls) -> bool:
@@ -71,7 +94,7 @@ class ZarrInterface(Interface):
 
     @staticmethod
     def _get_array(
-        array: Union[ZarrArray, str, Path, ZarrArrayPath, Sequence]
+        array: Union[ZarrArray, str, dict, ZarrJsonDict, Path, ZarrArrayPath, Sequence]
     ) -> ZarrArray:
         if isinstance(array, ZarrArray):
             return array
@@ -91,6 +114,12 @@ class ZarrInterface(Interface):
         """
         if isinstance(array, ZarrArray):
             return True
+
+        if isinstance(array, dict):
+            if array.get("type", False) == cls.name:
+                return True
+            # continue checking if dict contains a zarr file
+            array = array.get("file", "")
 
         # See if can be coerced to ZarrArrayPath
         if isinstance(array, (Path, str)):
@@ -135,26 +164,48 @@ class ZarrInterface(Interface):
         cls,
         array: Union[ZarrArray, str, Path, ZarrArrayPath, Sequence],
         info: Optional[SerializationInfo] = None,
-    ) -> dict:
+    ) -> Union[list, ZarrJsonDict]:
         """
-        Dump just the metadata for an array from :meth:`zarr.core.Array.info_items`
-        plus the :meth:`zarr.core.Array.hexdigest`.
+        Dump a Zarr Array to JSON
 
-        The full array can be returned by passing ``'zarr_dump_array': True`` to the
-        serialization ``context`` ::
+        If ``info.round_trip == False``, dump the array as a list of lists.
+        This may be a memory-intensive operation.
+
+        Otherwise, dump the metadata for an array from
+        :meth:`zarr.core.Array.info_items`
+        plus the :meth:`zarr.core.Array.hexdigest` as a :class:`.ZarrJsonDict`
+
+        If either the ``dump_array`` value in the context dictionary is ``True``
+        or the zarr array is an in-memory array, dump the array as well
+        (since without a persistent array it would be impossible to roundtrip and
+        dumping to JSON would be meaningless)
+
+        Passing ```dump_array': True`` to the serialization ``context``
+        looks like this::
 
             model.model_dump_json(context={'zarr_dump_array': True})
         """
-        dump_array = False
-        if info is not None and info.context is not None:
-            dump_array = info.context.get("zarr_dump_array", False)
-
         array = cls._get_array(array)
-        info = array.info_items()
-        info_dict = {i[0]: i[1] for i in info}
-        info_dict["hexdigest"] = array.hexdigest()
 
-        if dump_array:
-            info_dict["array"] = array[:].tolist()
+        if info.round_trip:
+            dump_array = False
+            if info is not None and info.context is not None:
+                dump_array = info.context.get("dump_array", False)
+            is_file = False
 
-        return info_dict
+            as_json = {"type": cls.name}
+            if hasattr(array.store, "dir_path"):
+                is_file = True
+                as_json["file"] = array.store.dir_path()
+                as_json["path"] = array.name
+            as_json["info"] = {i[0]: i[1] for i in array.info_items()}
+            as_json["info"]["hexdigest"] = array.hexdigest()
+
+            if dump_array or not is_file:
+                as_json["array"] = array[:].tolist()
+
+            as_json = ZarrJsonDict(**as_json)
+        else:
+            as_json = array[:].tolist()
+
+        return as_json

@@ -2,6 +2,73 @@
 
 ## 1.*
 
+### 1.6.*
+
+#### 1.6.0 - 24-09-23 - Roundtrip JSON Serialization
+
+Roundtrip JSON serialization is here - with serialization to list of lists,
+as well as file references that don't require copying the whole array if 
+used in data modeling, control over path relativization, and stamping of
+interface version for the extra provenance conscious.
+
+Please see [serialization](./serialization.md) for narrative documentation :)
+
+**Potentially Breaking Changes**
+- See [development](./development.md) for a statement about API stability
+- An additional {meth}`.Interface.deserialize` method has been added to
+  {meth}`.Interface.validate` - downstream users are not intended to override the
+  `validate method`, but if they have, then JSON deserialization will not work for them.
+- `Interface` subclasses now require a `name` attribute, a short string identifier for that interface,
+  and a `json_model` that inherits from {class}`.interface.JsonDict`. Interfaces without
+  these attributes will not be able to be instantiated.
+- {meth}`.Interface.to_json` is now an abstract method that all interfaces must define.
+
+**Features**
+- Roundtrip JSON serialization - by default dump to a list of list arrays, but
+  support the `round_trip` keyword in `model_dump_json` for provenance-preserving dumps
+- JSON Schema generation has been separated from `core_schema` generation in {class}`.NDArray`.
+  Downstream interfaces can customize json schema generation without compromising ability to validate.
+- All proxy classes must have an `__eq__` dunder method to compare equality -
+  in proxy classes, these compare equality of arguments, since the arrays that
+  are referenced on disk should be equal by definition. Direct array comparison
+  should use {func}`numpy.array_equal`
+- Interfaces previously couldn't be instantiated without explicit shape and dtype arguments,
+  these have been given `Any` defaults.
+- New {mod}`numpydantic.serialization` module to contain serialization logic.
+
+**New Classes**
+See the docstrings for descriptions of each class
+- `MarkMismatchError` for when an array serialized with `mark_interface` doesn't match
+  the interface that's deserializing it
+- {class}`.interface.InterfaceMark`
+- {class}`.interface.MarkedJson`
+- {class}`.interface.JsonDict`
+  - {class}`.dask.DaskJsonDict`
+  - {class}`.hdf5.H5JsonDict`
+  - {class}`.numpy.NumpyJsonDict`
+  - {class}`.video.VideoJsonDict`
+  - {class}`.zarr.ZarrJsonDict`
+
+**Bugfix**
+- [`#17`](https://github.com/p2p-ld/numpydantic/issues/17) - Arrays are re-validated as lists, rather than arrays
+- Some proxy classes would fail to be serialized becauase they lacked an `__array__` method.
+  `__array__` methods have been added, and tests for coercing to an array to prevent regression.
+- Some proxy classes lacked a `__name__` attribute, which caused failures to serialize
+  when the `__getattr__` methods attempted to pass it through. These have been added where needed.
+
+**Docs**
+- Add statement about versioning and API stability to [development](./development.md)
+- Add docs for serialization!
+- Remove stranded docs from hooks and monkeypatch
+- Added `myst_nb` to docs dependencies for direct rendering of code and output
+
+**Tests**
+- Marks have been added for running subsets of the tests for a given interface,
+  package feature, etc.
+- Tests for all the above functionality
+
+
+
 ### 1.5.*
 
 #### 1.5.3 - 24-09-03 - Bugfix, type checking for empty HDF5 datasets

@@ -6,12 +6,13 @@ import zarr
 from pydantic import BaseModel, ValidationError
 from numcodecs import Pickle
 
-
 from numpydantic.interface import ZarrInterface
 from numpydantic.interface.zarr import ZarrArrayPath
 from numpydantic.exceptions import DtypeError, ShapeError
 
 from tests.conftest import ValidationCase
+
+pytestmark = pytest.mark.zarr
 
 
 @pytest.fixture()
@@ -87,10 +88,12 @@ def test_zarr_check(interface_type):
         assert not ZarrInterface.check(interface_type[0])
 
 
+@pytest.mark.shape
 def test_zarr_shape(store, shape_cases):
     _test_zarr_case(shape_cases, store)
 
 
+@pytest.mark.dtype
 def test_zarr_dtype(dtype_cases, store):
     _test_zarr_case(dtype_cases, store)
 
@@ -123,7 +126,10 @@ def test_zarr_array_path_from_iterable(zarr_array):
     assert apath.path == inner_path
 
 
-def test_zarr_to_json(store, model_blank):
+@pytest.mark.serialization
+@pytest.mark.parametrize("dump_array", [True, False])
+@pytest.mark.parametrize("roundtrip", [True, False])
+def test_zarr_to_json(store, model_blank, roundtrip, dump_array):
     expected_fields = (
         "Type",
         "Data type",
@@ -137,17 +143,22 @@ def test_zarr_to_json(store, model_blank):
 
     array = zarr.array(lol_array, store=store)
     instance = model_blank(array=array)
-    as_json = json.loads(instance.model_dump_json())["array"]
-    assert "array" not in as_json
-    for field in expected_fields:
-        assert field in as_json
-    assert len(as_json["hexdigest"]) == 40
 
-    # dump the array itself too
-    as_json = json.loads(instance.model_dump_json(context={"zarr_dump_array": True}))[
-        "array"
-    ]
-    for field in expected_fields:
-        assert field in as_json
-    assert len(as_json["hexdigest"]) == 40
-    assert as_json["array"] == lol_array
+    context = {"dump_array": dump_array}
+    as_json = json.loads(
+        instance.model_dump_json(round_trip=roundtrip, context=context)
+    )["array"]
+
+    if roundtrip:
+        if dump_array:
+            assert as_json["array"] == lol_array
+        else:
+            if as_json.get("file", False):
+                assert "array" not in as_json
+
+        for field in expected_fields:
+            assert field in as_json["info"]
+        assert len(as_json["info"]["hexdigest"]) == 40
+
+    else:
+        assert as_json == lol_array
