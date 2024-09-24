@@ -473,6 +473,7 @@ dumped = instance.model_dump_json(context={'zarr_dump_array': True})
 
 design
 syntax
+dtype
 serialization
 interfaces
 ```
