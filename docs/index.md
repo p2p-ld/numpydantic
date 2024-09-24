@@ -475,8 +475,6 @@ design
 syntax
 serialization
 interfaces
-todo
-changelog
 ```
 
 ```{toctree}
@@ -502,7 +500,9 @@ api/types
 :caption: Meta
 :hidden: true
 
+changelog
 development
+todo
 ```
 
 ## See Also
