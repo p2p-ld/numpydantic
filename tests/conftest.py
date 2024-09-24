@@ -80,6 +80,8 @@ INTEGER: TypeAlias = NDArray[Shape["*, *, *"], Integer]
 FLOAT: TypeAlias = NDArray[Shape["*, *, *"], Float]
 STRING: TypeAlias = NDArray[Shape["*, *, *"], str]
 MODEL: TypeAlias = NDArray[Shape["*, *, *"], BasicModel]
+UNION_PIPE: TypeAlias = NDArray[Shape["*, *, *"], np.uint32 | np.float32]
+UNION_TYPE: TypeAlias = NDArray[Shape["*, *, *"], Union[np.uint32, np.float32]]
 
 
 @pytest.fixture(
@@ -147,6 +149,16 @@ def shape_cases(request) -> ValidationCase:
         ValidationCase(annotation=MODEL, dtype=BadModel, passes=False),
         ValidationCase(annotation=MODEL, dtype=int, passes=False),
         ValidationCase(annotation=MODEL, dtype=SubClass, passes=True),
+        ValidationCase(annotation=UNION_PIPE, dtype=np.uint32, passes=True),
+        ValidationCase(annotation=UNION_PIPE, dtype=np.float32, passes=True),
+        ValidationCase(annotation=UNION_PIPE, dtype=np.uint64, passes=False),
+        ValidationCase(annotation=UNION_PIPE, dtype=np.float64, passes=False),
+        ValidationCase(annotation=UNION_PIPE, dtype=str, passes=False),
+        ValidationCase(annotation=UNION_TYPE, dtype=np.uint32, passes=True),
+        ValidationCase(annotation=UNION_TYPE, dtype=np.float32, passes=True),
+        ValidationCase(annotation=UNION_TYPE, dtype=np.uint64, passes=False),
+        ValidationCase(annotation=UNION_TYPE, dtype=np.float64, passes=False),
+        ValidationCase(annotation=UNION_TYPE, dtype=str, passes=False),
     ],
     ids=[
         "float",
@@ -174,6 +186,16 @@ def shape_cases(request) -> ValidationCase:
         "model-badmodel",
         "model-int",
         "model-subclass",
+        "union-pipe-uint32",
+        "union-pipe-float32",
+        "union-pipe-uint64",
+        "union-pipe-float64",
+        "union-pipe-str",
+        "union-type-uint32",
+        "union-type-float32",
+        "union-type-uint64",
+        "union-type-float64",
+        "union-type-str",
     ],
 )
 def dtype_cases(request) -> ValidationCase:

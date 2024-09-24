@@ -1,7 +1,7 @@
 # shape
 
 ```{eval-rst}
-.. automodule:: numpydantic.shape
+.. automodule:: numpydantic.validation.shape
     :members:
     :undoc-members:
 ```

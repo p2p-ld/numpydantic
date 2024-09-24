@@ -33,11 +33,11 @@ class DaskJsonDict(JsonDict):
     name: str
     chunks: Iterable[tuple[int, ...]]
     dtype: str
-    array: list
+    value: list
 
     def to_array_input(self) -> DaskArray:
         """Construct a dask array"""
-        np_array = np.array(self.array, dtype=self.dtype)
+        np_array = np.array(self.value, dtype=self.dtype)
         array = from_array(
             np_array,
             name=self.name,
@@ -100,7 +100,7 @@ class DaskInterface(Interface):
         if info.round_trip:
             as_json = DaskJsonDict(
                 type=cls.name,
-                array=as_json,
+                value=as_json,
                 name=array.name,
                 chunks=array.chunks,
                 dtype=str(np_array.dtype),

@@ -27,13 +27,13 @@ class NumpyJsonDict(JsonDict):
 
     type: Literal["numpy"]
     dtype: str
-    array: list
+    value: list
 
     def to_array_input(self) -> ndarray:
         """
         Construct a numpy array
         """
-        return np.array(self.array, dtype=self.dtype)
+        return np.array(self.value, dtype=self.dtype)
 
 
 class NumpyInterface(Interface):
@@ -99,6 +99,6 @@ class NumpyInterface(Interface):
 
         if info.round_trip:
             json_array = NumpyJsonDict(
-                type=cls.name, dtype=str(array.dtype), array=json_array
+                type=cls.name, dtype=str(array.dtype), value=json_array
             )
         return json_array

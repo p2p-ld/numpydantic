@@ -12,6 +12,9 @@ module, rather than needing to import each individually.
 Some types like `Integer` are compound types - tuples of multiple dtypes.
 Check these using ``in`` rather than ``==``. This interface will develop in future
 versions to allow a single dtype check.
+
+For internal helper functions for validating dtype, 
+see :mod:`numpydantic.validation.dtype`
 """
 
 import sys
