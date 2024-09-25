@@ -1,0 +1,61 @@
+name: LinkML Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-linkml:
+    strategy:
+      matrix:
+        platform: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        python-version: ["3.9", "3.12"]
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout LinkML
+        uses: actions/checkout@v4
+        with:
+          repository: linkml/linkml
+          path: linkml
+          ref: main
+          fetch-depth: 0
+      - name: Checkout numpydantic
+        uses: actions/checkout@v4
+        with:
+          path: numpydantic
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Install dynamic versioning plugin
+        run: poetry self add "poetry-dynamic-versioning[plugin]"
+
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: poetry
+          cache-dependency-path: |
+            linkml/poetry.lock
+
+      - name: Add checked out numpydantic to poetry deps
+        working-directory: linkml
+        run: poetry add '../numpydantic' --python='>=3.9'
+
+      - name: Install dependencies
+        working-directory: linkml
+        run: poetry install --no-interaction -E tests
+
+      - name: print numpydantic version and path
+        working-directory: linkml
+        run: poetry run python -c 'import numpydantic; from importlib.metadata import version; print(numpydantic.__file__); print(version("numpydantic"))'
+
+      - name: Run LinkML Numpydantic Tests
+        run: poetry run python -m pytest -m pydanticgen_npd
+        working-directory: linkml
