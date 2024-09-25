@@ -76,7 +76,7 @@ def test_relative_to_path(hdf5_at_path, tmp_output_dir, model_blank):
     assert data["path"] == "/data"
 
 
-def test_relative_to_path(hdf5_at_path, tmp_output_dir, model_blank):
+def test_absolute_path(hdf5_at_path, tmp_output_dir, model_blank):
     """
     When told, we make paths absolute
     """
