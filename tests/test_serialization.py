@@ -82,7 +82,11 @@ def test_relative_to_root_dir():
     beneath the root directory (eg `/data`) even if they exist
 
     """
-    root = Path().resolve().parents[-1]
+    try:
+        root = Path().resolve().parents[-1]
+    except IndexError:
+        root = Path("/").resolve()
+
     test_path = None
     for path in root.iterdir():
         if path.is_dir():
