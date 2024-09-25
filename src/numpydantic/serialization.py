@@ -86,7 +86,7 @@ def _absolutize_paths(value: dict, skip: Iterable = tuple()) -> dict:
             return v
         try:
             path = Path(v)
-            # skip things that are pathlike but either don't exist 
+            # skip things that are pathlike but either don't exist
             # or that are at the filesystem root (eg like /data)
             if not path.exists() and path.parent != Path().root:
                 return v
