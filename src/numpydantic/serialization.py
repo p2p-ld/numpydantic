@@ -82,9 +82,13 @@ def _relativize_paths(
 
 def _absolutize_paths(value: dict, skip: Iterable = tuple()) -> dict:
     def _a_path(v: Any) -> Any:
+        if not isinstance(v, (str, Path)):
+            return v
         try:
             path = Path(v)
-            if not path.exists():
+            # skip things that are pathlike but either don't exist 
+            # or that are at the filesystem root (eg like /data)
+            if not path.exists() and path.parent != Path().root:
                 return v
             return str(path.resolve())
         except (TypeError, ValueError):
