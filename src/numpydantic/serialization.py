@@ -64,14 +64,20 @@ def _relativize_paths(
     ``relative_to`` directory, if provided in the context
     """
     relative_to = Path(relative_to).resolve()
-    # pdb.set_trace()
 
     def _r_path(v: Any) -> Any:
         if not isinstance(v, (str, Path)):
             return v
         try:
             path = Path(v)
-            if not path.exists():
+            resolved = path.resolve()
+            # skip things that are pathlike but either don't exist
+            # or that are at the filesystem root (eg like /data)
+            if (
+                not path.exists()
+                or (resolved.is_dir() and str(resolved.parent) == resolved.root)
+                or relative_to.root != resolved.root
+            ):
                 return v
             return str(relative_path(path, relative_to))
         except (TypeError, ValueError):
@@ -86,9 +92,7 @@ def _absolutize_paths(value: dict, skip: Iterable = tuple()) -> dict:
             return v
         try:
             path = Path(v)
-            # skip things that are pathlike but either don't exist
-            # or that are at the filesystem root (eg like /data)
-            if not path.exists() and path.parent != Path().root:
+            if not path.exists():
                 return v
             return str(path.resolve())
         except (TypeError, ValueError):
