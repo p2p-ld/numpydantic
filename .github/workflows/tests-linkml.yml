@@ -52,6 +52,12 @@ jobs:
         working-directory: linkml
         run: poetry install --no-interaction -E tests
 
+      - name: Force uninstall and reinstall
+        working-directory: linkml
+        run: |
+          poetry run pip uninstall numpydantic
+          poetry rin pip install -e ../numpydantic
+
       - name: print numpydantic version and path
         working-directory: linkml
         run: poetry run python -c 'import numpydantic; from importlib.metadata import version; print(numpydantic.__file__); print(version("numpydantic"))'
