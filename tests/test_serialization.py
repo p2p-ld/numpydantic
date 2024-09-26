@@ -82,17 +82,9 @@ def test_relative_to_root_dir():
     beneath the root directory (eg `/data`) even if they exist
 
     """
-    try:
-        root = Path().resolve().parents[-1]
-    except IndexError:
-        root = Path("/").resolve()
-
-    test_path = None
-    for path in root.iterdir():
-        if path.is_dir():
-            test_path = path
-
-    assert test_path is not None
+    # try:
+    this_file = Path(__file__).resolve()
+    test_path = this_file.parents[-2]
 
     test_data = {"some_field": str(test_path)}
 

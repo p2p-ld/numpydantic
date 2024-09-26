@@ -5,7 +5,7 @@
 groups = ["default", "arrays", "dask", "dev", "docs", "hdf5", "tests", "video", "zarr"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:a780500141cbf9d8453d464395951aed95cfba9bda9c82012f747c357ae6bb19"
+content_hash = "sha256:dee4ba1fabeacedf80f85b145bcb2ef83a2005cac6454f9672eb9a873cadd70b"
 
 [[metadata.targets]]
 requires_python = "~=3.9"
