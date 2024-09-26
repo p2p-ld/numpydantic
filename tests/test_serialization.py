@@ -82,9 +82,8 @@ def test_relative_to_root_dir():
     beneath the root directory (eg `/data`) even if they exist
 
     """
-    # try:
-    this_file = Path(__file__).resolve()
-    test_path = this_file.parents[-2]
+    # python 3.9 compat, which can't use negative indices
+    test_path = [p for p in Path(__file__).resolve().parents][-2]
 
     test_data = {"some_field": str(test_path)}
 
