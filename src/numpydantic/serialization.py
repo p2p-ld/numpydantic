@@ -75,8 +75,8 @@ def _relativize_paths(
             # or that are at the filesystem root (eg like /data)
             if (
                 not path.exists()
-                or (resolved.is_dir() and str(resolved.parent) == resolved.root)
-                or relative_to.root != resolved.root
+                or (resolved.is_dir() and str(resolved.parent) == resolved.anchor)
+                or relative_to.anchor != resolved.anchor
             ):
                 return v
             return str(relative_path(path, relative_to))
