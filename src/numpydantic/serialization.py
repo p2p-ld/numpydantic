@@ -16,11 +16,20 @@ U = TypeVar("U")
 
 def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
     """Use an interface class to render an array as JSON"""
-    # perf: keys to skip in generation - anything named "value" is array data.
-    skip = ["value"]
-
     interface_cls = Interface.match_output(value)
     array = interface_cls.to_json(value, info)
+    array = postprocess_json(array, info)
+    return array
+
+
+def postprocess_json(
+    array: Union[dict, list], info: SerializationInfo
+) -> Union[dict, list]:
+    """
+    Modify json after dumping from an interface
+    """
+    # perf: keys to skip in generation - anything named "value" is array data.
+    skip = ["value"]
     if isinstance(array, JsonDict):
         array = array.model_dump(exclude_none=True)
 

@@ -39,13 +39,25 @@ as ``S32`` isoformatted byte strings (timezones optional) like:
     
 """
 
+import pdb
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, List, NamedTuple, Optional, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
-from pydantic import SerializationInfo
+from pydantic import GetCoreSchemaHandler, SerializationInfo
+from pydantic_core import CoreSchema, core_schema
 
 from numpydantic.interface.interface import Interface, JsonDict
 from numpydantic.types import DtypeType, NDArrayType
@@ -66,6 +78,17 @@ T = TypeVar("T")
 
 
 class H5ArrayPath(NamedTuple):
+    """Location specifier for arrays within an HDF5 file"""
+
+    file: Union[Path, str]
+    """Location of HDF5 file"""
+    path: str
+    """Path within the HDF5 file"""
+    field: Optional[Union[str, List[str]]] = None
+    """Refer to a specific field within a compound dtype"""
+
+
+class H5ArrayPathDict(TypedDict):
     """Location specifier for arrays within an HDF5 file"""
 
     file: Union[Path, str]
@@ -156,9 +179,12 @@ class H5Proxy:
             return obj[:]
 
     def __getattr__(self, item: str):
+
         if item == "__name__":
             # special case for H5Proxies that don't refer to a real file during testing
             return "H5Proxy"
+        elif item.startswith("__"):
+            return object.__getattribute__(self, item)
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
             val = getattr(obj, item)
@@ -267,6 +293,68 @@ class H5Proxy:
                 v = [v]
             v = np.array(v).astype("S32")
         return v
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        pdb.set_trace()
+        return core_schema.typed_dict_schema(
+            {
+                "file": core_schema.typed_dict_field(
+                    core_schema.str_schema(), required=True
+                ),
+                "path": core_schema.typed_dict_field(
+                    core_schema.str_schema(), required=True
+                ),
+                "field": core_schema.typed_dict_field(
+                    core_schema.union_schema(
+                        [
+                            core_schema.str_schema(),
+                            core_schema.list_schema(core_schema.str_schema()),
+                        ],
+                    ),
+                    required=True,
+                ),
+            },
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                cls.to_json, when_used="json"
+            ),
+        )
+
+        # file: Union[Path, str]
+        # """Location of HDF5 file"""
+        # path: str
+        # """Path within the HDF5 file"""
+        # field: Optional[Union[str, List[str]]] = None
+        # """Refer to a specific field within a compound dtype"""
+        #     }
+        # )
+        #
+
+    #
+    # @model_serializer(when_used="json")
+    @staticmethod
+    def to_json(self, info: SerializationInfo):
+        """
+        Serialize H5Proxy to JSON, as the interface does,
+        in cases when the interface is not able to be used
+        (eg. like when used as an `extra` field in a model without a type annotation)
+        """
+        from numpydantic.serialization import postprocess_json
+
+        if info.round_trip:
+            as_json = {
+                "type": H5Interface.name,
+            }
+            as_json.update(self._h5arraypath._asdict())
+        else:
+            try:
+                dset = self.open()
+                as_json = dset[:].tolist()
+            finally:
+                self.close()
+        return postprocess_json(as_json, info)
 
 
 class H5Interface(Interface):
