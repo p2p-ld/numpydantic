@@ -46,7 +46,7 @@ jobs:
 
       - name: Add checked out numpydantic to poetry deps
         working-directory: linkml
-        run: poetry add '../numpydantic' --python='>=3.9'
+        run: poetry add '../numpydantic' --python='>=3.9' --editable
 
       - name: Install dependencies
         working-directory: linkml
