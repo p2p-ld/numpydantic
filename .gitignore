@@ -162,3 +162,5 @@ cython_debug/
 ndarray.pyi
 
 prof/
+
+__tmp__
