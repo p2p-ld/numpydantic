@@ -4,6 +4,32 @@
 
 ### 1.6.*
 
+#### 1.6.2 - 24-09-35
+
+Very minor bugfix and CI release
+
+PR: https://github.com/p2p-ld/numpydantic/pull/26
+
+**Bugfix**
+- h5py v3.12.0 broke file locking, so a temporary maximum version cap was added
+  until that is resolved. See [`h5py/h5py#2506`](https://github.com/h5py/h5py/issues/2506)
+  and [`#27`](https://github.com/p2p-ld/numpydantic/issues/27)
+- The `_relativize_paths` function used in roundtrip dumping was incorrectly
+  relativizing paths that are intended to refer to paths within a dataset,
+  rather than a file. This, as well as windows-specific bugs was fixed so that
+  directories that exist but are just below the filesystem root (like `/data`)
+  are excluded. If this becomes a problem then we will have to make the
+  relativization system a bit more robust by specifically enumerating which
+  path-like things are *not* intended to be paths.
+
+**CI**
+- `numpydantic` was added as an array range generator in `linkml` 
+  ([`linkml/linkml#2178`](https://github.com/linkml/linkml/pull/2178)),
+  so tests were added to ensure that changes to `numpydantic` don't break
+  linkml array range generation. `numpydantic`'s tests are naturally a
+  superset of the behavior tested in `linkml`, but this is a good
+  paranoia check in case we drift substantially (which shouldn't happen).
+
 #### 1.6.1 - 24-09-23 - Support Union Dtypes
 
 It's now possible to do this, like it always should have been

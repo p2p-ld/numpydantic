@@ -62,6 +62,31 @@ each interface, and that work is also ongoing. Once the test suite reaches
 maturity, it should be possible for any downstream interfaces to simply use those to
 ensure they are compatible with the latest version.
 
+## Platform/Dependency Versions
+
+### Python Version Support
+
+Numpydantic will support all versions of python that have not reached end-of-life
+status according to the official Python release cycle schedule:
+https://devguide.python.org/versions/
+
+Support for end-of-life Python versions will be dropped in the next release after
+that Python version reaches end-of-life status without deprecation warning.
+
+Support for new Python versions will be targeted as soon as possible after they
+are out of pre-release stage.
+
+Tests are run against the latest patch version for each active python minor version
+on Linux (ubuntu), and the latest patch version for the oldest and most recent minor
+versions on mac and windows (i.e. if python 3.9, 3.10, 3.11, and 3.12 are active,
+tests for mac and windows run against 3.9 and 3.12)
+
+### Numpy Version Support
+
+Numpydantic is currently tested against
+- The latest numpy version
+- The last numpy version <2.0.0
+
 ## Release Schedule
 
 There is no release schedule. Versions are released according to need and available labor.

@@ -10,7 +10,7 @@ from typing import Callable
 import numpy as np
 import json
 
-from numpydantic.serialization import _walk_and_apply
+from numpydantic.serialization import _walk_and_apply, _relativize_paths, relative_path
 
 pytestmark = pytest.mark.serialization
 
@@ -56,7 +56,7 @@ def test_relative_to_path(hdf5_at_path, tmp_output_dir, model_blank):
     """
     out_path = tmp_output_dir / "relative.h5"
     relative_to_path = Path(__file__) / "fake_dir" / "sub_fake_dir"
-    expected_path = "../../../__tmp__/relative.h5"
+    expected_path = Path("../../../__tmp__/relative.h5")
 
     hdf5_at_path(out_path)
     model = model_blank(array=(out_path, "/data"))
@@ -69,11 +69,27 @@ def test_relative_to_path(hdf5_at_path, tmp_output_dir, model_blank):
     # should not be absolute
     assert not Path(file).is_absolute()
     # should be expected path and reach the file
-    assert file == expected_path
+    assert Path(file) == expected_path
     assert (relative_to_path / file).resolve() == out_path.resolve()
 
     # we shouldn't have touched `/data` even though it is pathlike
     assert data["path"] == "/data"
+
+
+def test_relative_to_root_dir():
+    """
+    The relativize function should ignore paths that are directories
+    beneath the root directory (eg `/data`) even if they exist
+
+    """
+    # python 3.9 compat, which can't use negative indices
+    test_path = [p for p in Path(__file__).resolve().parents][-2]
+
+    test_data = {"some_field": str(test_path)}
+
+    walked = _relativize_paths(test_data, relative_to=".")
+    assert str(relative_path(test_path, Path(".").resolve())) != str(test_path)
+    assert walked["some_field"] == str(test_path)
 
 
 def test_absolute_path(hdf5_at_path, tmp_output_dir, model_blank):
