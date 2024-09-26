@@ -57,7 +57,8 @@ model = MyModel(array=('data.zarr', '/nested/dataset'))
 model = MyModel(array="data.mp4")
 ```
 
-And use the `NDArray` type annotation like a regular type outside
+`numpydantic` supports pydantic but none of its behavior is dependent on it!
+Use the `NDArray` type annotation like a regular type outside
 of pydantic -- eg. to validate an array anywhere, use `isinstance`:
 
 ```python
@@ -72,9 +73,26 @@ isinstance(np.zeros((1,2,3), dtype=float), array_type)
 # False
 ```
 
+Or use it as a convenient callable shorthand for validating and working with
+array types that usually don't have an array-like API.
+
+```python
+>>> rgb_video_type = NDArray[Shape["* t, 1920 x, 1080 y, 3 rgb"], np.uint8]
+>>> video = rgb_video_type('data.mp4')
+>>> video.shape
+(10, 1920, 1080, 3)
+>>> video[0, 0:3, 0:3, 0]
+array([[0, 0, 0],
+       [0, 0, 0],
+       [0, 0, 0]], dtype=uint8)
+```
+
 ```{note}
 `NDArray` can't do validation with static type checkers yet, see 
-{ref}`design_challenges` and {ref}`type_checkers`
+{ref}`design_challenges` and {ref}`type_checkers` .
+
+Converting the `NDArray` type away from the inherited `nptyping`
+class towards a proper generic is the top development priority for `v2.0.0`
 ```
 
 ## Features:
@@ -90,6 +108,9 @@ isinstance(np.zeros((1,2,3), dtype=float), array_type)
   recreate the model in the native format. Full roundtripping is supported :)
 - **Schema Generation** - Correct JSON Schema for arrays, complete with shape and dtype constraints, to
   make your models interoperable 
+- **Fast** - The validation codepath is careful to take quick exits and not perform unnecessary work,
+  and interfaces use whatever tools available to validate against array metadata and lazy load to avoid
+  expensive i/o operations. Our goal is to make numpydantic a tool you don't ever need to think about.
 
 Coming soon:
 - **Metadata** - This package was built to be used with [linkml arrays](https://linkml.io/linkml/schemas/arrays.html),

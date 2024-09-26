@@ -173,8 +173,8 @@ def zarr_array(tmp_output_dir_func) -> Path:
 
 
 @pytest.fixture(scope="function")
-def avi_video(tmp_path) -> Callable[[Tuple[int, int], int, bool], Path]:
-    video_path = tmp_path / "test.avi"
+def avi_video(tmp_output_dir_func) -> Callable[[Tuple[int, int], int, bool], Path]:
+    video_path = tmp_output_dir_func / "test.avi"
 
     def _make_video(shape=(100, 50), frames=10, is_color=True) -> Path:
         writer = cv2.VideoWriter(

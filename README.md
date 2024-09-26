@@ -13,7 +13,9 @@ A python package for specifying, validating, and serializing arrays with arbitra
 
 but ...
 
-3) if you try and specify an array in pydantic, this happens:
+3) Typical type annotations would only work for a single array library implementation
+4) They wouldn’t allow you to specify array shapes and dtypes, and
+5) If you try and specify an array in pydantic, this happens:
 
 ```python
 >>> from pydantic import BaseModel
@@ -27,8 +29,69 @@ Set `arbitrary_types_allowed=True` in the model_config to ignore this error
 or implement `__get_pydantic_core_schema__` on your type to fully support it.
 ```
 
-And setting `arbitrary_types_allowed = True` still prohibits you from 
-generating JSON Schema, serialization to JSON
+**Solution**
+
+Numpydantic allows you to do this:
+
+```python
+from pydantic import BaseModel
+from numpydantic import NDArray, Shape
+
+class MyModel(BaseModel):
+    array: NDArray[Shape["3 x, 4 y, * z"], int]
+```
+
+And use it with your favorite array library:
+
+```python
+import numpy as np
+import dask.array as da
+import zarr
+
+# numpy
+model = MyModel(array=np.zeros((3, 4, 5), dtype=int))
+# dask
+model = MyModel(array=da.zeros((3, 4, 5), dtype=int))
+# hdf5 datasets
+model = MyModel(array=('data.h5', '/nested/dataset'))
+# zarr arrays
+model = MyModel(array=zarr.zeros((3,4,5), dtype=int))
+model = MyModel(array='data.zarr')
+model = MyModel(array=('data.zarr', '/nested/dataset'))
+# video files
+model = MyModel(array="data.mp4")
+```
+
+`numpydantic` supports pydantic but none of its behavior is dependent on it!
+Use the `NDArray` type annotation like a regular type outside
+of pydantic -- eg. to validate an array anywhere, use `isinstance`:
+
+```python
+array_type = NDArray[Shape["1, 2, 3"], int]
+isinstance(np.zeros((1,2,3), dtype=int), array_type)
+# True
+isinstance(zarr.zeros((1,2,3), dtype=int), array_type)
+# True
+isinstance(np.zeros((4,5,6), dtype=int), array_type)
+# False
+isinstance(np.zeros((1,2,3), dtype=float), array_type)
+# False
+```
+
+Or use it as a convenient callable shorthand for validating and working with
+array types that usually don't have an array-like API.
+
+```python
+>>> rgb_video_type = NDArray[Shape["* t, 1920 x, 1080 y, 3 rgb"], np.uint8]
+>>> video = rgb_video_type('data.mp4')
+>>> video.shape
+(10, 1920, 1080, 3)
+>>> video[0, 0:3, 0:3, 0]
+array([[0, 0, 0],
+       [0, 0, 0],
+       [0, 0, 0]], dtype=uint8)
+```
+
 
 ## Features:
 - **Types** - Annotations (based on [npytyping](https://github.com/ramonhagenaars/nptyping))
@@ -44,6 +107,9 @@ generating JSON Schema, serialization to JSON
   recreate the model in the native format
 - **Schema Generation** - Correct JSON Schema for arrays, complete with shape and dtype constraints, to
   make your models interoperable 
+- **Fast** - The validation codepath is careful to take quick exits and not perform unnecessary work,
+  and interfaces use whatever tools available to validate against array metadata and lazy load to avoid
+  expensive i/o operations. Our goal is to make numpydantic a tool you don't ever need to think about.
 
 Coming soon:
 - **Metadata** - This package was built to be used with [linkml arrays](https://linkml.io/linkml/schemas/arrays.html),
@@ -76,6 +142,10 @@ pip intsall 'numpydantic[array]'
 ```
 
 ## Usage
+
+> [!TIP]
+> The README is just a sample! See the full documentation at 
+> https://numpydantic.readthedocs.io
 
 Specify an array using [nptyping syntax](https://github.com/ramonhagenaars/nptyping/blob/master/USERDOCS.md)
 and use it with your favorite array library :)
