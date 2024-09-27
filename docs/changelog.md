@@ -4,7 +4,15 @@
 
 ### 1.6.*
 
-#### 1.6.2 - 24-09-35
+#### 1.6.3 - 24-09-26
+
+**Bugfix**
+- h5py v3.12.0 was actually fine, but we did need to change the way that
+  the hdf5 tests work to not hold the file open during the test. Easy enough change.
+  the version cap has been removed from h5py (which is optional anyway,
+  so any version could be installed separately)
+
+#### 1.6.2 - 24-09-25
 
 Very minor bugfix and CI release
 

@@ -105,17 +105,10 @@ def model_blank() -> Type[BaseModel]:
 
 
 @pytest.fixture(scope="function")
-def hdf5_file(tmp_output_dir_func) -> h5py.File:
-    h5f_file = tmp_output_dir_func / "h5f.h5"
-    h5f = h5py.File(h5f_file, "w")
-    yield h5f
-    h5f.close()
-
-
-@pytest.fixture(scope="function")
 def hdf5_array(
-    hdf5_file, request
+    request, tmp_output_dir_func
 ) -> Callable[[Tuple[int, ...], Union[np.dtype, type]], H5ArrayPath]:
+    hdf5_file = tmp_output_dir_func / "h5f.h5"
 
     def _hdf5_array(
         shape: Tuple[int, ...] = (10, 10),
@@ -132,8 +125,8 @@ def hdf5_array(
                 data.fill(datetime.now(timezone.utc).isoformat().encode("utf-8"))
             else:
                 data = np.random.random(shape).astype(dtype)
-            _ = hdf5_file.create_dataset(array_path, data=data)
-            return H5ArrayPath(Path(hdf5_file.filename), array_path)
+
+            h5path = H5ArrayPath(hdf5_file, array_path)
         else:
             if dtype is str:
                 dt = np.dtype([("data", np.dtype("S10")), ("extra", "i8")])
@@ -148,8 +141,11 @@ def hdf5_array(
             else:
                 dt = np.dtype([("data", dtype), ("extra", "i8")])
                 data = np.zeros(shape, dtype=dt)
-            _ = hdf5_file.create_dataset(array_path, data=data)
-            return H5ArrayPath(Path(hdf5_file.filename), array_path, "data")
+            h5path = H5ArrayPath(hdf5_file, array_path, "data")
+
+        with h5py.File(hdf5_file, "w") as h5f:
+            _ = h5f.create_dataset(array_path, data=data)
+        return h5path
 
     return _hdf5_array
 
