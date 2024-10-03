@@ -333,8 +333,11 @@ class Interface(ABC, Generic[T]):
             :class:`~numpydantic.exceptions.ShapeError`
         """
         if not valid:
+            from numpydantic.validation.shape import to_shape
+
+            _shape = to_shape(self.shape)
             raise ShapeError(
-                f"Invalid shape! expected shape {self.shape.prepared_args}, "
+                f"Invalid shape! expected shape {_shape.prepared_args}, "
                 f"got shape {shape}"
             )
 

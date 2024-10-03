@@ -91,6 +91,16 @@ class Shape(NPTypingType, ABC, metaclass=ShapeMeta):
     prepared_args = ("*", "...")
 
 
+def to_shape(shape) -> "Shape":
+    from numpydantic import Shape
+
+    if isinstance(shape, int):
+        shape = Shape[f"{shape}"]
+    elif isinstance(shape, tuple):
+        shape = Shape[f"{', '.join([s for s in shape])}"]
+    return shape
+
+
 def validate_shape_expression(shape_expression: Union[ShapeExpression, Any]) -> None:
     """
     CHANGES FROM NPTYPING: Allow ranges
@@ -112,6 +122,7 @@ def validate_shape(shape: ShapeTuple, target: "Shape") -> bool:
     :param target: the shape expression to which shape is tested.
     :return: True if the given shape corresponds to shape_expression.
     """
+    target = to_shape(target)
     target_shape = _handle_ellipsis(shape, target.prepared_args)
     return _check_dimensions_against_shape(shape, target_shape)
 

@@ -113,7 +113,9 @@ def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
         array_type ( :class:`pydantic_core.CoreSchema` ): The pre-rendered pydantic
             core schema to use in the innermost list entry
     """
-    from numpydantic.validation.shape import _is_range
+    from numpydantic.validation.shape import _is_range, to_shape
+
+    shape = to_shape(shape)
 
     shape_parts = [part.strip() for part in shape.__args__[0].split(",")]
     # labels, if present

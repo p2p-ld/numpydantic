@@ -1,16 +1,15 @@
-import pytest
-
-from typing import Union, Optional, Any
 import json
+from typing import Any, Optional, Union
 
 import numpy as np
-from pydantic import BaseModel, ValidationError, Field
+import pytest
+from pydantic import BaseModel, Field, ValidationError
 
-
-from numpydantic import NDArray, Shape
-from numpydantic.exceptions import ShapeError, DtypeError
-from numpydantic import dtype
+# from numpydantic import NDArray, Shape
+from numpydantic import Shape, dtype
 from numpydantic.dtype import Number
+from numpydantic.exceptions import DtypeError
+from numpydantic.ndarray_generic import NDArray
 
 
 @pytest.mark.json_schema
@@ -177,9 +176,10 @@ def test_shape_ellipsis():
     """
 
     class MyModel(BaseModel):
-        array: NDArray[Shape["1, 2, ..."], Number]
+        array: NDArray[1, 2, ..., Number]
 
     _ = MyModel(array=np.zeros((1, 2, 3, 4, 5)))
+    _ = MyModel(array="hey")
 
 
 @pytest.mark.serialization
