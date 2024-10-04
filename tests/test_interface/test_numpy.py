@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
-from pydantic import ValidationError, BaseModel
-from numpydantic.exceptions import DtypeError, ShapeError
+from pydantic import BaseModel, ValidationError
 
-from tests.conftest import ValidationCase
+from numpydantic.exceptions import DtypeError, ShapeError
+from numpydantic.testing.helpers import ValidationCase
 
 pytestmark = pytest.mark.numpy
 

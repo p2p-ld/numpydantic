@@ -2,12 +2,10 @@
 Needs to be refactored to DRY, but works for now
 """
 
-import numpy as np
-import pytest
-
 from pathlib import Path
-import cv2
 
+import cv2
+import pytest
 from pydantic import BaseModel, ValidationError
 
 from numpydantic import NDArray, Shape
@@ -65,7 +63,7 @@ def test_video_wrong_shape(avi_video):
 
     # should correctly validate :)
     with pytest.raises(ValidationError):
-        instance = MyModel(array=vid)
+        _ = MyModel(array=vid)
 
 
 @pytest.mark.proxy

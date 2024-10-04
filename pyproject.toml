@@ -96,6 +96,12 @@ distribution = true
 
 [tool.pdm.build]
 includes = []
+
+[tool.pdm.scripts]
+lint = "ruff check"
+format = {shell = "ruff check --fix ; black ."}
+test = "pytest"
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
@@ -125,10 +131,12 @@ markers = [
     "zarr: zarr interface",
 ]
 
+[tool.black]
+target-version = ["py39", "py310", "py311", "py312"]
+
 [tool.ruff]
 target-version = "py39"
-include = ["src/numpydantic/**/*.py", "pyproject.toml"]
-exclude = ["tests"]
+include = ["src/numpydantic/**/*.py", "tests/**/*.py", "pyproject.toml"]
 
 [tool.ruff.lint]
 select = [
@@ -176,6 +184,10 @@ ignore = [
 ]
 
 fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/numpydantic/testing/*" = ["D", "F722"]
+"tests/*" = ["D", "F403", "F722", "ANN", ]
 
 [tool.mypy]
 plugins = [

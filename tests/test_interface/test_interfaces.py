@@ -2,15 +2,15 @@
 Tests that should be applied to all interfaces
 """
 
-import pytest
-from typing import Callable
-from importlib.metadata import version
 import json
+from importlib.metadata import version
+from typing import Callable
 
-import numpy as np
 import dask.array as da
-from zarr.core import Array as ZarrArray
+import numpy as np
+import pytest
 from pydantic import BaseModel
+from zarr.core import Array as ZarrArray
 
 from numpydantic.interface import Interface, InterfaceMark, MarkedJson
 
