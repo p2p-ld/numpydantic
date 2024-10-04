@@ -39,7 +39,6 @@ as ``S32`` isoformatted byte strings (timezones optional) like:
     
 """
 
-import pdb
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -171,7 +170,7 @@ class H5Proxy:
     __pydantic_serializer__ = SchemaSerializer(
         core_schema.plain_serializer_function_ser_schema(
             to_json, when_used="json", info_arg=True
-        )
+        ),
     )
 
     def __init__(
@@ -218,17 +217,18 @@ class H5Proxy:
             return obj[:]
 
     def __getattr__(self, item: str):
-        if item not in ("shape", "__pydantic_validator__"):
-            pdb.set_trace()
         if item == "__name__":
             # special case for H5Proxies that don't refer to a real file during testing
             return "H5Proxy"
         elif item.startswith("__"):
             return object.__getattribute__(self, item)
-        with h5py.File(self.file, "r") as h5f:
-            obj = h5f.get(self.path)
-            val = getattr(obj, item)
-            return val
+        try:
+            with h5py.File(self.file, "r") as h5f:
+                obj = h5f.get(self.path)
+                val = getattr(obj, item)
+                return val
+        except AttributeError:
+            return object.__getattribute__(self, item)
 
     def __getitem__(
         self, item: Union[int, slice, Tuple[Union[int, slice], ...]]
@@ -303,7 +303,8 @@ class H5Proxy:
         if isinstance(other, H5Proxy):
             return self._h5arraypath == other._h5arraypath
         else:
-            raise ValueError("Can only compare equality of two H5Proxies")
+            return False
+            # raise ValueError("Can only compare equality of two H5Proxies")
 
     def open(self, mode: str = "r") -> "h5py.Dataset":
         """

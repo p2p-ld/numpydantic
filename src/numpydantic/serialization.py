@@ -16,6 +16,8 @@ U = TypeVar("U")
 
 def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
     """Use an interface class to render an array as JSON"""
+    # return [1, 2, 3]
+    # pdb.set_trace()
     interface_cls = Interface.match_output(value)
     array = interface_cls.to_json(value, info)
     array = postprocess_json(array, info)
