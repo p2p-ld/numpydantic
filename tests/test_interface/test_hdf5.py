@@ -12,7 +12,7 @@ from numpydantic.interface import H5Interface
 from numpydantic.interface.hdf5 import H5ArrayPath, H5Proxy
 from numpydantic.exceptions import DtypeError, ShapeError
 
-from tests.conftest import ValidationCase
+from numpydantic.testing.helpers import ValidationCase
 
 pytestmark = pytest.mark.hdf5
 

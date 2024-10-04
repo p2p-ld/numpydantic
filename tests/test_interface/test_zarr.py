@@ -10,7 +10,7 @@ from numpydantic.interface import ZarrInterface
 from numpydantic.interface.zarr import ZarrArrayPath
 from numpydantic.exceptions import DtypeError, ShapeError
 
-from tests.conftest import ValidationCase
+from numpydantic.testing.helpers import ValidationCase
 
 pytestmark = pytest.mark.zarr
 

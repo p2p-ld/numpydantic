@@ -7,7 +7,7 @@ from pydantic import BaseModel, ValidationError
 from numpydantic.interface import DaskInterface
 from numpydantic.exceptions import DtypeError, ShapeError
 
-from tests.conftest import ValidationCase
+from numpydantic.testing.helpers import ValidationCase
 
 pytestmark = pytest.mark.dask
 

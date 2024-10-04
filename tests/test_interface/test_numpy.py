@@ -3,7 +3,7 @@ import pytest
 from pydantic import ValidationError, BaseModel
 from numpydantic.exceptions import DtypeError, ShapeError
 
-from tests.conftest import ValidationCase
+from numpydantic.testing.helpers import ValidationCase
 
 pytestmark = pytest.mark.numpy
 
