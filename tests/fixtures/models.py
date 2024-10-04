@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, Union, Type, Optional, Any
+from typing import Any, Callable, Optional, Tuple, Type, Union
 
 import numpy as np
 import pytest

@@ -6,18 +6,17 @@ for tests that should apply to all interfaces, use ``test_interfaces.py``
 import gc
 from typing import Literal
 
-import pytest
 import numpy as np
+import pytest
+from pydantic import ValidationError
 
 from numpydantic.interface import (
     Interface,
-    JsonDict,
     InterfaceMark,
-    NumpyInterface,
+    JsonDict,
     MarkedJson,
+    NumpyInterface,
 )
-from pydantic import ValidationError
-
 from numpydantic.interface.interface import V
 
 
@@ -46,9 +45,7 @@ def interfaces():
         @classmethod
         def check(cls, array):
             cls.checked = True
-            if isinstance(array, list):
-                return True
-            return False
+            return isinstance(array, list)
 
         @classmethod
         def enabled(cls) -> bool:
@@ -94,7 +91,8 @@ def interfaces():
 
 def test_interface_match_error(interfaces):
     """
-    Test that `match` and `match_output` raises errors when no or multiple matches are found
+    Test that `match` and `match_output` raises errors when no or multiple matches 
+    are found
     """
     with pytest.raises(ValueError) as e:
         Interface.match([1, 2, 3])

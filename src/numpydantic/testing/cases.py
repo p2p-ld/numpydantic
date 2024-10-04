@@ -18,7 +18,6 @@ else:
     YES_PIPE = False
 
 
-
 class BasicModel(BaseModel):
     x: int
 
@@ -129,4 +128,3 @@ if YES_PIPE:
             "union-pipe-str",
         ]
     )
-

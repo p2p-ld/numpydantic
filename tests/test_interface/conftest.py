@@ -1,12 +1,12 @@
-import pytest
-
 from typing import Callable, Tuple, Type
-import numpy as np
+
 import dask.array as da
+import numpy as np
+import pytest
 import zarr
 from pydantic import BaseModel
 
-from numpydantic import interface, NDArray
+from numpydantic import NDArray, interface
 
 
 @pytest.fixture(

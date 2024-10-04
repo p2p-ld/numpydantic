@@ -24,15 +24,16 @@ def hdf5_array(
         compound: bool = False,
     ) -> H5ArrayPath:
         array_path = "/" + "_".join([str(s) for s in shape]) + "__" + dtype.__name__
-
+        generator = np.random.default_rng()
+        
         if not compound:
             if dtype is str:
-                data = np.random.random(shape).astype(bytes)
+                data = generator.random(shape).astype(bytes)
             elif dtype is datetime:
                 data = np.empty(shape, dtype="S32")
                 data.fill(datetime.now(timezone.utc).isoformat().encode("utf-8"))
             else:
-                data = np.random.random(shape).astype(dtype)
+                data = generator.random(shape).astype(dtype)
 
             h5path = H5ArrayPath(hdf5_file, array_path)
         else:
@@ -64,7 +65,7 @@ def zarr_nested_array(tmp_output_dir_func) -> ZarrArrayPath:
     file = tmp_output_dir_func / "nested.zarr"
     path = "a/b/c"
     root = zarr.open(str(file), mode="w")
-    array = root.zeros(path, shape=(100, 100), chunks=(10, 10))
+    _ = root.zeros(path, shape=(100, 100), chunks=(10, 10))
     return ZarrArrayPath(file=file, path=path)
 
 

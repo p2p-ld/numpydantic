@@ -1,7 +1,10 @@
-import sys
+import pytest
 
-from numpydantic.testing.cases import YES_PIPE, RGB_UNION, UNION_PIPE, DTYPE_CASES, DTYPE_IDS
-
+from numpydantic.testing.cases import (
+    DTYPE_CASES,
+    DTYPE_IDS,
+    RGB_UNION,
+)
 from numpydantic.testing.helpers import ValidationCase
 from tests.fixtures import *
 
@@ -12,9 +15,6 @@ def pytest_addoption(parser):
         action="store_true",
         help="Keep test outputs in the __tmp__ directory",
     )
-
-
-
 
 
 @pytest.fixture(

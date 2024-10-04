@@ -2,14 +2,11 @@ import json
 
 import pytest
 import zarr
-
 from pydantic import BaseModel, ValidationError
-from numcodecs import Pickle
 
+from numpydantic.exceptions import DtypeError, ShapeError
 from numpydantic.interface import ZarrInterface
 from numpydantic.interface.zarr import ZarrArrayPath
-from numpydantic.exceptions import DtypeError, ShapeError
-
 from numpydantic.testing.helpers import ValidationCase
 
 pytestmark = pytest.mark.zarr
@@ -36,7 +33,7 @@ def nested_dir_array(tmp_output_dir_func) -> zarr.NestedDirectoryStore:
 def _zarr_array(case: ValidationCase, store) -> zarr.core.Array:
     if issubclass(case.dtype, BaseModel):
         pytest.skip(
-            f"Zarr can't handle objects properly at the moment, "
+            "Zarr can't handle objects properly at the moment, "
             "see https://github.com/zarr-developers/zarr-python/issues/2081"
         )
         # return zarr.full(
@@ -103,14 +100,14 @@ def test_zarr_from_tuple(array, model_blank, request):
     """Should be able to do the same validation logic from tuples as an input"""
     array = request.getfixturevalue(array)
     if isinstance(array, ZarrArrayPath):
-        instance = model_blank(array=(array.file, array.path))
+        _ = model_blank(array=(array.file, array.path))
     else:
-        instance = model_blank(array=(array,))
+        _ = model_blank(array=(array,))
 
 
 def test_zarr_from_path(zarr_array, model_blank):
     """Should be able to just pass a path"""
-    instance = model_blank(array=zarr_array)
+    _ = model_blank(array=zarr_array)
 
 
 def test_zarr_array_path_from_iterable(zarr_array):

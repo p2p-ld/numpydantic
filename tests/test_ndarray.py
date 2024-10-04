@@ -1,16 +1,13 @@
-import pytest
-
-from typing import Union, Optional, Any
 import json
+from typing import Any, Optional, Union
 
 import numpy as np
-from pydantic import BaseModel, ValidationError, Field
+import pytest
+from pydantic import BaseModel, Field, ValidationError
 
-
-from numpydantic import NDArray, Shape
-from numpydantic.exceptions import ShapeError, DtypeError
-from numpydantic import dtype
+from numpydantic import NDArray, Shape, dtype
 from numpydantic.dtype import Number
+from numpydantic.exceptions import DtypeError
 
 
 @pytest.mark.json_schema
@@ -28,15 +25,15 @@ def test_ndarray_type():
     assert schema["properties"]["array"]["minItems"] == 2
 
     # models should instantiate correctly!
-    instance = Model(array=np.zeros((2, 3)))
+    _ = Model(array=np.zeros((2, 3)))
 
     with pytest.raises(ValidationError):
-        instance = Model(array=np.zeros((4, 6)))
+        _ = Model(array=np.zeros((4, 6)))
 
     with pytest.raises(ValidationError):
-        instance = Model(array=np.ones((2, 3), dtype=bool))
+        _ = Model(array=np.ones((2, 3), dtype=bool))
 
-    instance = Model(array=np.zeros((2, 3)), array_any=np.ones((3, 4, 5)))
+    _ = Model(array=np.zeros((2, 3)), array_any=np.ones((3, 4, 5)))
 
 
 @pytest.mark.dtype
@@ -93,6 +90,7 @@ def test_schema_number():
 
 
 def test_ndarray_union():
+    generator = np.random.default_rng()
     class Model(BaseModel):
         array: Optional[
             Union[
@@ -102,22 +100,22 @@ def test_ndarray_union():
             ]
         ] = Field(None)
 
-    instance = Model()
-    instance = Model(array=np.random.random((5, 10)))
-    instance = Model(array=np.random.random((5, 10, 3)))
-    instance = Model(array=np.random.random((5, 10, 3, 4)))
+    _ = Model()
+    _ = Model(array=generator.random((5, 10)))
+    _ = Model(array=generator.random((5, 10, 3)))
+    _ = Model(array=generator.random((5, 10, 3, 4)))
 
     with pytest.raises(ValidationError):
-        instance = Model(array=np.random.random((5,)))
+        _ = Model(array=generator.random((5,)))
 
     with pytest.raises(ValidationError):
-        instance = Model(array=np.random.random((5, 10, 4)))
+        _ = Model(array=generator.random((5, 10, 4)))
 
     with pytest.raises(ValidationError):
-        instance = Model(array=np.random.random((5, 10, 3, 6)))
+        _ = Model(array=generator.random((5, 10, 3, 6)))
 
     with pytest.raises(ValidationError):
-        instance = Model(array=np.random.random((5, 10, 4, 6)))
+        _ = Model(array=generator.random((5, 10, 4, 6)))
 
 
 @pytest.mark.shape
@@ -127,15 +125,16 @@ def test_ndarray_unparameterized(dtype):
     """
     NDArray without any parameters is any shape, any type
     """
+    generator = np.random.default_rng()
 
     class Model(BaseModel):
         array: NDArray
 
     # not very sophisticated fuzzing of "any shape"
     test_cases = 10
-    for i in range(test_cases):
-        n_dimensions = np.random.randint(1, 8)
-        dim_sizes = np.random.randint(1, 7, size=n_dimensions)
+    for _ in range(test_cases):
+        n_dimensions = generator.integers(1, 8)
+        dim_sizes = generator.integers(1, 7, size=n_dimensions)
         _ = Model(array=np.zeros(dim_sizes, dtype=dtype))
 
 
@@ -144,15 +143,16 @@ def test_ndarray_any():
     """
     using :class:`typing.Any` in for the shape means any shape
     """
+    generator = np.random.default_rng()
 
     class Model(BaseModel):
         array: NDArray[Any, np.uint8]
 
     # not very sophisticated fuzzing of "any shape"
     test_cases = 100
-    for i in range(test_cases):
-        n_dimensions = np.random.randint(1, 8)
-        dim_sizes = np.random.randint(1, 16, size=n_dimensions)
+    for _ in range(test_cases):
+        n_dimensions = generator.integers(1, 8)
+        dim_sizes = generator.integers(1, 16, size=n_dimensions)
         _ = Model(array=np.zeros(dim_sizes, dtype=np.uint8))
 
 
@@ -191,7 +191,7 @@ def test_ndarray_serialize():
     class Model(BaseModel):
         array: NDArray[Any, Number]
 
-    mod = Model(array=np.random.random((3, 3)))
+    mod = Model(array=np.random.default_rng().random((3, 3)))
     mod_str = mod.model_dump_json()
     mod_json = json.loads(mod_str)
     assert isinstance(mod_json["array"], list)

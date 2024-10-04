@@ -20,7 +20,8 @@ def tmp_output_dir(request: pytest.FixtureRequest) -> Path:
         except PermissionError as e:
             # sporadic error on windows machines...
             warn(
-                f"Temporary directory could not be removed due to a permissions error: \n{str(e)}"
+                "Temporary directory could not be removed due to a permissions error: "
+                f"\n{str(e)}"
             )
 
 

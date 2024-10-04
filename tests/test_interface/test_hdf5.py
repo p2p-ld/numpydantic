@@ -1,17 +1,16 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 import h5py
+import numpy as np
 import pytest
 from pydantic import BaseModel, ValidationError
 
-import numpy as np
 from numpydantic import NDArray, Shape
+from numpydantic.exceptions import DtypeError, ShapeError
 from numpydantic.interface import H5Interface
 from numpydantic.interface.hdf5 import H5ArrayPath, H5Proxy
-from numpydantic.exceptions import DtypeError, ShapeError
-
 from numpydantic.testing.helpers import ValidationCase
 
 pytestmark = pytest.mark.hdf5
@@ -221,10 +220,7 @@ def test_empty_dataset(dtype, tmp_path):
     Empty datasets shouldn't choke us during validation
     """
     array_path = tmp_path / "test.h5"
-    if dtype in (str, datetime):
-        np_dtype = "S32"
-    else:
-        np_dtype = dtype
+    np_dtype = "S32" if dtype in (str, datetime) else dtype
 
     with h5py.File(array_path, "w") as h5f:
         _ = h5f.create_dataset(name="/data", dtype=np_dtype)

@@ -1,5 +1,6 @@
 from typing import Any, Tuple, Type, Union
 
+import numpy as np
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from numpydantic import NDArray, Shape

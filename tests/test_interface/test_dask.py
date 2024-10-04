@@ -1,12 +1,11 @@
-import pytest
 import json
 
 import dask.array as da
+import pytest
 from pydantic import BaseModel, ValidationError
 
-from numpydantic.interface import DaskInterface
 from numpydantic.exceptions import DtypeError, ShapeError
-
+from numpydantic.interface import DaskInterface
 from numpydantic.testing.helpers import ValidationCase
 
 pytestmark = pytest.mark.dask

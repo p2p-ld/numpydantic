@@ -3,14 +3,15 @@ Test serialization-specific functionality that doesn't need to be
 applied across every interface (use test_interface/test_interfaces for that
 """
 
-import h5py
-import pytest
+import json
 from pathlib import Path
 from typing import Callable
-import numpy as np
-import json
 
-from numpydantic.serialization import _walk_and_apply, _relativize_paths, relative_path
+import h5py
+import numpy as np
+import pytest
+
+from numpydantic.serialization import _relativize_paths, _walk_and_apply, relative_path
 
 pytestmark = pytest.mark.serialization
 
@@ -115,7 +116,8 @@ def test_absolute_path(hdf5_at_path, tmp_output_dir, model_blank):
 
 def test_walk_and_apply():
     """
-    Walk and apply should recursively apply a function to everything in a nesty structure
+    Walk and apply should recursively apply a function to everything in a 
+    nesty structure
     """
     test = {
         "a": 1,
