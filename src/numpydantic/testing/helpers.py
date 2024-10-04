@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError, computed_field
 from numpydantic import NDArray, Shape
 from numpydantic.dtype import Float
 from numpydantic.interface import Interface
-from numpydantic.types import NDArrayType
+from numpydantic.types import DtypeType, NDArrayType
 
 
 class InterfaceCase(ABC):
@@ -29,43 +29,64 @@ class InterfaceCase(ABC):
         """The interface that this helper is for"""
 
     @classmethod
-    @abstractmethod
-    def generate_array(
-        cls, case: "ValidationCase", path: Path
+    def array_from_case(
+        cls, case: "ValidationCase", path: Optional[Path] = None
     ) -> Optional[NDArrayType]:
         """
         Generate an array from the given validation case.
 
         Returns ``None`` if an array can't be generated for a specific case.
         """
+        return cls.make_array(shape=case.shape, dtype=case.dtype, path=path)
 
     @classmethod
-    def validate_array(cls, case: "ValidationCase", path: Path) -> Optional[bool]:
+    @abstractmethod
+    def make_array(
+        cls,
+        shape: Tuple[int, ...] = (10, 10),
+        dtype: DtypeType = float,
+        path: Optional[Path] = None,
+    ) -> Optional[NDArrayType]:
+        """
+        Make an array from a shape and dtype, and a path if needed
+        """
+
+    @classmethod
+    def validate_case(cls, case: "ValidationCase", path: Path) -> bool:
         """
         Validate a generated array against the annotation in the validation case.
 
         Kept in the InterfaceCase in case an interface has specific
         needs aside from just validating against a model, but typically left as is.
 
-        Does not raise on Validation errors -
-        returns bool instead for consistency's sake.
-
         If an array can't be generated for a given case, returns `None`
         so that the calling function can know to skip rather than fail the case.
+
+        Raises exceptions if validation fails (or succeeds when it shouldn't)
+
+        Args:
+            case (ValidationCase): The validation case to validate.
+            path (Path): Path to generate arrays into, if any.
+
+        Returns:
+            ``True`` if array is valid and was supposed to be,
+                or invalid and wasn't supposed to be
         """
-        array = cls.generate_array(case, path)
+        import pytest
+
+        array = cls.array_from_case(case, path)
         if array is None:
-            return None
-        try:
+            pytest.skip()
+        if case.passes:
             case.model(array=array)
-            # True if case is supposed to pass, False if it's not...
-            return case.passes
-        except ValidationError:
-            # False if the case is supposed to pass, True if it is...
-            return not case.passes
+            return True
+        else:
+            with pytest.raises(ValidationError):
+                case.model(array=array)
+            return True
 
     @classmethod
-    def skip(cls, case: "ValidationCase") -> bool:
+    def skip(cls, shape: Tuple[int, ...], dtype: DtypeType) -> bool:
         """
         Whether a given interface should be skipped for the case
         """
@@ -97,6 +118,9 @@ class ValidationCase(BaseModel):
     passes: bool = False
     """Whether the validation should pass or not"""
     interface: Optional[InterfaceCase] = None
+    """The interface test case to generate and validate the array with"""
+    path: Optional[Path] = None
+    """The path to generate arrays into, if any."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -109,6 +133,39 @@ class ValidationCase(BaseModel):
             array: annotation
 
         return Model
+
+    def validate_case(self, path: Optional[Path] = None) -> bool:
+        """
+        Whether the generated array correctly validated against the annotation,
+        given the interface
+
+        Args:
+            path (:class:`pathlib.Path`): Directory to generate array into, if on disk.
+
+        Raises:
+            ValueError: if an ``interface`` is missing
+        """
+        if self.interface is None:
+            raise ValueError("Missing an interface")
+        if path is None:
+            if self.path:
+                path = self.path
+            else:
+                raise ValueError("Missing a path to generate arrays into")
+
+        return self.interface.validate_case(self, path)
+
+    def array(self, path: Path) -> NDArrayType:
+        """Generate an array for the validation case if we have an interface to do so"""
+        if self.interface is None:
+            raise ValueError("Missing an interface")
+        if path is None:
+            if self.path:
+                path = self.path
+            else:
+                raise ValueError("Missing a path to generate arrays into")
+
+        return self.interface.array_from_case(self, path)
 
     def merge(
         self, other: Union["ValidationCase", Sequence["ValidationCase"]]
@@ -154,7 +211,9 @@ class ValidationCase(BaseModel):
         (eg. due to the interface case being incompatible
         with the requested dtype or shape)
         """
-        return bool(self.interface is not None and self.interface.skip())
+        return bool(
+            self.interface is not None and self.interface.skip(self.shape, self.dtype)
+        )
 
 
 def merge_cases(*args: ValidationCase) -> ValidationCase:

@@ -203,9 +203,19 @@ def merged_product(
 
             iterator = merged_product(shape_cases, dtype_cases))
             next(iterator)
-            # ValidationCase(shape=(10, 10, 10), dtype=float, passes=True, id="valid shape-float")
+            # ValidationCase(
+            #     shape=(10, 10, 10),
+            #     dtype=float,
+            #     passes=True,
+            #     id="valid shape-float"
+            # )
             next(iterator)
-            # ValidationCase(shape=(10, 10, 10), dtype=int, passes=False, id="valid shape-int")
+            # ValidationCase(
+            #     shape=(10, 10, 10),
+            #     dtype=int,
+            #     passes=False,
+            #     id="valid shape-int"
+            # )
 
 
     """

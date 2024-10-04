@@ -1,12 +1,20 @@
+import inspect
 from typing import Callable, Tuple, Type
 
-import dask.array as da
-import numpy as np
 import pytest
-import zarr
 from pydantic import BaseModel
 
 from numpydantic import NDArray, interface
+from numpydantic.testing.helpers import InterfaceCase
+from numpydantic.testing.interfaces import (
+    DaskCase,
+    HDF5Case,
+    NumpyCase,
+    VideoCase,
+    ZarrCase,
+    ZarrDirCase,
+    ZarrNestedCase,
+)
 
 
 @pytest.fixture(
@@ -18,47 +26,55 @@ from numpydantic import NDArray, interface
             id="numpy-list",
         ),
         pytest.param(
-            (np.zeros((3, 4)), interface.NumpyInterface),
+            (NumpyCase, interface.NumpyInterface),
             marks=pytest.mark.numpy,
             id="numpy",
         ),
         pytest.param(
-            ("hdf5_array", interface.H5Interface),
+            (HDF5Case, interface.H5Interface),
             marks=pytest.mark.hdf5,
             id="h5-array-path",
         ),
         pytest.param(
-            (da.random.random((10, 10)), interface.DaskInterface),
+            (DaskCase, interface.DaskInterface),
             marks=pytest.mark.dask,
             id="dask",
         ),
         pytest.param(
-            (zarr.ones((10, 10)), interface.ZarrInterface),
+            (ZarrCase, interface.ZarrInterface),
             marks=pytest.mark.zarr,
             id="zarr-memory",
         ),
         pytest.param(
-            ("zarr_nested_array", interface.ZarrInterface),
+            (ZarrNestedCase, interface.ZarrInterface),
             marks=pytest.mark.zarr,
             id="zarr-nested",
         ),
         pytest.param(
-            ("zarr_array", interface.ZarrInterface),
+            (ZarrDirCase, interface.ZarrInterface),
             marks=pytest.mark.zarr,
-            id="zarr-array",
+            id="zarr-dir",
         ),
         pytest.param(
-            ("avi_video", interface.VideoInterface), marks=pytest.mark.video, id="video"
+            (VideoCase, interface.VideoInterface), marks=pytest.mark.video, id="video"
         ),
     ],
 )
-def interface_type(request) -> Tuple[NDArray, Type[interface.Interface]]:
+def interface_type(
+    request, tmp_output_dir_func
+) -> Tuple[NDArray, Type[interface.Interface]]:
     """
     Test cases for each interface's ``check`` method - each input should match the
     provided interface and that interface only
     """
-    if isinstance(request.param[0], str):
-        return (request.getfixturevalue(request.param[0]), request.param[1])
+
+    if inspect.isclass(request.param[0]) and issubclass(
+        request.param[0], InterfaceCase
+    ):
+        array = request.param[0].make_array(path=tmp_output_dir_func)
+        if array is None:
+            pytest.skip()
+        return array, request.param[1]
     else:
         return request.param
 
