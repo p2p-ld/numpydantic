@@ -1,5 +1,5 @@
 import sys
-from typing import TypeAlias, Union
+from typing import Union
 
 import numpy as np
 from pydantic import BaseModel
