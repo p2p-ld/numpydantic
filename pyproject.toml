@@ -96,6 +96,12 @@ distribution = true
 
 [tool.pdm.build]
 includes = []
+
+[tool.pdm.scripts]
+lint = "ruff check"
+format = {shell = "ruff check --fix ; black ."}
+test = "pytest"
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"

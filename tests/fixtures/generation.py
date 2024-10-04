@@ -25,7 +25,7 @@ def hdf5_array(
     ) -> H5ArrayPath:
         array_path = "/" + "_".join([str(s) for s in shape]) + "__" + dtype.__name__
         generator = np.random.default_rng()
-        
+
         if not compound:
             if dtype is str:
                 data = generator.random(shape).astype(bytes)

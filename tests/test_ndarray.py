@@ -91,6 +91,7 @@ def test_schema_number():
 
 def test_ndarray_union():
     generator = np.random.default_rng()
+
     class Model(BaseModel):
         array: Optional[
             Union[

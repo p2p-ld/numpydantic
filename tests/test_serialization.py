@@ -116,7 +116,7 @@ def test_absolute_path(hdf5_at_path, tmp_output_dir, model_blank):
 
 def test_walk_and_apply():
     """
-    Walk and apply should recursively apply a function to everything in a 
+    Walk and apply should recursively apply a function to everything in a
     nesty structure
     """
     test = {

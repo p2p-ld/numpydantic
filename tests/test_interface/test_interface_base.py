@@ -91,7 +91,7 @@ def interfaces():
 
 def test_interface_match_error(interfaces):
     """
-    Test that `match` and `match_output` raises errors when no or multiple matches 
+    Test that `match` and `match_output` raises errors when no or multiple matches
     are found
     """
     with pytest.raises(ValueError) as e:
