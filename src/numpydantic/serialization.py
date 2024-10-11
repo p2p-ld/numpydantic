@@ -64,7 +64,7 @@ def _relativize_paths(
     ``relative_to`` directory, if provided in the context
     """
     relative_to = Path(relative_to).resolve()
-    
+
     def _r_path(v: Any) -> Any:
         if not isinstance(v, (str, Path)):
             return v
