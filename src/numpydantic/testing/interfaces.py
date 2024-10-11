@@ -19,7 +19,7 @@ from numpydantic.interface import (
     ZarrInterface,
 )
 from numpydantic.testing.helpers import InterfaceCase
-from numpydantic.types import DtypeType
+from numpydantic.types import DtypeType, NDArrayType
 
 
 class NumpyCase(InterfaceCase):
@@ -33,8 +33,11 @@ class NumpyCase(InterfaceCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> np.ndarray:
-        if issubclass(dtype, BaseModel):
+        if array is not None:
+            return np.array(array, dtype=dtype)
+        elif issubclass(dtype, BaseModel):
             return np.full(shape=shape, fill_value=dtype(x=1))
         else:
             return np.zeros(shape=shape, dtype=dtype)
@@ -59,6 +62,7 @@ class HDF5Case(_HDF5MetaCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> Optional[H5ArrayPath]:
         if cls.skip(shape, dtype):
             return None
@@ -67,7 +71,9 @@ class HDF5Case(_HDF5MetaCase):
         array_path = "/" + "_".join([str(s) for s in shape]) + "__" + dtype.__name__
         generator = np.random.default_rng()
 
-        if dtype is str:
+        if array is not None:
+            data = np.array(array, dtype=dtype)
+        elif dtype is str:
             data = generator.random(shape).astype(bytes)
         elif dtype is datetime:
             data = np.empty(shape, dtype="S32")
@@ -91,13 +97,16 @@ class HDF5CompoundCase(_HDF5MetaCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> Optional[H5ArrayPath]:
         if cls.skip(shape, dtype):
             return None
 
         hdf5_file = path / "h5f.h5"
         array_path = "/" + "_".join([str(s) for s in shape]) + "__" + dtype.__name__
-        if dtype is str:
+        if array is not None:
+            data = np.array(array, dtype=dtype)
+        elif dtype is str:
             dt = np.dtype([("data", np.dtype("S10")), ("extra", "i8")])
             data = np.array([("hey", 0)] * np.prod(shape), dtype=dt).reshape(shape)
         elif dtype is datetime:
@@ -128,7 +137,10 @@ class DaskCase(InterfaceCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> da.Array:
+        if array is not None:
+            return da.array(array, dtype=dtype, chunks=-1)
         if issubclass(dtype, BaseModel):
             return da.full(shape=shape, fill_value=dtype(x=1), chunks=-1)
         else:
@@ -142,7 +154,7 @@ class _ZarrMetaCase(InterfaceCase):
 
     @classmethod
     def skip(cls, shape: Tuple[int, ...], dtype: DtypeType) -> bool:
-        return not issubclass(dtype, BaseModel)
+        return issubclass(dtype, BaseModel)
 
 
 class ZarrCase(_ZarrMetaCase):
@@ -154,8 +166,12 @@ class ZarrCase(_ZarrMetaCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> Optional[zarr.Array]:
-        return zarr.zeros(shape=shape, dtype=dtype)
+        if array is not None:
+            return zarr.array(array, dtype=dtype, chunks=-1)
+        else:
+            return zarr.zeros(shape=shape, dtype=dtype)
 
 
 class ZarrDirCase(_ZarrMetaCase):
@@ -167,9 +183,13 @@ class ZarrDirCase(_ZarrMetaCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> Optional[zarr.Array]:
         store = zarr.DirectoryStore(str(path / "array.zarr"))
-        return zarr.zeros(shape=shape, dtype=dtype, store=store)
+        if array is not None:
+            return zarr.array(array, dtype=dtype, store=store, chunks=-1)
+        else:
+            return zarr.zeros(shape=shape, dtype=dtype, store=store)
 
 
 class ZarrZipCase(_ZarrMetaCase):
@@ -181,9 +201,13 @@ class ZarrZipCase(_ZarrMetaCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> Optional[zarr.Array]:
         store = zarr.ZipStore(str(path / "array.zarr"), mode="w")
-        return zarr.zeros(shape=shape, dtype=dtype, store=store)
+        if array is not None:
+            return zarr.array(array, dtype=dtype, store=store, chunks=-1)
+        else:
+            return zarr.zeros(shape=shape, dtype=dtype, store=store)
 
 
 class ZarrNestedCase(_ZarrMetaCase):
@@ -195,11 +219,15 @@ class ZarrNestedCase(_ZarrMetaCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> ZarrArrayPath:
         file = str(path / "nested.zarr")
         root = zarr.open(file, mode="w")
         subpath = "a/b/c"
-        _ = root.zeros(subpath, shape=shape, dtype=dtype)
+        if array is not None:
+            _ = root.array(subpath, array, dtype=dtype)
+        else:
+            _ = root.zeros(subpath, shape=shape, dtype=dtype)
         return ZarrArrayPath(file=file, path=subpath)
 
 
@@ -214,9 +242,14 @@ class VideoCase(InterfaceCase):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> Optional[Path]:
         if cls.skip(shape, dtype):
             return None
+
+        if array is not None:
+            array = np.ndarray(shape, dtype=np.uint8)
+            shape = array.shape
 
         is_color = len(shape) == 4
         frames = shape[0]
@@ -232,13 +265,16 @@ class VideoCase(InterfaceCase):
         )
 
         for i in range(frames):
-            # make fresh array every time bc opencv eats them
-            array = np.zeros(frame_shape, dtype=np.uint8)
-            if not is_color:
-                array[i, i] = i
+            if array is not None:
+                frame = array[i]
             else:
-                array[i, i, :] = i
-            writer.write(array)
+                # make fresh array every time bc opencv eats them
+                frame = np.zeros(frame_shape, dtype=np.uint8)
+                if not is_color:
+                    frame[i, i] = i
+                else:
+                    frame[i, i, :] = i
+            writer.write(frame)
         writer.release()
         return video_path
 

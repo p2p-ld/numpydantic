@@ -5,13 +5,11 @@ from typing import Any
 import h5py
 import numpy as np
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from numpydantic import NDArray, Shape
-from numpydantic.exceptions import DtypeError, ShapeError
 from numpydantic.interface import H5Interface
 from numpydantic.interface.hdf5 import H5ArrayPath, H5Proxy
-from numpydantic.testing.helpers import ValidationCase
 from numpydantic.testing.interfaces import HDF5Case, HDF5CompoundCase
 
 pytestmark = pytest.mark.hdf5
@@ -27,33 +25,22 @@ def hdf5_cases(request):
     return request.param
 
 
-def hdf5_array_case(
-    case: ValidationCase, array_func, compound: bool = False
-) -> H5ArrayPath:
-    """
-    Args:
-        case:
-        array_func: ( the function returned from the `hdf5_array` fixture )
-
-    Returns:
-
-    """
-    if issubclass(case.dtype, BaseModel):
-        pytest.skip("hdf5 cant support arbitrary python objects")
-    return array_func(case.shape, case.dtype, compound)
-
-
-def _test_hdf5_case(case: ValidationCase, array_func, compound: bool = False) -> None:
-    array = hdf5_array_case(case, array_func, compound)
-    if case.passes:
-        case.model(array=array)
-    else:
-        with pytest.raises((ValidationError, DtypeError, ShapeError)):
-            case.model(array=array)
-
-
 def test_hdf5_enabled():
     assert H5Interface.enabled()
+
+
+@pytest.mark.shape
+def test_hdf5_shape(shape_cases, hdf5_cases):
+    shape_cases.interface = hdf5_cases
+    if shape_cases.skip():
+        pytest.skip()
+    shape_cases.validate_case()
+
+
+@pytest.mark.dtype
+def test_hdf5_dtype(dtype_cases, hdf5_cases):
+    dtype_cases.interface = hdf5_cases
+    dtype_cases.validate_case()
 
 
 def test_hdf5_check(interface_type):
@@ -80,20 +67,6 @@ def test_hdf5_check_not_hdf5(tmp_path):
 
     spec = (afile, "/fake/array")
     assert not H5Interface.check(spec)
-
-
-@pytest.mark.shape
-def test_hdf5_shape(shape_cases, hdf5_cases):
-    shape_cases.interface = hdf5_cases
-    if shape_cases.skip():
-        pytest.skip()
-    shape_cases.validate_case()
-
-
-@pytest.mark.dtype
-def test_hdf5_dtype(dtype_cases, hdf5_cases):
-    dtype_cases.interface = hdf5_cases
-    dtype_cases.validate_case()
 
 
 def test_hdf5_dataset_not_exists(hdf5_array, model_blank):

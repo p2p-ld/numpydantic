@@ -7,7 +7,6 @@ import zarr
 
 from numpydantic.interface.hdf5 import H5ArrayPath
 from numpydantic.interface.zarr import ZarrArrayPath
-from numpydantic.testing import ValidationCase
 from numpydantic.testing.interfaces import HDF5Case, HDF5CompoundCase, VideoCase
 
 
@@ -57,8 +56,8 @@ def avi_video(tmp_output_dir_func) -> Callable[[Tuple[int, int], int, bool], Pat
         shape = (frames, *shape)
         if is_color:
             shape = (*shape, 3)
-        return VideoCase.array_from_case(
-            ValidationCase(shape=shape, dtype=np.uint8), tmp_output_dir_func
+        return VideoCase.make_array(
+            shape=shape, dtype=np.uint8, path=tmp_output_dir_func
         )
 
     return _make_video

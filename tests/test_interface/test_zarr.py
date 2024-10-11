@@ -1,58 +1,21 @@
 import json
 
+import numpy as np
 import pytest
-import zarr
-from pydantic import BaseModel, ValidationError
 
-from numpydantic.exceptions import DtypeError, ShapeError
 from numpydantic.interface import ZarrInterface
 from numpydantic.interface.zarr import ZarrArrayPath
-from numpydantic.testing.helpers import ValidationCase
+from numpydantic.testing.cases import ZarrCase, ZarrDirCase, ZarrNestedCase, ZarrZipCase
+from numpydantic.testing.helpers import InterfaceCase
 
 pytestmark = pytest.mark.zarr
 
 
-@pytest.fixture()
-def dir_array(tmp_output_dir_func) -> zarr.DirectoryStore:
-    store = zarr.DirectoryStore(tmp_output_dir_func / "array.zarr")
-    return store
-
-
-@pytest.fixture()
-def zip_array(tmp_output_dir_func) -> zarr.ZipStore:
-    store = zarr.ZipStore(tmp_output_dir_func / "array.zip", mode="w")
-    return store
-
-
-@pytest.fixture()
-def nested_dir_array(tmp_output_dir_func) -> zarr.NestedDirectoryStore:
-    store = zarr.NestedDirectoryStore(tmp_output_dir_func / "nested")
-    return store
-
-
-def _zarr_array(case: ValidationCase, store) -> zarr.core.Array:
-    if issubclass(case.dtype, BaseModel):
-        pytest.skip(
-            "Zarr can't handle objects properly at the moment, "
-            "see https://github.com/zarr-developers/zarr-python/issues/2081"
-        )
-        # return zarr.full(
-        #     shape=case.shape,
-        #     fill_value=case.dtype(x=1),
-        #     dtype=object,
-        #     object_codec=Pickle(),
-        # )
-    else:
-        return zarr.zeros(shape=case.shape, dtype=case.dtype, store=store)
-
-
-def _test_zarr_case(case: ValidationCase, store):
-    array = _zarr_array(case, store)
-    if case.passes:
-        case.model(array=array)
-    else:
-        with pytest.raises((ValidationError, DtypeError, ShapeError)):
-            case.model(array=array)
+@pytest.fixture(
+    params=[ZarrCase, ZarrZipCase, ZarrDirCase, ZarrNestedCase],
+)
+def zarr_case(request) -> InterfaceCase:
+    return request.param
 
 
 @pytest.fixture(
@@ -86,13 +49,17 @@ def test_zarr_check(interface_type):
 
 
 @pytest.mark.shape
-def test_zarr_shape(store, shape_cases):
-    _test_zarr_case(shape_cases, store)
+def test_zarr_shape(shape_cases, zarr_case):
+    shape_cases.interface = zarr_case
+    shape_cases.validate_case()
 
 
 @pytest.mark.dtype
-def test_zarr_dtype(dtype_cases, store):
-    _test_zarr_case(dtype_cases, store)
+def test_zarr_dtype(dtype_cases, zarr_case):
+    dtype_cases.interface = zarr_case
+    if dtype_cases.skip():
+        pytest.skip()
+    dtype_cases.validate_case()
 
 
 @pytest.mark.parametrize("array", ["zarr_nested_array", "zarr_array"])
@@ -126,7 +93,7 @@ def test_zarr_array_path_from_iterable(zarr_array):
 @pytest.mark.serialization
 @pytest.mark.parametrize("dump_array", [True, False])
 @pytest.mark.parametrize("roundtrip", [True, False])
-def test_zarr_to_json(store, model_blank, roundtrip, dump_array):
+def test_zarr_to_json(zarr_case, model_blank, roundtrip, dump_array, tmp_path):
     expected_fields = (
         "Type",
         "Data type",
@@ -136,9 +103,9 @@ def test_zarr_to_json(store, model_blank, roundtrip, dump_array):
         "Store type",
         "hexdigest",
     )
-    lol_array = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    lol_array = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=int)
 
-    array = zarr.array(lol_array, store=store)
+    array = zarr_case.make_array(array=lol_array, dtype=int, path=tmp_path)
     instance = model_blank(array=array)
 
     context = {"dump_array": dump_array}
@@ -148,7 +115,7 @@ def test_zarr_to_json(store, model_blank, roundtrip, dump_array):
 
     if roundtrip:
         if dump_array:
-            assert as_json["value"] == lol_array
+            assert np.array_equal(as_json["value"], lol_array)
         else:
             if as_json.get("file", False):
                 assert "array" not in as_json
@@ -158,4 +125,4 @@ def test_zarr_to_json(store, model_blank, roundtrip, dump_array):
         assert len(as_json["info"]["hexdigest"]) == 40
 
     else:
-        assert as_json == lol_array
+        assert np.array_equal(as_json, lol_array)

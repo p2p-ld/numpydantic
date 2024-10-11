@@ -31,6 +31,53 @@ else:
     YES_PIPE = False
 
 
+def merged_product(
+    *args: Sequence[ValidationCase],
+) -> Generator[ValidationCase, None, None]:
+    """
+    Generator for the product of the iterators of validation cases,
+    merging each tuple, and respecting if they should be :meth:`.ValidationCase.skip`
+    or not.
+
+    Examples:
+
+        .. code-block:: python
+
+            shape_cases = [
+                ValidationCase(shape=(10, 10, 10), passes=True, id="valid shape"),
+                ValidationCase(shape=(10, 10), passes=False, id="missing dimension"),
+            ]
+            dtype_cases = [
+                ValidationCase(dtype=float, passes=True, id="float"),
+                ValidationCase(dtype=int, passes=False, id="int"),
+            ]
+
+            iterator = merged_product(shape_cases, dtype_cases))
+            next(iterator)
+            # ValidationCase(
+            #     shape=(10, 10, 10),
+            #     dtype=float,
+            #     passes=True,
+            #     id="valid shape-float"
+            # )
+            next(iterator)
+            # ValidationCase(
+            #     shape=(10, 10, 10),
+            #     dtype=int,
+            #     passes=False,
+            #     id="valid shape-int"
+            # )
+
+
+    """
+    iterator = product(*args)
+    for case_tuple in iterator:
+        case = merge_cases(case_tuple)
+        if case.skip():
+            continue
+        yield case
+
+
 class BasicModel(BaseModel):
     x: int
 
@@ -58,7 +105,6 @@ FLOAT: TypeAlias = NDArray[Shape["*, *, *"], Float]
 STRING: TypeAlias = NDArray[Shape["*, *, *"], str]
 MODEL: TypeAlias = NDArray[Shape["*, *, *"], BasicModel]
 UNION_TYPE: TypeAlias = NDArray[Shape["*, *, *"], Union[np.uint32, np.float32]]
-UNION_PIPE: TypeAlias = NDArray[Shape["*, *, *"], np.uint32 | np.float32]
 
 SHAPE_CASES = (
     ValidationCase(shape=(10, 10, 10), passes=True, id="valid shape"),
@@ -135,6 +181,8 @@ DTYPE_CASES = [
 
 
 if YES_PIPE:
+    UNION_PIPE: TypeAlias = NDArray[Shape["*, *, *"], np.uint32 | np.float32]
+
     DTYPE_CASES.extend(
         [
             ValidationCase(
@@ -178,50 +226,3 @@ _INTERFACE_CASES = [
     ZarrNestedCase,
     VideoCase,
 ]
-
-
-def merged_product(
-    *args: Sequence[ValidationCase],
-) -> Generator[ValidationCase, None, None]:
-    """
-    Generator for the product of the iterators of validation cases,
-    merging each tuple, and respecting if they should be :meth:`.ValidationCase.skip`
-    or not.
-
-    Examples:
-
-        .. code-block:: python
-
-            shape_cases = [
-                ValidationCase(shape=(10, 10, 10), passes=True, id="valid shape"),
-                ValidationCase(shape=(10, 10), passes=False, id="missing dimension"),
-            ]
-            dtype_cases = [
-                ValidationCase(dtype=float, passes=True, id="float"),
-                ValidationCase(dtype=int, passes=False, id="int"),
-            ]
-
-            iterator = merged_product(shape_cases, dtype_cases))
-            next(iterator)
-            # ValidationCase(
-            #     shape=(10, 10, 10),
-            #     dtype=float,
-            #     passes=True,
-            #     id="valid shape-float"
-            # )
-            next(iterator)
-            # ValidationCase(
-            #     shape=(10, 10, 10),
-            #     dtype=int,
-            #     passes=False,
-            #     id="valid shape-int"
-            # )
-
-
-    """
-    iterator = product(*args)
-    for case_tuple in iterator:
-        case = merge_cases(case_tuple)
-        if case.skip():
-            continue
-        yield case

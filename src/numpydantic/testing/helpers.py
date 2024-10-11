@@ -46,9 +46,16 @@ class InterfaceCase(ABC):
         shape: Tuple[int, ...] = (10, 10),
         dtype: DtypeType = float,
         path: Optional[Path] = None,
+        array: Optional[NDArrayType] = None,
     ) -> Optional[NDArrayType]:
         """
         Make an array from a shape and dtype, and a path if needed
+
+        Args:
+            shape: shape of the array
+            dtype: dtype of the array
+            path: Path, if needed to generate on disk
+            array: Rather than passing shape and dtype, pass a literal arraylike thing
         """
 
     @classmethod
