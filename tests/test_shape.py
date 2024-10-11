@@ -1,9 +1,8 @@
-import pytest
-
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
 import numpy as np
+import pytest
+from pydantic import BaseModel, ValidationError
 
 from numpydantic import NDArray, Shape
 

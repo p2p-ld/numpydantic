@@ -1,4 +1,5 @@
 import sys
+
 import pytest
 
 from numpydantic import NDArray
@@ -40,4 +41,4 @@ def test_stub_revealed_type():
     """
     Check that the revealed type matches the stub
     """
-    type = reveal_type(NDArray)
+    _ = reveal_type(NDArray)

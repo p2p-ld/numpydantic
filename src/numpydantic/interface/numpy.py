@@ -4,7 +4,7 @@ Interface to numpy arrays
 
 from typing import Any, Literal, Union
 
-from pydantic import SerializationInfo
+from pydantic import BaseModel, SerializationInfo
 
 from numpydantic.interface.interface import Interface, JsonDict
 
@@ -59,6 +59,9 @@ class NumpyInterface(Interface):
         Check that this is in fact a numpy ndarray or something that can be
         coerced to one
         """
+        if array is None:
+            return False
+
         if isinstance(array, ndarray):
             return True
         elif isinstance(array, dict):
@@ -77,6 +80,14 @@ class NumpyInterface(Interface):
         """
         if not isinstance(array, ndarray):
             array = np.array(array)
+
+        try:
+            if issubclass(self.dtype, BaseModel) and isinstance(array.flat[0], dict):
+                array = np.vectorize(lambda x: self.dtype(**x))(array)
+        except TypeError:
+            # fine, dtype isn't a type
+            pass
+
         return array
 
     @classmethod

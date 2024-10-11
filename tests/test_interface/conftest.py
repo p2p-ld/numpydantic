@@ -1,80 +1,150 @@
 import pytest
 
-from typing import Callable, Tuple, Type
-import numpy as np
-import dask.array as da
-import zarr
-from pydantic import BaseModel
-
-from numpydantic import interface, NDArray
+from numpydantic.testing.cases import (
+    ALL_CASES,
+    ALL_CASES_PASSING,
+    DTYPE_AND_INTERFACE_CASES_PASSING,
+)
+from numpydantic.testing.helpers import InterfaceCase, ValidationCase, merge_cases
+from numpydantic.testing.interfaces import (
+    DaskCase,
+    HDF5Case,
+    NumpyCase,
+    VideoCase,
+    ZarrCase,
+    ZarrDirCase,
+    ZarrNestedCase,
+)
 
 
 @pytest.fixture(
     scope="function",
     params=[
         pytest.param(
-            ([[1, 2], [3, 4]], interface.NumpyInterface),
-            marks=pytest.mark.numpy,
-            id="numpy-list",
-        ),
-        pytest.param(
-            (np.zeros((3, 4)), interface.NumpyInterface),
+            NumpyCase,
             marks=pytest.mark.numpy,
             id="numpy",
         ),
         pytest.param(
-            ("hdf5_array", interface.H5Interface),
+            HDF5Case,
             marks=pytest.mark.hdf5,
             id="h5-array-path",
         ),
         pytest.param(
-            (da.random.random((10, 10)), interface.DaskInterface),
+            DaskCase,
             marks=pytest.mark.dask,
             id="dask",
         ),
         pytest.param(
-            (zarr.ones((10, 10)), interface.ZarrInterface),
+            ZarrCase,
             marks=pytest.mark.zarr,
             id="zarr-memory",
         ),
         pytest.param(
-            ("zarr_nested_array", interface.ZarrInterface),
+            ZarrNestedCase,
             marks=pytest.mark.zarr,
             id="zarr-nested",
         ),
         pytest.param(
-            ("zarr_array", interface.ZarrInterface),
+            ZarrDirCase,
             marks=pytest.mark.zarr,
-            id="zarr-array",
+            id="zarr-dir",
         ),
-        pytest.param(
-            ("avi_video", interface.VideoInterface), marks=pytest.mark.video, id="video"
-        ),
+        pytest.param(VideoCase, marks=pytest.mark.video, id="video"),
     ],
 )
-def interface_type(request) -> Tuple[NDArray, Type[interface.Interface]]:
+def interface_cases(request) -> InterfaceCase:
     """
-    Test cases for each interface's ``check`` method - each input should match the
-    provided interface and that interface only
+    Fixture for combinatoric tests across all interface cases
     """
-    if isinstance(request.param[0], str):
-        return (request.getfixturevalue(request.param[0]), request.param[1])
-    else:
-        return request.param
+    return request.param
+
+
+@pytest.fixture(
+    params=(
+        pytest.param(p, id=p.id, marks=getattr(pytest.mark, p.interface.interface.name))
+        for p in ALL_CASES
+    )
+)
+def all_cases(interface_cases, request) -> ValidationCase:
+    """
+    Combinatoric testing for all dtype, shape, and interface cases.
+
+    This is a very expensive fixture! Only use it for core functionality
+    that we want to be sure is *very true* in every circumstance,
+    INCLUDING invalid combinations of annotations and arrays.
+    Typically, that means only use this in `test_interfaces.py`
+    """
+
+    case = merge_cases(request.param, ValidationCase(interface=interface_cases))
+    if case.skip():
+        pytest.skip()
+    return case
+
+
+@pytest.fixture(
+    params=(
+        pytest.param(p, id=p.id, marks=getattr(pytest.mark, p.interface.interface.name))
+        for p in ALL_CASES_PASSING
+    )
+)
+def all_passing_cases(request) -> ValidationCase:
+    """
+    Combinatoric testing for all dtype, shape, and interface cases,
+    but only the combinations that we expect to pass.
+
+    This is a very expensive fixture! Only use it for core functionality
+    that we want to be sure is *very true* in every circumstance.
+    Typically, that means only use this in `test_interfaces.py`
+    """
+    return request.param
 
 
 @pytest.fixture()
-def all_interfaces(interface_type) -> BaseModel:
+def all_cases_instance(all_cases, tmp_output_dir_func):
     """
-    An instantiated version of each interface within a basemodel,
-    with the array in an `array` field
+    all_cases but with an instantiated model
+    Args:
+        all_cases:
+
+    Returns:
+
     """
-    array, interface = interface_type
-    if isinstance(array, Callable):
-        array = array()
+    array = all_cases.array(path=tmp_output_dir_func)
+    instance = all_cases.model(array=array)
+    return instance
 
-    class MyModel(BaseModel):
-        array: NDArray
 
-    instance = MyModel(array=array)
+@pytest.fixture()
+def all_passing_cases_instance(all_passing_cases, tmp_output_dir_func):
+    """
+    all_cases but with an instantiated model
+    Args:
+        all_cases:
+
+    Returns:
+
+    """
+    array = all_passing_cases.array(path=tmp_output_dir_func)
+    instance = all_passing_cases.model(array=array)
+    return instance
+
+
+@pytest.fixture(
+    params=(
+        pytest.param(p, id=p.id, marks=getattr(pytest.mark, p.interface.interface.name))
+        for p in DTYPE_AND_INTERFACE_CASES_PASSING
+    )
+)
+def dtype_by_interface(request):
+    """
+    Tests for all dtypes by all interfaces
+    """
+    return request.param
+
+
+@pytest.fixture()
+def dtype_by_interface_instance(dtype_by_interface, tmp_output_dir_func):
+    array = dtype_by_interface.array(path=tmp_output_dir_func)
+    instance = dtype_by_interface.model(array=array)
     return instance

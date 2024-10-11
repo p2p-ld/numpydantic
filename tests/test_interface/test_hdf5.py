@@ -1,61 +1,54 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 import h5py
-import pytest
-from pydantic import BaseModel, ValidationError
-
 import numpy as np
+import pytest
+from pydantic import BaseModel
+
 from numpydantic import NDArray, Shape
 from numpydantic.interface import H5Interface
 from numpydantic.interface.hdf5 import H5ArrayPath, H5Proxy
-from numpydantic.exceptions import DtypeError, ShapeError
-
-from tests.conftest import ValidationCase
+from numpydantic.testing.interfaces import HDF5Case, HDF5CompoundCase
 
 pytestmark = pytest.mark.hdf5
 
 
-def hdf5_array_case(
-    case: ValidationCase, array_func, compound: bool = False
-) -> H5ArrayPath:
-    """
-    Args:
-        case:
-        array_func: ( the function returned from the `hdf5_array` fixture )
-
-    Returns:
-
-    """
-    if issubclass(case.dtype, BaseModel):
-        pytest.skip("hdf5 cant support arbitrary python objects")
-    return array_func(case.shape, case.dtype, compound)
-
-
-def _test_hdf5_case(case: ValidationCase, array_func, compound: bool = False) -> None:
-    array = hdf5_array_case(case, array_func, compound)
-    if case.passes:
-        case.model(array=array)
-    else:
-        with pytest.raises((ValidationError, DtypeError, ShapeError)):
-            case.model(array=array)
+@pytest.fixture(
+    params=[
+        pytest.param(HDF5Case, id="hdf5"),
+        pytest.param(HDF5CompoundCase, id="hdf5-compound"),
+    ]
+)
+def hdf5_cases(request):
+    return request.param
 
 
 def test_hdf5_enabled():
     assert H5Interface.enabled()
 
 
-def test_hdf5_check(interface_type):
-    if interface_type[1] is H5Interface:
-        if interface_type[0].__name__ == "_hdf5_array":
-            interface_type = (interface_type[0](), interface_type[1])
-        assert H5Interface.check(interface_type[0])
-        if isinstance(interface_type[0], H5ArrayPath):
-            # also test that we can instantiate from a tuple like the H5ArrayPath
-            assert H5Interface.check((interface_type[0].file, interface_type[0].path))
+@pytest.mark.shape
+def test_hdf5_shape(shape_cases, hdf5_cases):
+    shape_cases.interface = hdf5_cases
+    if shape_cases.skip():
+        pytest.skip()
+    shape_cases.validate_case()
+
+
+@pytest.mark.dtype
+def test_hdf5_dtype(dtype_cases, hdf5_cases):
+    dtype_cases.interface = hdf5_cases
+    dtype_cases.validate_case()
+
+
+def test_hdf5_check(interface_cases, tmp_output_dir_func):
+    array = interface_cases.make_array(path=tmp_output_dir_func)
+    if interface_cases.interface is H5Interface:
+        assert H5Interface.check(array)
     else:
-        assert not H5Interface.check(interface_type[0])
+        assert not H5Interface.check(array)
 
 
 def test_hdf5_check_not_exists():
@@ -72,18 +65,6 @@ def test_hdf5_check_not_hdf5(tmp_path):
 
     spec = (afile, "/fake/array")
     assert not H5Interface.check(spec)
-
-
-@pytest.mark.shape
-@pytest.mark.parametrize("compound", [True, False])
-def test_hdf5_shape(shape_cases, hdf5_array, compound):
-    _test_hdf5_case(shape_cases, hdf5_array, compound)
-
-
-@pytest.mark.dtype
-@pytest.mark.parametrize("compound", [True, False])
-def test_hdf5_dtype(dtype_cases, hdf5_array, compound):
-    _test_hdf5_case(dtype_cases, hdf5_array, compound)
 
 
 def test_hdf5_dataset_not_exists(hdf5_array, model_blank):
@@ -221,10 +202,7 @@ def test_empty_dataset(dtype, tmp_path):
     Empty datasets shouldn't choke us during validation
     """
     array_path = tmp_path / "test.h5"
-    if dtype in (str, datetime):
-        np_dtype = "S32"
-    else:
-        np_dtype = dtype
+    np_dtype = "S32" if dtype in (str, datetime) else dtype
 
     with h5py.File(array_path, "w") as h5f:
         _ = h5f.create_dataset(name="/data", dtype=np_dtype)

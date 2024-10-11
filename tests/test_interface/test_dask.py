@@ -1,31 +1,12 @@
-import pytest
 import json
 
 import dask.array as da
-from pydantic import BaseModel, ValidationError
+import pytest
 
 from numpydantic.interface import DaskInterface
-from numpydantic.exceptions import DtypeError, ShapeError
-
-from tests.conftest import ValidationCase
+from numpydantic.testing.interfaces import DaskCase
 
 pytestmark = pytest.mark.dask
-
-
-def dask_array(case: ValidationCase) -> da.Array:
-    if issubclass(case.dtype, BaseModel):
-        return da.full(shape=case.shape, fill_value=case.dtype(x=1), chunks=-1)
-    else:
-        return da.zeros(shape=case.shape, dtype=case.dtype, chunks=10)
-
-
-def _test_dask_case(case: ValidationCase):
-    array = dask_array(case)
-    if case.passes:
-        case.model(array=array)
-    else:
-        with pytest.raises((ValidationError, DtypeError, ShapeError)):
-            case.model(array=array)
 
 
 def test_dask_enabled():
@@ -35,21 +16,25 @@ def test_dask_enabled():
     assert DaskInterface.enabled()
 
 
-def test_dask_check(interface_type):
-    if interface_type[1] is DaskInterface:
-        assert DaskInterface.check(interface_type[0])
+def test_dask_check(interface_cases, tmp_output_dir_func):
+    array = interface_cases.make_array(path=tmp_output_dir_func)
+
+    if interface_cases.interface is DaskInterface:
+        assert DaskInterface.check(array)
     else:
-        assert not DaskInterface.check(interface_type[0])
+        assert not DaskInterface.check(array)
 
 
 @pytest.mark.shape
 def test_dask_shape(shape_cases):
-    _test_dask_case(shape_cases)
+    shape_cases.interface = DaskCase
+    shape_cases.validate_case()
 
 
 @pytest.mark.dtype
 def test_dask_dtype(dtype_cases):
-    _test_dask_case(dtype_cases)
+    dtype_cases.interface = DaskCase
+    dtype_cases.validate_case()
 
 
 @pytest.mark.serialization
