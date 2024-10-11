@@ -3,6 +3,7 @@ Tests that should be applied to all interfaces
 """
 
 import json
+import pdb
 from importlib.metadata import version
 
 import dask.array as da
@@ -97,6 +98,9 @@ def test_interface_roundtrip_json(dtype_by_interface, tmp_output_dir_func):
     """
     if "subclass" in dtype_by_interface.id.lower():
         pytest.xfail()
+
+    if "str-str" in dtype_by_interface.id.lower():
+        pdb.set_trace()
 
     array = dtype_by_interface.array(path=tmp_output_dir_func)
     case = dtype_by_interface.model(array=array)

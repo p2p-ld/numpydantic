@@ -64,7 +64,7 @@ def _relativize_paths(
     ``relative_to`` directory, if provided in the context
     """
     relative_to = Path(relative_to).resolve()
-
+    
     def _r_path(v: Any) -> Any:
         if not isinstance(v, (str, Path)):
             return v
@@ -80,7 +80,7 @@ def _relativize_paths(
             ):
                 return v
             return str(relative_path(path, relative_to))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OSError):
             return v
 
     return _walk_and_apply(value, _r_path, skip)
@@ -95,7 +95,7 @@ def _absolutize_paths(value: dict, skip: Iterable = tuple()) -> dict:
             if not path.exists():
                 return v
             return str(path.resolve())
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OSError):
             return v
 
     return _walk_and_apply(value, _a_path, skip)
