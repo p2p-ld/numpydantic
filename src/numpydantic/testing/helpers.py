@@ -190,21 +190,21 @@ class ValidationCase(BaseModel):
         Raises:
             ValueError: if an ``interface`` is missing
         """
-        if self.interface is None:
+        if self.interface is None:  # pragma: no cover
             raise ValueError("Missing an interface")
         if path is None:
             if self.path:
                 path = self.path
-            else:
+            else:  # pragma: no cover
                 raise ValueError("Missing a path to generate arrays into")
 
         return self.interface.validate_case(self, path)
 
     def array(self, path: Path) -> NDArrayType:
         """Generate an array for the validation case if we have an interface to do so"""
-        if self.interface is None:
+        if self.interface is None:  # pragma: no cover
             raise ValueError("Missing an interface")
-        if path is None:
+        if path is None:  # pragma: no cover
             if self.path:
                 path = self.path
             else:
@@ -242,7 +242,7 @@ def merge_cases(*args: ValidationCase) -> ValidationCase:
     """
     Merge multiple validation cases
     """
-    if len(args) == 1:
+    if len(args) == 1:  # pragma: no cover
         return args[0]
 
     dumped = [

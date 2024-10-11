@@ -64,7 +64,7 @@ class HDF5Case(_HDF5MetaCase):
         path: Optional[Path] = None,
         array: Optional[NDArrayType] = None,
     ) -> Optional[H5ArrayPath]:
-        if cls.skip(shape, dtype):
+        if cls.skip(shape, dtype):  # pragma: no cover
             return None
 
         hdf5_file = path / "h5f.h5"
@@ -99,7 +99,7 @@ class HDF5CompoundCase(_HDF5MetaCase):
         path: Optional[Path] = None,
         array: Optional[NDArrayType] = None,
     ) -> Optional[H5ArrayPath]:
-        if cls.skip(shape, dtype):
+        if cls.skip(shape, dtype):  # pragma: no cover
             return None
 
         hdf5_file = path / "h5f.h5"
@@ -140,7 +140,7 @@ class DaskCase(InterfaceCase):
         array: Optional[NDArrayType] = None,
     ) -> da.Array:
         if array is not None:
-            return da.array(array, dtype=dtype, chunks=-1)
+            return da.array(array, dtype=dtype)
         if issubclass(dtype, BaseModel):
             return da.full(shape=shape, fill_value=dtype(x=1), chunks=-1)
         else:
@@ -244,11 +244,11 @@ class VideoCase(InterfaceCase):
         path: Optional[Path] = None,
         array: Optional[NDArrayType] = None,
     ) -> Optional[Path]:
-        if cls.skip(shape, dtype):
+        if cls.skip(shape, dtype):  # pragma: no cover
             return None
 
         if array is not None:
-            array = np.ndarray(shape, dtype=np.uint8)
+            array = np.array(array, dtype=np.uint8)
             shape = array.shape
 
         is_color = len(shape) == 4
@@ -263,7 +263,6 @@ class VideoCase(InterfaceCase):
             (frame_shape[1], frame_shape[0]),
             is_color,
         )
-
         for i in range(frames):
             if array is not None:
                 frame = array[i]
