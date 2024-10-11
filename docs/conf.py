@@ -49,6 +49,7 @@ intersphinx_mapping = {
 
 html_theme = "furo"
 html_static_path = ["_static"]
+html_css_files = ["css/notebooks.css"]
 
 # autodoc
 autodoc_pydantic_model_show_json_error_strategy = "coerce"

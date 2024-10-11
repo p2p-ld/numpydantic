@@ -514,6 +514,7 @@ api/meta
 api/schema
 api/serialization
 api/types
+api/testing/index
 
 ```
 
@@ -523,6 +524,7 @@ api/types
 :hidden: true
 
 changelog
+contributing/index
 development
 todo
 ```

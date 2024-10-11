@@ -83,6 +83,9 @@ SHAPE_CASES = (
         id="Union incorrect both",
     ),
 )
+"""
+Base Shape cases
+"""
 
 
 DTYPE_CASES = [
@@ -163,6 +166,9 @@ DTYPE_CASES = [
         annotation_dtype=UNION_TYPE, dtype=str, passes=False, id="union-type-str"
     ),
 ]
+"""
+Base Dtype cases
+"""
 
 
 if YES_PIPE:
@@ -214,19 +220,40 @@ INTERFACE_CASES = [
     ValidationCase(interface=ZarrNestedCase, id="zarr_nested"),
     ValidationCase(interface=VideoCase, id="video"),
 ]
+"""
+All the interface cases
+"""
 
 
 DTYPE_AND_SHAPE_CASES = merged_product(SHAPE_CASES, DTYPE_CASES)
+"""
+Merged product of dtype and shape cases
+"""
 DTYPE_AND_SHAPE_CASES_PASSING = merged_product(
     SHAPE_CASES, DTYPE_CASES, conditions={"passes": True}
 )
+"""
+Merged product of dtype and shape cases that are valid
+"""
 
 DTYPE_AND_INTERFACE_CASES = merged_product(INTERFACE_CASES, DTYPE_CASES)
+"""
+Merged product of dtype and interface cases
+"""
 DTYPE_AND_INTERFACE_CASES_PASSING = merged_product(
     INTERFACE_CASES, DTYPE_CASES, conditions={"passes": True}
 )
+"""
+Merged product of dtype and interface cases that pass
+"""
 
 ALL_CASES = merged_product(SHAPE_CASES, DTYPE_CASES, INTERFACE_CASES)
+"""
+Merged product of all cases - dtype, shape, and interface
+"""
 ALL_CASES_PASSING = merged_product(
     SHAPE_CASES, DTYPE_CASES, INTERFACE_CASES, conditions={"passes": True}
 )
+"""
+Merged product of all cases, but only those that pass
+"""
