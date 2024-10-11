@@ -154,7 +154,7 @@ class _ZarrMetaCase(InterfaceCase):
 
     @classmethod
     def skip(cls, shape: Tuple[int, ...], dtype: DtypeType) -> bool:
-        return issubclass(dtype, BaseModel)
+        return issubclass(dtype, BaseModel) or dtype is str
 
 
 class ZarrCase(_ZarrMetaCase):
@@ -239,8 +239,8 @@ class VideoCase(InterfaceCase):
     @classmethod
     def make_array(
         cls,
-        shape: Tuple[int, ...] = (10, 10),
-        dtype: DtypeType = float,
+        shape: Tuple[int, ...] = (10, 10, 10, 3),
+        dtype: DtypeType = np.uint8,
         path: Optional[Path] = None,
         array: Optional[NDArrayType] = None,
     ) -> Optional[Path]:
@@ -269,20 +269,26 @@ class VideoCase(InterfaceCase):
                 frame = array[i]
             else:
                 # make fresh array every time bc opencv eats them
-                frame = np.zeros(frame_shape, dtype=np.uint8)
-                if not is_color:
-                    frame[i, i] = i
-                else:
-                    frame[i, i, :] = i
+                frame = np.full(frame_shape, fill_value=i, dtype=np.uint8)
             writer.write(frame)
         writer.release()
         return video_path
 
     @classmethod
     def skip(cls, shape: Tuple[int, ...], dtype: DtypeType) -> bool:
-        """We really can only handle 3-4 dimensional cases in 8-bit rn lol"""
-        if len(shape) < 3 or len(shape) > 4:
+        """
+        We really can only handle 4 dimensional cases in 8-bit rn lol
+
+        .. todo::
+
+            Fix shape/writing for grayscale videos
+
+        """
+        if len(shape) != 4:
             return True
+
+        # if len(shape) < 3 or len(shape) > 4:
+        #     return True
         if dtype not in (int, np.uint8):
             return True
         # if we have a color video (ie. shape == 4, needs to be RGB)

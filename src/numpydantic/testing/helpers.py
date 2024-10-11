@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from functools import reduce
+from itertools import product
+from operator import ior
 from pathlib import Path
-from typing import Any, Optional, Tuple, Type, Union
+from typing import Generator, List, Literal, Optional, Tuple, Type, Union
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, ValidationError, computed_field
@@ -101,6 +104,9 @@ class InterfaceCase(ABC):
         return False
 
 
+_a_shape_type = Tuple[Union[int, Literal["*"], Literal["..."]], ...]
+
+
 class ValidationCase(BaseModel):
     """
     Test case for validating an array.
@@ -113,23 +119,55 @@ class ValidationCase(BaseModel):
     """
     String identifying the validation case
     """
-    annotation: Any = NDArray[Shape["10, 10, *"], Float]
+    annotation_shape: Union[
+        Tuple[Union[int, str], ...], Tuple[Tuple[Union[int, str], ...], ...]
+    ] = (10, 10, "*", "*")
     """
-    Array annotation used in the validating model
-    Any typed because the types of type annotations are weird
+    Shape to use in computed annotation used to validate against
     """
-    shape: Tuple[int, ...] = (10, 10, 10)
+    annotation_dtype: Union[DtypeType, Sequence[DtypeType]] = Float
+    """
+    Dtype to use in computed annotation used to validate against
+    """
+    shape: Tuple[int, ...] = (10, 10, 2, 2)
     """Shape of the array to validate"""
     dtype: Union[Type, np.dtype] = float
     """Dtype of the array to validate"""
     passes: bool = False
     """Whether the validation should pass or not"""
-    interface: Optional[InterfaceCase] = None
+    interface: Optional[Type[InterfaceCase]] = None
     """The interface test case to generate and validate the array with"""
     path: Optional[Path] = None
     """The path to generate arrays into, if any."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @computed_field()
+    def annotation(self) -> NDArray:
+        """
+        Annotation used in the model we validate against
+        """
+        # make a union type if we need to
+        shape_union = all(isinstance(s, Sequence) for s in self.annotation_shape)
+        dtype_union = isinstance(self.annotation_dtype, Sequence) and all(
+            isinstance(s, Sequence) for s in self.annotation_dtype
+        )
+        if shape_union or dtype_union:
+            shape_iter = (
+                self.annotation_shape if shape_union else [self.annotation_shape]
+            )
+            dtype_iter = (
+                self.annotation_dtype if dtype_union else [self.annotation_dtype]
+            )
+            annotations: List[type] = []
+            for shape, dtype in product(shape_iter, dtype_iter):
+                shape_str = ", ".join([str(i) for i in shape])
+                annotations.append(NDArray[Shape[shape_str], dtype])
+            return Union[tuple(annotations)]
+
+        else:
+            shape_str = ", ".join([str(i) for i in self.annotation_shape])
+            return NDArray[Shape[shape_str], self.annotation_dtype]
 
     @computed_field()
     def model(self) -> Type[BaseModel]:
@@ -186,31 +224,8 @@ class ValidationCase(BaseModel):
         """
         if isinstance(other, Sequence):
             return merge_cases(self, *other)
-
-        self_dump = self.model_dump(exclude_unset=True)
-        other_dump = other.model_dump(exclude_unset=True)
-
-        # dumps might not have set `valid`, use only the ones that have
-        valids = [
-            v
-            for v in [self_dump.get("valid", None), other_dump.get("valid", None)]
-            if v is not None
-        ]
-        valid = all(valids)
-
-        # combine ids if present
-        ids = "-".join(
-            [
-                str(v)
-                for v in [self_dump.get("id", None), other_dump.get("id", None)]
-                if v is not None
-            ]
-        )
-
-        merged = {**self_dump, **other_dump}
-        merged["valid"] = valid
-        merged["id"] = ids
-        return ValidationCase(**merged)
+        else:
+            return merge_cases(self, other)
 
     def skip(self) -> bool:
         """
@@ -230,7 +245,73 @@ def merge_cases(*args: ValidationCase) -> ValidationCase:
     if len(args) == 1:
         return args[0]
 
-    case = args[0]
-    for arg in args[1:]:
-        case = case.merge(arg)
-    return case
+    dumped = [
+        m.model_dump(exclude_unset=True, exclude={"model", "annotation"}) for m in args
+    ]
+
+    # self_dump = self.model_dump(exclude_unset=True)
+    # other_dump = other.model_dump(exclude_unset=True)
+
+    # dumps might not have set `passes`, use only the ones that have
+    passes = [v.get("passes") for v in dumped if "passes" in v]
+    passes = all(passes)
+
+    # combine ids if present
+    ids = "-".join([str(v.get("id")) for v in dumped if "id" in v])
+
+    # merge dicts
+    merged = reduce(ior, dumped, {})
+    merged["passes"] = passes
+    merged["id"] = ids
+    return ValidationCase.model_construct(**merged)
+
+
+def merged_product(
+    *args: Sequence[ValidationCase], conditions: dict = None
+) -> Generator[ValidationCase, None, None]:
+    """
+    Generator for the product of the iterators of validation cases,
+    merging each tuple, and respecting if they should be :meth:`.ValidationCase.skip`
+    or not.
+
+    Examples:
+
+        .. code-block:: python
+
+            shape_cases = [
+                ValidationCase(shape=(10, 10, 10), passes=True, id="valid shape"),
+                ValidationCase(shape=(10, 10), passes=False, id="missing dimension"),
+            ]
+            dtype_cases = [
+                ValidationCase(dtype=float, passes=True, id="float"),
+                ValidationCase(dtype=int, passes=False, id="int"),
+            ]
+
+            iterator = merged_product(shape_cases, dtype_cases))
+            next(iterator)
+            # ValidationCase(
+            #     shape=(10, 10, 10),
+            #     dtype=float,
+            #     passes=True,
+            #     id="valid shape-float"
+            # )
+            next(iterator)
+            # ValidationCase(
+            #     shape=(10, 10, 10),
+            #     dtype=int,
+            #     passes=False,
+            #     id="valid shape-int"
+            # )
+
+
+    """
+    iterator = product(*args)
+    for case_tuple in iterator:
+        case = merge_cases(*case_tuple)
+        if case.skip():
+            continue
+        if conditions:
+            matching = all([getattr(case, k, None) == v for k, v in conditions.items()])
+            if not matching:
+                continue
+        yield case

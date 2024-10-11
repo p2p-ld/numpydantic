@@ -63,6 +63,7 @@ class ZarrJsonDict(JsonDict):
     type: Literal["zarr"]
     file: Optional[str] = None
     path: Optional[str] = None
+    dtype: Optional[str] = None
     value: Optional[list] = None
 
     def to_array_input(self) -> Union[ZarrArray, ZarrArrayPath]:
@@ -73,7 +74,7 @@ class ZarrJsonDict(JsonDict):
         if self.file:
             array = ZarrArrayPath(file=self.file, path=self.path)
         else:
-            array = zarr.array(self.value)
+            array = zarr.array(self.value, dtype=self.dtype)
         return array
 
 
@@ -194,6 +195,7 @@ class ZarrInterface(Interface):
             is_file = False
 
             as_json = {"type": cls.name}
+            as_json["dtype"] = array.dtype.name
             if hasattr(array.store, "dir_path"):
                 is_file = True
                 as_json["file"] = array.store.dir_path()

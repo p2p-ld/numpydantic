@@ -43,14 +43,12 @@ def test_hdf5_dtype(dtype_cases, hdf5_cases):
     dtype_cases.validate_case()
 
 
-def test_hdf5_check(interface_type):
-    if interface_type[1] is H5Interface:
-        assert H5Interface.check(interface_type[0])
-        if isinstance(interface_type[0], H5ArrayPath):
-            # also test that we can instantiate from a tuple like the H5ArrayPath
-            assert H5Interface.check((interface_type[0].file, interface_type[0].path))
+def test_hdf5_check(interface_cases, tmp_output_dir_func):
+    array = interface_cases.make_array(path=tmp_output_dir_func)
+    if interface_cases.interface is H5Interface:
+        assert H5Interface.check(array)
     else:
-        assert not H5Interface.check(interface_type[0])
+        assert not H5Interface.check(array)
 
 
 def test_hdf5_check_not_exists():

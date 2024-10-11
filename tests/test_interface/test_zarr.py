@@ -38,14 +38,15 @@ def test_zarr_enabled():
     assert ZarrInterface.enabled()
 
 
-def test_zarr_check(interface_type):
+def test_zarr_check(interface_cases, tmp_output_dir_func):
     """
     We should only use the zarr interface for zarr-like things
     """
-    if interface_type[1] is ZarrInterface:
-        assert ZarrInterface.check(interface_type[0])
+    array = interface_cases.make_array(path=tmp_output_dir_func)
+    if interface_cases.interface is ZarrInterface:
+        assert ZarrInterface.check(array)
     else:
-        assert not ZarrInterface.check(interface_type[0])
+        assert not ZarrInterface.check(array)
 
 
 @pytest.mark.shape

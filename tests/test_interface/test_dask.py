@@ -16,11 +16,13 @@ def test_dask_enabled():
     assert DaskInterface.enabled()
 
 
-def test_dask_check(interface_type):
-    if interface_type[1] is DaskInterface:
-        assert DaskInterface.check(interface_type[0])
+def test_dask_check(interface_cases, tmp_output_dir_func):
+    array = interface_cases.make_array(path=tmp_output_dir_func)
+
+    if interface_cases.interface is DaskInterface:
+        assert DaskInterface.check(array)
     else:
-        assert not DaskInterface.check(interface_type[0])
+        assert not DaskInterface.check(array)
 
 
 @pytest.mark.shape

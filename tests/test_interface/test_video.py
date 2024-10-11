@@ -80,15 +80,12 @@ def test_video_getitem(avi_video):
 
     instance = MyModel(array=vid)
     fifth_frame = instance.array[5]
-    # the first frame should have 1's in the 1,1 position
+    # the fifth frame should be all 5s
     assert (fifth_frame[5, 5, :] == [5, 5, 5]).all()
-    # and nothing in the 6th position
-    assert (fifth_frame[6, 6, :] == [0, 0, 0]).all()
 
     # slicing should also work as if it were just a numpy array
     single_slice = instance.array[3, 0:10, 0:5]
     assert single_slice[3, 3, 0] == 3
-    assert single_slice[4, 4, 0] == 0
     assert single_slice.shape == (10, 5, 3)
 
     # also get a range of frames
@@ -96,19 +93,19 @@ def test_video_getitem(avi_video):
     range_slice = instance.array[3:5]
     assert range_slice.shape == (2, 100, 50, 3)
     assert range_slice[0, 3, 3, 0] == 3
-    assert range_slice[0, 4, 4, 0] == 0
+    assert range_slice[1, 4, 4, 0] == 4
 
     # full range
     range_slice = instance.array[3:5, 0:10, 0:5]
     assert range_slice.shape == (2, 10, 5, 3)
     assert range_slice[0, 3, 3, 0] == 3
-    assert range_slice[0, 4, 4, 0] == 0
+    assert range_slice[1, 4, 4, 0] == 4
 
     # starting range
     range_slice = instance.array[6:, 0:10, 0:10]
     assert range_slice.shape == (4, 10, 10, 3)
     assert range_slice[-1, 9, 9, 0] == 9
-    assert range_slice[-2, 9, 9, 0] == 0
+    assert range_slice[-2, 9, 9, 0] == 8
 
     # ending range
     range_slice = instance.array[:3, 0:5, 0:5]
@@ -119,10 +116,8 @@ def test_video_getitem(avi_video):
     # second slice should be the second frame (instead of the first)
     assert range_slice.shape == (3, 6, 6, 3)
     assert range_slice[1, 2, 2, 0] == 2
-    assert range_slice[1, 3, 3, 0] == 0
     # and the third should be the fourth (instead of the second)
     assert range_slice[2, 4, 4, 0] == 4
-    assert range_slice[2, 5, 5, 0] == 0
 
     with pytest.raises(NotImplementedError):
         # shouldn't be allowed to set
