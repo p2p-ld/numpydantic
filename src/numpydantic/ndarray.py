@@ -152,6 +152,8 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
             result = str(dtype)
         elif isinstance(dtype, tuple):
             result = ", ".join([str(dt) for dt in dtype])
+        else:
+            result = str(dtype)
         return result
 
 
