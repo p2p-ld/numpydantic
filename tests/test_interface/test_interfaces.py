@@ -74,12 +74,13 @@ def test_interface_rematch(interface_cases, tmp_output_dir_func):
     )
 
 
-def test_interface_to_numpy_array(dtype_by_interface):
+def test_interface_to_numpy_array(dtype_by_interface_instance):
     """
     All interfaces should be able to have the output of their validation stage
     coerced to a numpy array with np.array()
     """
-    _ = np.array(dtype_by_interface.array)
+
+    _ = np.array(dtype_by_interface_instance.array)
 
 
 @pytest.mark.serialization

@@ -83,7 +83,7 @@ class DaskInterface(Interface):
                     def _vectorized_to_model(item: Union[dict, BaseModel]) -> BaseModel:
                         if not isinstance(item, self.dtype):
                             return self.dtype(**item)
-                        else:
+                        else:  # pragma: no cover
                             return item
 
                     return np.vectorize(_vectorized_to_model)(array)
