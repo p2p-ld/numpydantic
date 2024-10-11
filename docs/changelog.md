@@ -4,6 +4,33 @@
 
 ### 1.6.*
 
+#### 1.6.4 - 24-10-11 - Combinatoric Testing
+
+PR: https://github.com/p2p-ld/numpydantic/pull/31
+
+
+We have rewritten our testing system for more rigorous tests,
+where before we were limited to only testing dtype or shape cases one at a time,
+now we can test all possible combinations together!
+
+This allows us to have better guarantees for behavior that all interfaces
+should support, validating it against all possible dtypes and shapes.
+
+We also exposed all the helpers and array testing classes for downstream development
+so that it would be easier to test and validate any 3rd-party interfaces
+that haven't made their way into mainline numpydantic yet - 
+see the {mod}`numpydantic.testing` module.
+
+See the [testing documentation](./contributing/testing.md) for more details.
+
+**Bugfix**
+- Previously, numpy and dask arrays with a model dtype would fail json roundtripping
+  because they wouldn't be correctly cast back to the model type. Now they are.
+- Zarr would not dump the dtype of an array when it roundtripped to json,
+  causing every array to be interpreted as a random integer or float type.
+  `dtype` is now dumped and used when deserializing.
+
+
 #### 1.6.3 - 24-09-26
 
 **Bugfix**
