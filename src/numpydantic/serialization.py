@@ -20,12 +20,12 @@ def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
     # pdb.set_trace()
     interface_cls = Interface.match_output(value)
     array = interface_cls.to_json(value, info)
-    array = postprocess_json(array, info)
+    array = postprocess_json(array, info, interface_cls)
     return array
 
 
 def postprocess_json(
-    array: Union[dict, list], info: SerializationInfo
+    array: Union[dict, list], info: SerializationInfo, interface_cls: type[Interface]
 ) -> Union[dict, list]:
     """
     Modify json after dumping from an interface

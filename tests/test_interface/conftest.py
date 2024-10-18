@@ -136,7 +136,7 @@ def all_passing_cases_instance(all_passing_cases, tmp_output_dir_func):
         for p in DTYPE_AND_INTERFACE_CASES_PASSING
     )
 )
-def dtype_by_interface(request):
+def all_passing_cases(request):
     """
     Tests for all dtypes by all interfaces
     """
@@ -144,7 +144,7 @@ def dtype_by_interface(request):
 
 
 @pytest.fixture()
-def dtype_by_interface_instance(dtype_by_interface, tmp_output_dir_func):
-    array = dtype_by_interface.array(path=tmp_output_dir_func)
-    instance = dtype_by_interface.model(array=array)
+def dtype_by_interface_instance(all_passing_cases, tmp_output_dir_func):
+    array = all_passing_cases.array(path=tmp_output_dir_func)
+    instance = all_passing_cases.model(array=array)
     return instance

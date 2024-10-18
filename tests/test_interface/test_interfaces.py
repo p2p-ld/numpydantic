@@ -91,15 +91,15 @@ def test_interface_dump_json(dtype_by_interface_instance):
 
 
 @pytest.mark.serialization
-def test_interface_roundtrip_json(dtype_by_interface, tmp_output_dir_func):
+def test_interface_roundtrip_json(all_passing_cases, tmp_output_dir_func):
     """
     All interfaces should be able to roundtrip to and from json
     """
-    if "subclass" in dtype_by_interface.id.lower():
+    if "subclass" in all_passing_cases.id.lower():
         pytest.xfail()
 
-    array = dtype_by_interface.array(path=tmp_output_dir_func)
-    case = dtype_by_interface.model(array=array)
+    array = all_passing_cases.array(path=tmp_output_dir_func)
+    case = all_passing_cases.model(array=array)
 
     dumped_json = case.model_dump_json(round_trip=True)
     model = case.model_validate_json(dumped_json)
@@ -123,16 +123,16 @@ def test_interface_mark_interface(an_interface):
 @pytest.mark.serialization
 @pytest.mark.parametrize("valid", [True, False])
 @pytest.mark.filterwarnings("ignore:Mismatch between serialized mark")
-def test_interface_mark_roundtrip(dtype_by_interface, valid, tmp_output_dir_func):
+def test_interface_mark_roundtrip(all_passing_cases, valid, tmp_output_dir_func):
     """
     All interfaces should be able to roundtrip with the marked interface,
     and a mismatch should raise a warning and attempt to proceed
     """
-    if "subclass" in dtype_by_interface.id.lower():
+    if "subclass" in all_passing_cases.id.lower():
         pytest.xfail()
 
-    array = dtype_by_interface.array(path=tmp_output_dir_func)
-    case = dtype_by_interface.model(array=array)
+    array = all_passing_cases.array(path=tmp_output_dir_func)
+    case = all_passing_cases.model(array=array)
 
     dumped_json = case.model_dump_json(
         round_trip=True, context={"mark_interface": True}

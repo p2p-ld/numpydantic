@@ -220,8 +220,8 @@ def test_empty_dataset(dtype, tmp_path):
         (H5Proxy(file="test_file.h5", path="/subpath", field="sup"), True),
         (H5Proxy(file="test_file.h5", path="/subpath"), False),
         (H5Proxy(file="different_file.h5", path="/subpath"), False),
-        (("different_file.h5", "/subpath", "sup"), ValueError),
-        ("not even a proxy-like thing", ValueError),
+        (("different_file.h5", "/subpath", "sup"), False),
+        ("not even a proxy-like thing", False),
     ],
 )
 def test_proxy_eq(comparison, valid):
@@ -232,8 +232,5 @@ def test_proxy_eq(comparison, valid):
     proxy_a = H5Proxy(file="test_file.h5", path="/subpath", field="sup")
     if valid is True:
         assert proxy_a == comparison
-    elif valid is False:
-        assert proxy_a != comparison
     else:
-        with pytest.raises(valid):
-            assert proxy_a == comparison
+        assert proxy_a != comparison
