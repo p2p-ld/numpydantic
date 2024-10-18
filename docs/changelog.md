@@ -8,7 +8,6 @@
 
 PR: https://github.com/p2p-ld/numpydantic/pull/31
 
-
 We have rewritten our testing system for more rigorous tests,
 where before we were limited to only testing dtype or shape cases one at a time,
 now we can test all possible combinations together!
