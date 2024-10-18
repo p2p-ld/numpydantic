@@ -4,11 +4,16 @@ and :func:`pydantic.BaseModel.model_dump_json` .
 """
 
 from pathlib import Path
-from typing import Any, Callable, Iterable, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeVar, Union
 
-from pydantic_core.core_schema import SerializationInfo
+from pydantic_core import SchemaSerializer
+from pydantic_core.core_schema import (
+    SerializationInfo,
+    plain_serializer_function_ser_schema,
+)
 
-from numpydantic.interface import Interface, JsonDict
+if TYPE_CHECKING:
+    from numpydantic.interface import Interface
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -16,8 +21,8 @@ U = TypeVar("U")
 
 def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
     """Use an interface class to render an array as JSON"""
-    # return [1, 2, 3]
-    # pdb.set_trace()
+    from numpydantic.interface import Interface
+
     interface_cls = Interface.match_output(value)
     array = interface_cls.to_json(value, info)
     array = postprocess_json(array, info, interface_cls)
@@ -25,11 +30,13 @@ def jsonize_array(value: Any, info: SerializationInfo) -> Union[list, dict]:
 
 
 def postprocess_json(
-    array: Union[dict, list], info: SerializationInfo, interface_cls: type[Interface]
+    array: Union[dict, list], info: SerializationInfo, interface_cls: type["Interface"]
 ) -> Union[dict, list]:
     """
     Modify json after dumping from an interface
     """
+    from numpydantic.interface import JsonDict
+
     # perf: keys to skip in generation - anything named "value" is array data.
     skip = ["value"]
     if isinstance(array, JsonDict):
@@ -65,6 +72,17 @@ def postprocess_json(
         array = _relativize_paths(array, ".", skip)
 
     return array
+
+
+pydantic_serializer = SchemaSerializer(
+    plain_serializer_function_ser_schema(
+        jsonize_array, when_used="json", info_arg=True
+    ),
+)
+"""
+A generic serializer that can be applied to interface proxies et al as
+``__pydantic_serializer__`` . 
+"""
 
 
 def _relativize_paths(

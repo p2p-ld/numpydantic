@@ -4,13 +4,15 @@ Tests that should be applied to all interfaces
 
 import json
 from importlib.metadata import version
+from typing import Generic, TypeVar
 
 import dask.array as da
 import numpy as np
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from zarr.core import Array as ZarrArray
 
+from numpydantic import NDArray
 from numpydantic.interface import Interface, InterfaceMark, MarkedJson
 from numpydantic.testing.helpers import ValidationCase
 
@@ -30,6 +32,8 @@ def _test_roundtrip(source: BaseModel, target: BaseModel):
             assert target_type is source_type
         else:
             assert np.all(da.equal(target.array, source.array))
+    elif isinstance(source.array, BaseModel):
+        return _test_roundtrip(source.array, target.array)
     else:
         assert target.array == source.array
 
@@ -95,8 +99,6 @@ def test_interface_roundtrip_json(all_passing_cases, tmp_output_dir_func):
     """
     All interfaces should be able to roundtrip to and from json
     """
-    if "subclass" in all_passing_cases.id.lower():
-        pytest.xfail()
 
     array = all_passing_cases.array(path=tmp_output_dir_func)
     case = all_passing_cases.model(array=array)
@@ -154,3 +156,69 @@ def test_interface_mark_roundtrip(all_passing_cases, valid, tmp_output_dir_func)
         model = case.model_validate_json(dumped_json)
 
     _test_roundtrip(case, model)
+
+
+@pytest.mark.serialization
+def test_roundtrip_from_extra(dtype_by_interface, tmp_output_dir_func):
+    """
+    Arrays can be dumped when they are specified in an `__extra__` field
+    """
+
+    class Model(BaseModel):
+        __pydantic_extra__: dict[str, dtype_by_interface.annotation]
+        model_config = ConfigDict(extra="allow")
+
+    instance = Model(array=dtype_by_interface.array(path=tmp_output_dir_func))
+    dumped = instance.model_dump_json(round_trip=True)
+    roundtripped = Model.model_validate_json(dumped)
+    _test_roundtrip(instance, roundtripped)
+
+
+@pytest.mark.serialization
+def test_roundtrip_from_union(dtype_by_interface, tmp_output_dir_func):
+    """
+    Arrays can be dumped when they are specified along with a union of another type field
+    """
+
+    class Model(BaseModel):
+        array: str | dtype_by_interface.annotation
+
+    array = dtype_by_interface.array(path=tmp_output_dir_func)
+
+    instance = Model(array=array)
+    dumped = instance.model_dump_json(round_trip=True)
+    roundtripped = Model.model_validate_json(dumped)
+    _test_roundtrip(instance, roundtripped)
+
+
+@pytest.mark.serialization
+def test_roundtrip_from_generic(dtype_by_interface, tmp_output_dir_func):
+    """
+    Arrays can be dumped when they are specified in an `__extra__` field
+    """
+    T = TypeVar("T", bound=NDArray)
+
+    class GenType(BaseModel, Generic[T]):
+        array: T
+
+    class Model(BaseModel):
+        array: GenType[dtype_by_interface.annotation]
+
+    array = dtype_by_interface.array(path=tmp_output_dir_func)
+    instance = Model(**{"array": {"array": array}})
+    dumped = instance.model_dump_json(round_trip=True)
+    roundtripped = Model.model_validate_json(dumped)
+    _test_roundtrip(instance, roundtripped)
+
+
+@pytest.mark.serialization
+def test_roundtrip_from_any(dtype_by_interface, tmp_output_dir_func):
+    """
+    We can roundtrip from an AnyType
+    Args:
+        dtype_by_interface:
+        tmp_output_dir_func:
+
+    Returns:
+
+    """

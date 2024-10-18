@@ -47,7 +47,7 @@ jobs:
         run: pip install "numpy${{ matrix.numpy-version }}"
 
       - name: Run Tests
-        run: pytest
+        run: pytest -n auto
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@v2.3.0

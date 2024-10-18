@@ -55,7 +55,6 @@ from typing import (
 
 import numpy as np
 from pydantic import SerializationInfo
-from pydantic_core import SchemaSerializer, core_schema
 
 from numpydantic.interface.interface import Interface, JsonDict
 from numpydantic.types import DtypeType, NDArrayType
@@ -100,49 +99,49 @@ class H5JsonDict(JsonDict):
         )
 
 
-def to_json(self, info: SerializationInfo):
-    """
-    Serialize H5Proxy to JSON, as the interface does,
-    in cases when the interface is not able to be used
-    (eg. like when used as an `extra` field in a model without a type annotation)
-    """
-    from numpydantic.serialization import postprocess_json
+# def to_json(self, info: SerializationInfo):
+#     """
+#     Serialize H5Proxy to JSON, as the interface does,
+#     in cases when the interface is not able to be used
+#     (eg. like when used as an `extra` field in a model without a type annotation)
+#     """
+#     from numpydantic.serialization import postprocess_json
+#
+#     if info.round_trip:
+#         as_json = {
+#             "type": H5Interface.name,
+#         }
+#         as_json.update(self._h5arraypath._asdict())
+#     else:
+#         try:
+#             dset = self.open()
+#             as_json = dset[:].tolist()
+#         finally:
+#             self.close()
+#     return postprocess_json(as_json, info)
 
-    if info.round_trip:
-        as_json = {
-            "type": H5Interface.name,
-        }
-        as_json.update(self._h5arraypath._asdict())
-    else:
-        try:
-            dset = self.open()
-            as_json = dset[:].tolist()
-        finally:
-            self.close()
-    return postprocess_json(as_json, info)
 
-
-def _make_pydantic_schema():
-    return core_schema.typed_dict_schema(
-        {
-            "file": core_schema.typed_dict_field(
-                core_schema.str_schema(), required=True
-            ),
-            "path": core_schema.typed_dict_field(
-                core_schema.str_schema(), required=True
-            ),
-            "field": core_schema.typed_dict_field(
-                core_schema.union_schema(
-                    [
-                        core_schema.str_schema(),
-                        core_schema.list_schema(core_schema.str_schema()),
-                    ],
-                ),
-                required=True,
-            ),
-        },
-        # serialization=
-    )
+# def _make_pydantic_schema():
+#     return core_schema.typed_dict_schema(
+#         {
+#             "file": core_schema.typed_dict_field(
+#                 core_schema.str_schema(), required=True
+#             ),
+#             "path": core_schema.typed_dict_field(
+#                 core_schema.str_schema(), required=True
+#             ),
+#             "field": core_schema.typed_dict_field(
+#                 core_schema.union_schema(
+#                     [
+#                         core_schema.str_schema(),
+#                         core_schema.list_schema(core_schema.str_schema()),
+#                     ],
+#                 ),
+#                 required=True,
+#             ),
+#         },
+#         # serialization=
+#     )
 
 
 class H5Proxy:
@@ -167,11 +166,11 @@ class H5Proxy:
         annotation_dtype (dtype): Optional - the dtype of our type annotation
     """
 
-    __pydantic_serializer__ = SchemaSerializer(
-        core_schema.plain_serializer_function_ser_schema(
-            to_json, when_used="json", info_arg=True
-        ),
-    )
+    # __pydantic_serializer__ = SchemaSerializer(
+    #     core_schema.plain_serializer_function_ser_schema(
+    #         jsonize_array, when_used="json", info_arg=True
+    #     ),
+    # )
 
     def __init__(
         self,
