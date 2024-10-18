@@ -13,7 +13,6 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 
 """
 
-import pdb
 from typing import TYPE_CHECKING, Any, Literal, Tuple, get_origin
 
 import numpy as np
@@ -202,7 +201,6 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
         cls, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
     ) -> core_schema.JsonSchema:
         shape, dtype = cls.__args__
-        pdb.set_trace()
         json_schema = handler(schema["metadata"])
         json_schema = handler.resolve_ref_schema(json_schema)
 

@@ -304,7 +304,6 @@ class H5Proxy:
             return self._h5arraypath == other._h5arraypath
         else:
             return False
-            # raise ValueError("Can only compare equality of two H5Proxies")
 
     def open(self, mode: str = "r") -> "h5py.Dataset":
         """
@@ -334,25 +333,6 @@ class H5Proxy:
                 v = [v]
             v = np.array(v).astype("S32")
         return v
-
-    # @classmethod
-    # def __get_pydantic_core_schema__(
-    #     cls, source_type: Any, handler: GetCoreSchemaHandler
-    # ) -> CoreSchema:
-    #     return cls._make_pydantic_schema()
-
-    # file: Union[Path, str]
-    # """Location of HDF5 file"""
-    # path: str
-    # """Path within the HDF5 file"""
-    # field: Optional[Union[str, List[str]]] = None
-    # """Refer to a specific field within a compound dtype"""
-    #     }
-    # )
-    #
-
-    #
-    # @model_serializer(when_used="json")
 
 
 class H5Interface(Interface):
