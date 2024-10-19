@@ -148,7 +148,7 @@ def dtype_by_interface(request):
 
 
 @pytest.fixture()
-def dtype_by_interface_instance(all_passing_cases, tmp_output_dir_func):
-    array = all_passing_cases.array(path=tmp_output_dir_func)
-    instance = all_passing_cases.model(array=array)
+def dtype_by_interface_instance(dtype_by_interface, tmp_output_dir_func):
+    array = dtype_by_interface.array(path=tmp_output_dir_func)
+    instance = dtype_by_interface.model(array=array)
     return instance
