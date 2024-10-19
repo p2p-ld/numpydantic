@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeVar, Union
 from pydantic_core import SchemaSerializer
 from pydantic_core.core_schema import (
     SerializationInfo,
+    any_schema,
     plain_serializer_function_ser_schema,
 )
 
@@ -75,9 +76,11 @@ def postprocess_json(
 
 
 pydantic_serializer = SchemaSerializer(
-    plain_serializer_function_ser_schema(
-        jsonize_array, when_used="json", info_arg=True
-    ),
+    any_schema(
+        serialization=plain_serializer_function_ser_schema(
+            jsonize_array, when_used="json", info_arg=True
+        )
+    )
 )
 """
 A generic serializer that can be applied to interface proxies et al as

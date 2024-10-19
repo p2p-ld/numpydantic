@@ -14,6 +14,11 @@ from zarr.core import Array as ZarrArray
 
 from numpydantic import NDArray
 from numpydantic.interface import Interface, InterfaceMark, MarkedJson
+from numpydantic.testing.cases import (
+    ALL_CASES_PASSING,
+    DTYPE_AND_INTERFACE_CASES_PASSING,
+    INTERFACE_CASES,
+)
 from numpydantic.testing.helpers import ValidationCase
 
 
@@ -38,6 +43,26 @@ def _test_roundtrip(source: BaseModel, target: BaseModel):
         assert target.array == source.array
 
     assert target.array.dtype == source.array.dtype
+
+
+@pytest.mark.parametrize(
+    "interface",
+    [
+        pytest.param(i, marks=getattr(pytest.mark, i.interface.interface.name))
+        for i in INTERFACE_CASES
+    ],
+)
+@pytest.mark.parametrize(
+    "cases", [ALL_CASES_PASSING, DTYPE_AND_INTERFACE_CASES_PASSING]
+)
+def test_cases_include_all_interfaces(interface: ValidationCase, cases):
+    """
+    Test our test cases - we should hit all interfaces in the common "test all" fixtures
+    """
+    cases = list(cases)
+    assert any(
+        [case.interface is interface.interface for case in cases]
+    ), f"Interface case unused in general test cases: {interface.interface}"
 
 
 def test_dunder_len(interface_cases, tmp_output_dir_func):
@@ -177,7 +202,8 @@ def test_roundtrip_from_extra(dtype_by_interface, tmp_output_dir_func):
 @pytest.mark.serialization
 def test_roundtrip_from_union(dtype_by_interface, tmp_output_dir_func):
     """
-    Arrays can be dumped when they are specified along with a union of another type field
+    Arrays can be dumped when they are specified along with a
+    union of another type field
     """
 
     class Model(BaseModel):
@@ -209,16 +235,3 @@ def test_roundtrip_from_generic(dtype_by_interface, tmp_output_dir_func):
     dumped = instance.model_dump_json(round_trip=True)
     roundtripped = Model.model_validate_json(dumped)
     _test_roundtrip(instance, roundtripped)
-
-
-@pytest.mark.serialization
-def test_roundtrip_from_any(dtype_by_interface, tmp_output_dir_func):
-    """
-    We can roundtrip from an AnyType
-    Args:
-        dtype_by_interface:
-        tmp_output_dir_func:
-
-    Returns:
-
-    """
