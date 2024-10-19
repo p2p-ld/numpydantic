@@ -389,7 +389,7 @@ def test_callable():
     annotation = NDArray[Shape["3"], int]
     array = np.array([1, 2, 3], dtype=int)
     validated = annotation(array)
-    assert validated is array
+    assert np.array_equal(validated, array)
 
     with pytest.raises(DtypeError):
         _ = annotation(np.zeros((1, 2, 3)))

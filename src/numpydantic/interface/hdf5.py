@@ -42,7 +42,16 @@ as ``S32`` isoformatted byte strings (timezones optional) like:
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, List, NamedTuple, Optional, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 from pydantic import SerializationInfo
@@ -159,10 +168,15 @@ class H5Proxy:
         if item == "__name__":
             # special case for H5Proxies that don't refer to a real file during testing
             return "H5Proxy"
-        with h5py.File(self.file, "r") as h5f:
-            obj = h5f.get(self.path)
-            val = getattr(obj, item)
-            return val
+        elif item.startswith("__"):
+            return object.__getattribute__(self, item)
+        try:
+            with h5py.File(self.file, "r") as h5f:
+                obj = h5f.get(self.path)
+                val = getattr(obj, item)
+                return val
+        except AttributeError:
+            return object.__getattribute__(self, item)
 
     def __getitem__(
         self, item: Union[int, slice, Tuple[Union[int, slice], ...]]
@@ -237,7 +251,7 @@ class H5Proxy:
         if isinstance(other, H5Proxy):
             return self._h5arraypath == other._h5arraypath
         else:
-            raise ValueError("Can only compare equality of two H5Proxies")
+            return False
 
     def open(self, mode: str = "r") -> "h5py.Dataset":
         """

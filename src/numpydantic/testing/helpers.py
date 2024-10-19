@@ -129,7 +129,7 @@ class ValidationCase(BaseModel):
     """
     Dtype to use in computed annotation used to validate against
     """
-    shape: Tuple[int, ...] = (10, 10, 2, 2)
+    shape: Tuple[int, ...] = (10, 10, 2, 3)
     """Shape of the array to validate"""
     dtype: Union[Type, np.dtype] = float
     """Dtype of the array to validate"""
