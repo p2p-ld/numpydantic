@@ -4,7 +4,7 @@ Tests that should be applied to all interfaces
 
 import json
 from importlib.metadata import version
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Union
 
 import dask.array as da
 import numpy as np
@@ -207,7 +207,7 @@ def test_roundtrip_from_union(dtype_by_interface, tmp_output_dir_func):
     """
 
     class Model(BaseModel):
-        array: str | dtype_by_interface.annotation
+        array: Union[str, dtype_by_interface.annotation]
 
     array = dtype_by_interface.array(path=tmp_output_dir_func)
 
