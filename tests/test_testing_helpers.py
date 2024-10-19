@@ -39,7 +39,7 @@ def test_validation_case_merge():
     "interface",
     [
         pytest.param(
-            i.interface, marks=getattr(pytest.mark, i.interface.interface.name)
+            i.interface, id=i.id, marks=getattr(pytest.mark, i.interface.interface.name)
         )
         for i in INTERFACE_CASES
         if i.id not in ("hdf5_compound")
