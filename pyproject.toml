@@ -1,12 +1,12 @@
 [project]
 name = "numpydantic"
-version = "1.6.4"
+version = "1.6.5"
 description = "Type and shape validation and serialization for arbitrary array types in pydantic models"
 authors = [
     {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
 ]
 dependencies = [
-    "pydantic>=2.3.0",
+    "pydantic>=2.7.0",
     "numpy>=1.24.0",
     "typing-extensions>=4.11.0;python_version<'3.11'"
 ]
