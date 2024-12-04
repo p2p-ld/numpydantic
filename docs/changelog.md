@@ -4,6 +4,11 @@
 
 ### 1.6.*
 
+#### 1.6.5 - 24-12-04 - Bump Pydantic Minimum
+
+**Bugfix**
+- [#36](https://github.com/p2p-ld/numpydantic/issues/36), [#37](https://github.com/p2p-ld/numpydantic/pull/37) - [@gerhardadler](https://github.com/gerhardadler) identifies that serialization context was only introduced in pydantic 2.7, minimum pydantic version has been updated accordingly
+
 #### 1.6.4 - 24-10-11 - Combinatoric Testing
 
 PR: https://github.com/p2p-ld/numpydantic/pull/31
