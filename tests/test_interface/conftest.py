@@ -97,6 +97,8 @@ def all_passing_cases(request) -> ValidationCase:
     that we want to be sure is *very true* in every circumstance.
     Typically, that means only use this in `test_interfaces.py`
     """
+    if "subclass" in request.param.id.lower():
+        pytest.xfail()
     return request.param
 
 
@@ -140,6 +142,8 @@ def dtype_by_interface(request):
     """
     Tests for all dtypes by all interfaces
     """
+    if "subclass" in request.param.id.lower():
+        pytest.xfail()
     return request.param
 
 

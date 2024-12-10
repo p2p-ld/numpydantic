@@ -20,6 +20,7 @@ from numpydantic.exceptions import (
     ShapeError,
     TooManyMatchesError,
 )
+from numpydantic.serialization import pydantic_serializer
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.validation import validate_dtype, validate_shape
 
@@ -232,6 +233,7 @@ class Interface(ABC, Generic[T]):
         shape_valid = self.validate_shape(shape)
         self.raise_for_shape(shape_valid, shape)
 
+        array = self.apply_serializer(array)
         array = self.after_validation(array)
 
         return array
@@ -337,6 +339,17 @@ class Interface(ABC, Generic[T]):
                 f"Invalid shape! expected shape {self.shape.prepared_args}, "
                 f"got shape {shape}"
             )
+
+    def apply_serializer(self, array: NDArrayType) -> NDArrayType:
+        """
+        Apply a __pydantic_serializer__ method that allows the array to be
+        serialized directly without knowledge of the interface in the containing model.
+
+        Useful for when arrays are specified as `__pydantic_extra__` which has
+        different serializer resolution logic.
+        """
+        array.__pydantic_serializer__ = pydantic_serializer
+        return array
 
     def after_validation(self, array: NDArrayType) -> T:
         """
