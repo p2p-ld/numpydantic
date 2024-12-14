@@ -1,6 +1,10 @@
 # Changelog
 
-## Upcoming
+## 1.*
+
+### 1.6.*
+
+#### 1.6.6 - 24-12-13
 
 **Bugfix**
 - [#38](https://github.com/p2p-ld/numpydantic/issues/38), [#39](https://github.com/p2p-ld/numpydantic/pull/39) -
@@ -8,6 +12,11 @@
     An additional check was added for presence of `__name__` when embedding.
   - `NDArray` types were incorrectly cached s.t. pipe-union dtypes were considered equivalent to `Union[]`
     dtypes. An additional tuple with the type of the args was added to the cache key to disambiguate them.
+- [#38](https://github.com/p2p-ld/numpydantic/issues/38), [#40](https://github.com/p2p-ld/numpydantic/pull/40) - 
+  - Tuple dtypes were naively checked by just testing for whether the given dtype was contained by the tuple,
+    ignoring special cases like string type checking. Tuple dtypes are now checked recursively with the same
+    logic as all other type checking.
+  - Zarr treats `dtype=str` as numpy type `O` - added special case when validating from JSON to cast to `np.str_`
 
 **Testing**
 - [#39](https://github.com/p2p-ld/numpydantic/pull/39) - Test that all combinations of shapes, dtypes, and interfaces
@@ -15,10 +24,8 @@
 - [#39](https://github.com/p2p-ld/numpydantic/pull/39) - Add python 3.13 to the testing matrix.
 - [#39](https://github.com/p2p-ld/numpydantic/pull/39) - Add an additional `marks` field to ValidationCase
   for finer-grained control over running tests.
-
-## 1.*
-
-### 1.6.*
+- [#40](https://github.com/p2p-ld/numpydantic/pull/40) - Explicitly test for `np.str_` annotation dtypes alone and 
+  in tuples.
 
 #### 1.6.5 - 24-12-04 - Bump Pydantic Minimum
 

@@ -74,7 +74,8 @@ class ZarrJsonDict(JsonDict):
         if self.file:
             array = ZarrArrayPath(file=self.file, path=self.path)
         else:
-            array = zarr.array(self.value, dtype=self.dtype)
+            dtype = np.str_ if self.dtype == "str" else self.dtype
+            array = zarr.array(self.value, dtype=dtype)
         return array
 
 

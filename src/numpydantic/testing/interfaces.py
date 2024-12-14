@@ -75,6 +75,8 @@ class HDF5Case(_HDF5MetaCase):
             data = np.array(array, dtype=dtype)
         elif dtype is str:
             data = generator.random(shape).astype(bytes)
+        elif dtype is np.str_:
+            data = generator.random(shape).astype("S32")
         elif dtype is datetime:
             data = np.empty(shape, dtype="S32")
             data.fill(datetime.now(timezone.utc).isoformat().encode("utf-8"))
@@ -106,7 +108,7 @@ class HDF5CompoundCase(_HDF5MetaCase):
         array_path = "/" + "_".join([str(s) for s in shape]) + "__" + dtype.__name__
         if array is not None:
             data = np.array(array, dtype=dtype)
-        elif dtype is str:
+        elif dtype in (str, np.str_):
             dt = np.dtype([("data", np.dtype("S10")), ("extra", "i8")])
             data = np.array([("hey", 0)] * np.prod(shape), dtype=dt).reshape(shape)
         elif dtype is datetime:
