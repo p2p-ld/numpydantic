@@ -4,15 +4,18 @@ from functools import reduce
 from itertools import product
 from operator import ior
 from pathlib import Path
-from typing import Generator, List, Literal, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Generator, List, Literal, Optional, Tuple, Type, Union
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, ValidationError, computed_field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, computed_field
 
 from numpydantic import NDArray, Shape
 from numpydantic.dtype import Float
 from numpydantic.interface import Interface
 from numpydantic.types import DtypeType, NDArrayType
+
+if TYPE_CHECKING:
+    from _pytest.mark.structures import MarkDecorator
 
 
 class InterfaceCase(ABC):
@@ -139,6 +142,8 @@ class ValidationCase(BaseModel):
     """The interface test case to generate and validate the array with"""
     path: Optional[Path] = None
     """The path to generate arrays into, if any."""
+    marks: set[str] = Field(default_factory=set)
+    """pytest marks to set for this test case"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -178,6 +183,19 @@ class ValidationCase(BaseModel):
             array: annotation
 
         return Model
+
+    @property
+    def pytest_marks(self) -> list["MarkDecorator"]:
+        """
+        Instantiated pytest marks from :attr:`.ValidationCase.marks`
+        plus the interface name.
+        """
+        import pytest
+
+        marks = self.marks.copy()
+        if self.interface is not None:
+            marks.add(self.interface.interface.name)
+        return [getattr(pytest.mark, m) for m in marks]
 
     def validate_case(self, path: Optional[Path] = None) -> bool:
         """
@@ -246,7 +264,10 @@ def merge_cases(*args: ValidationCase) -> ValidationCase:
         return args[0]
 
     dumped = [
-        m.model_dump(exclude_unset=True, exclude={"model", "annotation"}) for m in args
+        m.model_dump(
+            exclude_unset=True, exclude={"model", "annotation", "pytest_marks"}
+        )
+        for m in args
     ]
 
     # self_dump = self.model_dump(exclude_unset=True)
@@ -263,6 +284,7 @@ def merge_cases(*args: ValidationCase) -> ValidationCase:
     merged = reduce(ior, dumped, {})
     merged["passes"] = passes
     merged["id"] = ids
+    merged["marks"] = set().union(*[v.get("marks", set()) for v in dumped])
     return ValidationCase.model_construct(**merged)
 
 

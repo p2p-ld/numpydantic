@@ -61,6 +61,18 @@ def test_interface_revalidate(all_passing_cases_instance):
     _ = type(all_passing_cases_instance)(array=all_passing_cases_instance.array)
 
 
+@pytest.mark.json_schema
+def test_interface_jsonschema(all_passing_cases_instance):
+    """
+    All interfaces should be able to generate json schema
+    for all combinations of dtype and shape
+
+    Note that this does not test for json schema correctness -
+    see ndarray tests for that
+    """
+    _ = all_passing_cases_instance.model_json_schema()
+
+
 @pytest.mark.xfail
 def test_interface_rematch(interface_cases, tmp_output_dir_func):
     """

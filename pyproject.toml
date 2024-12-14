@@ -129,6 +129,8 @@ markers = [
     "numpy: numpy interface",
     "video: video interface",
     "zarr: zarr interface",
+    "union: union dtypes",
+    "pipe_union: union dtypes specified with a pipe",
 ]
 
 [tool.black]

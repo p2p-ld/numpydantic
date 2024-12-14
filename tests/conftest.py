@@ -14,7 +14,8 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(
-    scope="function", params=[pytest.param(c, id=c.id) for c in SHAPE_CASES]
+    scope="function",
+    params=[pytest.param(c, id=c.id, marks=c.pytest_marks) for c in SHAPE_CASES],
 )
 def shape_cases(request, tmp_output_dir_func) -> ValidationCase:
     case: ValidationCase = request.param.model_copy()
@@ -23,7 +24,8 @@ def shape_cases(request, tmp_output_dir_func) -> ValidationCase:
 
 
 @pytest.fixture(
-    scope="function", params=[pytest.param(c, id=c.id) for c in DTYPE_CASES]
+    scope="function",
+    params=[pytest.param(c, id=c.id, marks=c.pytest_marks) for c in DTYPE_CASES],
 )
 def dtype_cases(request, tmp_output_dir_func) -> ValidationCase:
     case: ValidationCase = request.param.model_copy()

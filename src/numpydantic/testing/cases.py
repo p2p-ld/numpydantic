@@ -143,27 +143,35 @@ DTYPE_CASES = [
         dtype=np.uint32,
         passes=True,
         id="union-type-uint32",
+        marks={"union"},
     ),
     ValidationCase(
         annotation_dtype=UNION_TYPE,
         dtype=np.float32,
         passes=True,
         id="union-type-float32",
+        marks={"union"},
     ),
     ValidationCase(
         annotation_dtype=UNION_TYPE,
         dtype=np.uint64,
         passes=False,
         id="union-type-uint64",
+        marks={"union"},
     ),
     ValidationCase(
         annotation_dtype=UNION_TYPE,
         dtype=np.float64,
         passes=False,
         id="union-type-float64",
+        marks={"union"},
     ),
     ValidationCase(
-        annotation_dtype=UNION_TYPE, dtype=str, passes=False, id="union-type-str"
+        annotation_dtype=UNION_TYPE,
+        dtype=str,
+        passes=False,
+        id="union-type-str",
+        marks={"union"},
     ),
 ]
 """
@@ -181,30 +189,35 @@ if YES_PIPE:
                 dtype=np.uint32,
                 passes=True,
                 id="union-pipe-uint32",
+                marks={"union", "pipe_union"},
             ),
             ValidationCase(
                 annotation_dtype=UNION_PIPE,
                 dtype=np.float32,
                 passes=True,
                 id="union-pipe-float32",
+                marks={"union", "pipe_union"},
             ),
             ValidationCase(
                 annotation_dtype=UNION_PIPE,
                 dtype=np.uint64,
                 passes=False,
                 id="union-pipe-uint64",
+                marks={"union", "pipe_union"},
             ),
             ValidationCase(
                 annotation_dtype=UNION_PIPE,
                 dtype=np.float64,
                 passes=False,
                 id="union-pipe-float64",
+                marks={"union", "pipe_union"},
             ),
             ValidationCase(
                 annotation_dtype=UNION_PIPE,
                 dtype=str,
                 passes=False,
                 id="union-pipe-str",
+                marks={"union", "pipe_union"},
             ),
         ]
     )
