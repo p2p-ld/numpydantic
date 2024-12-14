@@ -127,6 +127,27 @@ DTYPE_CASES = [
     ValidationCase(annotation_dtype=str, dtype=int, passes=False, id="str-int"),
     ValidationCase(annotation_dtype=str, dtype=float, passes=False, id="str-float"),
     ValidationCase(
+        annotation_dtype=np.str_,
+        dtype=str,
+        passes=True,
+        id="np_str-str",
+        marks={"np_str", "str"},
+    ),
+    ValidationCase(
+        annotation_dtype=np.str_,
+        dtype=np.str_,
+        passes=True,
+        id="np_str-np_str",
+        marks={"np_str", "str"},
+    ),
+    ValidationCase(
+        annotation_dtype=(int, np.str_),
+        dtype=str,
+        passes=True,
+        id="tuple_np_str-str",
+        marks={"np_str", "str", "tuple"},
+    ),
+    ValidationCase(
         annotation_dtype=BasicModel, dtype=BasicModel, passes=True, id="model-model"
     ),
     ValidationCase(
