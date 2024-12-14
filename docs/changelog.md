@@ -1,6 +1,10 @@
 # Changelog
 
-## Upcoming
+## 1.*
+
+### 1.6.*
+
+#### 1.6.6 - 24-12-13
 
 **Bugfix**
 - [#38](https://github.com/p2p-ld/numpydantic/issues/38), [#39](https://github.com/p2p-ld/numpydantic/pull/39) -
@@ -22,10 +26,6 @@
   for finer-grained control over running tests.
 - [#40](https://github.com/p2p-ld/numpydantic/pull/40) - Explicitly test for `np.str_` annotation dtypes alone and 
   in tuples.
-
-## 1.*
-
-### 1.6.*
 
 #### 1.6.5 - 24-12-04 - Bump Pydantic Minimum
 
