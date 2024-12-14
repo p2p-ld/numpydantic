@@ -120,7 +120,7 @@ class SubscriptableMeta(ABCMeta):
     new type is returned for every unique set of arguments.
     """
 
-    _all_types: Dict[Tuple[type, Tuple[Any, ...]], type] = {}
+    _all_types: Dict[Tuple[type, Tuple[Any, ...], tuple[type, ...]], type] = {}
     _parameterized: bool = False
 
     @abstractmethod
@@ -160,7 +160,7 @@ class SubscriptableMeta(ABCMeta):
     def _create_type(
         cls, args: Tuple[Any, ...], additional_values: Dict[str, Any]
     ) -> type:
-        key = (cls, args)
+        key = (cls, args, tuple(type(a) for a in args))
         if key not in cls._all_types:
             cls._all_types[key] = type(
                 cls.__name__,

@@ -61,10 +61,7 @@ def interface_cases(request) -> InterfaceCase:
 
 
 @pytest.fixture(
-    params=(
-        pytest.param(p, id=p.id, marks=getattr(pytest.mark, p.interface.interface.name))
-        for p in ALL_CASES
-    )
+    params=(pytest.param(p, id=p.id, marks=p.pytest_marks) for p in ALL_CASES)
 )
 def all_cases(interface_cases, request) -> ValidationCase:
     """
@@ -83,10 +80,7 @@ def all_cases(interface_cases, request) -> ValidationCase:
 
 
 @pytest.fixture(
-    params=(
-        pytest.param(p, id=p.id, marks=getattr(pytest.mark, p.interface.interface.name))
-        for p in ALL_CASES_PASSING
-    )
+    params=(pytest.param(p, id=p.id, marks=p.pytest_marks) for p in ALL_CASES_PASSING)
 )
 def all_passing_cases(request) -> ValidationCase:
     """
@@ -132,7 +126,7 @@ def all_passing_cases_instance(all_passing_cases, tmp_output_dir_func):
 
 @pytest.fixture(
     params=(
-        pytest.param(p, id=p.id, marks=getattr(pytest.mark, p.interface.interface.name))
+        pytest.param(p, id=p.id, marks=p.pytest_marks)
         for p in DTYPE_AND_INTERFACE_CASES_PASSING
     )
 )

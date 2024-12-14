@@ -1,5 +1,21 @@
 # Changelog
 
+## Upcoming
+
+**Bugfix**
+- [#38](https://github.com/p2p-ld/numpydantic/issues/38), [#39](https://github.com/p2p-ld/numpydantic/pull/39) -
+  - JSON Schema generation failed when the `dtype` was embedded from dtypes that lack a `__name__` attribute.
+    An additional check was added for presence of `__name__` when embedding.
+  - `NDArray` types were incorrectly cached s.t. pipe-union dtypes were considered equivalent to `Union[]`
+    dtypes. An additional tuple with the type of the args was added to the cache key to disambiguate them.
+
+**Testing**
+- [#39](https://github.com/p2p-ld/numpydantic/pull/39) - Test that all combinations of shapes, dtypes, and interfaces
+  can generate JSON schema.
+- [#39](https://github.com/p2p-ld/numpydantic/pull/39) - Add python 3.13 to the testing matrix.
+- [#39](https://github.com/p2p-ld/numpydantic/pull/39) - Add an additional `marks` field to ValidationCase
+  for finer-grained control over running tests.
+
 ## 1.*
 
 ### 1.6.*

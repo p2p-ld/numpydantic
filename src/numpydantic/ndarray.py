@@ -204,9 +204,15 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
         json_schema = handler(schema["metadata"])
         json_schema = handler.resolve_ref_schema(json_schema)
 
-        if not isinstance(dtype, tuple) and dtype.__module__ not in (
-            "builtins",
-            "typing",
+        if (
+            not isinstance(dtype, tuple)
+            and dtype.__module__
+            not in (
+                "builtins",
+                "typing",
+                "types",
+            )
+            and hasattr(dtype, "__name__")
         ):
             json_schema["dtype"] = ".".join([dtype.__module__, dtype.__name__])
 
