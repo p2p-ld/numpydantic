@@ -12,6 +12,7 @@
 **Testing**
 - [#39](https://github.com/p2p-ld/numpydantic/pull/39) - Test that all combinations of shapes, dtypes, and interfaces
   can generate JSON schema.
+- [#39](https://github.com/p2p-ld/numpydantic/pull/39) - Add python 3.13 to the testing matrix.
 
 ## 1.*
 
