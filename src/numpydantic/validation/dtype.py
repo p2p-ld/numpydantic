@@ -32,7 +32,7 @@ def validate_dtype(dtype: Any, target: DtypeType) -> bool:
         return True
 
     if isinstance(target, tuple):
-        valid = dtype in target
+        valid = any(validate_dtype(dtype, target_dt) for target_dt in target)
     elif is_union(target):
         valid = any(
             [validate_dtype(dtype, target_dt) for target_dt in get_args(target)]
