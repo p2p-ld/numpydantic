@@ -1,6 +1,6 @@
 [project]
 name = "numpydantic"
-version = "1.6.6"
+version = "1.6.7"
 description = "Type and shape validation and serialization for arbitrary array types in pydantic models"
 authors = [
     {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
@@ -59,7 +59,7 @@ video = [
     "opencv-python>=4.9.0.80",
 ]
 zarr = [
-    "zarr>=2.17.2",
+    "zarr>=2.17.2,<3.0.0",
 ]
 arrays = [
     "numpydantic[dask,hdf5,zarr,video]"

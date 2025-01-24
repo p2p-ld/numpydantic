@@ -4,6 +4,16 @@
 
 ### 1.6.*
 
+#### 1.6.7 - 25-01-23
+
+**UX**
+
+- [#42](https://github.com/p2p-ld/numpydantic/issues/42), [#43](https://github.com/p2p-ld/numpydantic/pulls/43) - 
+  Use an `ImportWarning` rather than a `UserWarning` when a stubfile can't be generated and saved
+  (e.g. due to a read-only filesystem or permissions error) so it only shows in CI and not at runtime.
+- [#44](https://github.com/p2p-ld/numpydantic/issues/44) - Zarr 3.0 changed a ton about how zarr works,
+  so until we can adapt the interface, put an upper bound of `<3.0.0` for zarr
+
 #### 1.6.6 - 24-12-13
 
 **Bugfix**
