@@ -63,4 +63,8 @@ def update_ndarray_stub() -> None:
         with open(pyi_file, "w") as pyi:
             pyi.write(stub_string)
     except Exception as e:  # pragma: no cover
-        warn(f"ndarray.pyi stub file could not be generated: {e}", stacklevel=1)
+        warn(
+            f"ndarray.pyi stub file could not be generated: {e}",
+            category=ImportWarning,
+            stacklevel=1,
+        )
