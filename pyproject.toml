@@ -59,7 +59,7 @@ video = [
     "opencv-python>=4.9.0.80",
 ]
 zarr = [
-    "zarr>=2.17.2",
+    "zarr>=2.17.2,<3.0.0",
 ]
 arrays = [
     "numpydantic[dask,hdf5,zarr,video]"
