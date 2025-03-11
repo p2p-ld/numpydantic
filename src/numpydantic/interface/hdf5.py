@@ -5,28 +5,28 @@ Interfaces for HDF5 Datasets
 
     HDF5 arrays are accessed through a proxy class :class:`.H5Proxy` .
     Getting/setting values should work as normal, **except** that setting
-    values on nested views is impossible - 
-    
+    values on nested views is impossible -
+
     Specifically this doesn't work:
-    
+
     .. code-block:: python
-    
+
         my_model.array[0][0] = 1
-    
+
     But this does work:
-    
+
     .. code-block:: python
-    
+
         my_model.array[0,0] = 1
-        
+
     To have direct access to the hdf5 dataset, use the
     :meth:`.H5Proxy.open` method.
-    
-Datetimes 
+
+Datetimes
 ---------
 
 Datetimes are supported as a dtype annotation, but currently they must be stored
-as ``S32`` isoformatted byte strings (timezones optional) like:    
+as ``S32`` isoformatted byte strings (timezones optional) like:
 
 .. code-block:: python
 
@@ -36,7 +36,7 @@ as ``S32`` isoformatted byte strings (timezones optional) like:
     data = np.array([datetime.now().isoformat().encode('utf-8')], dtype="S32")
     h5f = h5py.File('test.hdf5', 'w')
     h5f.create_dataset('data', data=data)
-    
+
 """
 
 import sys

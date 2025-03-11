@@ -96,7 +96,7 @@ class ZarrInterface(Interface):
 
     @staticmethod
     def _get_array(
-        array: Union[ZarrArray, str, dict, ZarrJsonDict, Path, ZarrArrayPath, Sequence]
+        array: Union[ZarrArray, str, dict, ZarrJsonDict, Path, ZarrArrayPath, Sequence],
     ) -> ZarrArray:
         if isinstance(array, ZarrArray):
             return array

@@ -53,7 +53,7 @@ if TYPE_CHECKING:
 
 
 def validate_structure_expression(
-    structure_expression: Union[StructureExpression, Any]
+    structure_expression: Union[StructureExpression, Any],
 ) -> None:
     """
     Validate the given structure_expression and raise an InvalidStructureError
