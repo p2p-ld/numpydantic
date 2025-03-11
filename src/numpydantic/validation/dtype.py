@@ -47,8 +47,9 @@ def validate_dtype(dtype: Any, target: DtypeType) -> bool:
         try:
             valid = issubclass(dtype, target)
         except TypeError:
-            # expected, if dtype or target is not a class
-            valid = dtype == target
+            # error expected if dtype or target is not a class
+            # main type check - directly test dtype identity
+            valid = dtype == target or getattr(dtype, "type", None) == target
 
     return valid
 
