@@ -4,6 +4,15 @@
 
 ### 1.6.*
 
+#### 1.6.8 - 25-03-10
+
+**Bugfix**
+
+- [#46](https://github.com/p2p-ld/numpydantic/issues/46), [#47](https://github.com/p2p-ld/numpydantic/pull/47) - 
+  Correctly handle `np.datetime64` types. Typically `datetime.datetime` would be used to be generic across interfaces,
+  but special types like `np.datetime64` were incorrectly rejected because they have a special type function/class
+  relationship similar to `np.str_`. Make dtype checking also check the `dtype.type` attribute, if present.
+
 #### 1.6.7 - 25-01-23
 
 **UX**
