@@ -56,7 +56,7 @@ jobs:
         run: pip install "numpy${{ matrix.numpy-version }}"
 
       - name: Install pydantic version
-        if: matrix.pydantic-version != "latest"
+        if: matrix.pydantic-version != 'latest'
         run: pip install "pydantic==${{ matrix.pydantic-version }} "
 
       - name: Run Tests
