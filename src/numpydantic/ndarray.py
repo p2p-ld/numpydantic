@@ -183,9 +183,7 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
         dtype: DtypeType
 
         # make core schema for json schema, store it and any model definitions
-        # note that there is a big of fragility in this function,
-        # as we need to access a private method of _handler to
-        # flatten out the json schema. See help(make_json_schema)
+        # so that we can use them when rendering json schema
         json_schema = make_json_schema(shape, dtype, _handler)
 
         return core_schema.with_info_plain_validator_function(
