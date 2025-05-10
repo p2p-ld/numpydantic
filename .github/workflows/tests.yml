@@ -15,16 +15,22 @@ jobs:
       matrix:
         platform: ["ubuntu-latest", "macos-latest", "windows-latest"]
         numpy-version: ["<2.0.0", ">=2.0.0"]
+        pydantic-version: ["2.7.0", "latest"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         exclude:
+          # no wheels for 2.7.0 in python 3.13
+          - pydantic-version: "2.7.0"
+            python-version: "3.13"
+          # let's call python 3.12 the last version we're going to support with numpy <2
+          # they don't provide wheels for <2 in 3.13 and beyond.
+          # only test on oldest supported versions and 3.12
           - numpy-version: "<2.0.0"
             python-version: "3.10"
           - numpy-version: "<2.0.0"
             python-version: "3.11"
-            # let's call python 3.12 the last version we're going to support with numpy <2
-            # they don't provide wheels for <2 in 3.13 and beyond.
           - numpy-version: "<2.0.0"
             python-version: "3.13"
+          # Don't test intermediate versions on non-linux OSes, to save test time.
           - platform: "macos-latest"
             python-version: "3.10"
           - platform: "macos-latest"
@@ -53,6 +59,10 @@ jobs:
 
       - name: Install numpy version
         run: pip install "numpy${{ matrix.numpy-version }}"
+
+      - name: Install pydantic version
+        if: matrix.pydantic-version != 'latest'
+        run: pip install "pydantic==${{ matrix.pydantic-version }} "
 
       - name: Run Tests
         run: pytest

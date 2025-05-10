@@ -4,6 +4,30 @@
 
 ### 1.6.*
 
+#### 1.6.9 - 25-05-09
+
+**Bugfix**
+
+- [#48](https://github.com/p2p-ld/numpydantic/issues/48), [#49](https://github.com/p2p-ld/numpydantic/pull/49) - 
+  Pydantic 2.11 changed the way that they resolve and iterate through referenced schemas, 
+  since that was a significant source of import latency.
+
+  Previously, in order to use pydantic models as the dtype in an array, 
+  we had to use a private method of the handler 
+  in order to materialize a json schema reference to the model. 
+  Using private interfaces is always fragile, and we 
+  had noted that at the time.
+
+  The fix is so simple haters will say it's fake! 
+  We just copy the pydantic schema from the model. 
+  This has the benefit of no longer using the private method of the handler, 
+  but it may be slow since it involves copying the model core_schema 
+  rather than letting pydantic handle the references.
+
+**Testing**
+
+- Added tests against old pydantic versions to matrix
+
 #### 1.6.8 - 25-03-10
 
 **Bugfix**

@@ -92,6 +92,18 @@ def _lol_dtype(
             array_type = core_schema.bool_schema()
         elif python_type is Any:
             array_type = core_schema.any_schema()
+        elif issubclass(python_type, BaseModel):
+            # We a) need to materialize the model schema rather than reference it
+            # since there isn't a good way to propagate the reference through the
+            # handler,
+            # and b) can't use the handler to generate the schema
+            # since it can only generate the reference
+            # caching it for full materialization later.
+            # the easiest way to get the model's schema is just to ... get it,
+            # which may be a bit expensive with the copy.
+            # see https://github.com/p2p-ld/numpydantic/issues/48
+            # if this proves to be prohibitively expensive, we can find a better way.
+            array_type = python_type.__pydantic_core_schema__.copy()
         else:
             array_type = _handler.generate_schema(python_type)
 
@@ -226,19 +238,13 @@ def make_json_schema(
     First resolves the dtype into a pydantic ``CoreSchema`` ,
     and then uses that with :func:`.list_of_lists_schema` .
 
-    .. admonition:: Potentially Fragile
-
-        Uses a private method from the handler to flatten out nested definitions
-        (e.g. when dtype is a pydantic model)
-        so that they are present in the generated schema directly rather than
-        as references. Otherwise, at the time __get_pydantic_json_schema__ is called,
-        the definition references are lost.
-
     Args:
         shape ( ShapeType ): Specification of a shape, as a tuple or
             an nptyping ``Shape``
         dtype ( DtypeType ): A builtin type or numpy dtype
-        _handler: The pydantic schema generation handler (see pydantic docs)
+        _handler: The pydantic schema generation handler (see pydantic docs).
+            Needed to generate the schema for the dtype
+            if we don't know how to do it ourselves.
 
     Returns:
         :class:`pydantic_core.core_schema.ListSchema`
@@ -251,8 +257,6 @@ def make_json_schema(
         # list_schema = core_schema.list_schema(core_schema.any_schema())
     else:
         list_schema = list_of_lists_schema(shape, dtype_schema)
-
-    list_schema = _handler._generate_schema.clean_schema(list_schema)
 
     return list_schema
 
