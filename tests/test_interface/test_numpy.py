@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any
 
@@ -52,13 +53,12 @@ def test_numpy_coercion(model_blank):
     assert isinstance(instance.array, np.ndarray)
 
 
-@pytest.mark.xfail
 def test_numpy_empty_string():
     class MyModel(BaseModel):
         array: NDArray[Any, np.str_]
 
     inst = MyModel(array="")
-    assert isinstance(inst, np.array)
-    assert inst == np.array([""])
+    assert isinstance(inst.array, np.ndarray)
+    assert inst.array == np.array([""])
     dumped = inst.model_dump_json()
-    assert dumped["array"] == [""]
+    assert json.loads(dumped)["array"] == [""]
