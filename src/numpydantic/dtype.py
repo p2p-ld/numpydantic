@@ -60,7 +60,9 @@ ULongLong = np.ulonglong
 LongLong = np.longlong
 Timedelta64 = np.timedelta64
 SignedInteger = (np.int8, np.int16, np.int32, np.int64, np.short)
+"""Signed integer types"""
 UnsignedInteger = (np.uint8, np.uint16, np.uint32, np.uint64, np.ushort)
+"""Unsigned integer types"""
 Integer = tuple([*SignedInteger, *UnsignedInteger])
 """All integer types"""
 Int = Integer  # Int should translate to the "generic" int type.
@@ -79,7 +81,9 @@ Float = (
     np.single,
     np.double,
 )
+"""All numpy float types"""
 Floating = Float
+"""Alias to Float"""
 
 Complex64 = np.complex64
 Complex128 = np.complex128

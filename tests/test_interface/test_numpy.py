@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 import numpy as np
 import pytest
@@ -49,3 +50,15 @@ def test_numpy_coercion(model_blank):
     """If no other interface matches, we try and coerce to a numpy array"""
     instance = model_blank(array=[1, 2, 3])
     assert isinstance(instance.array, np.ndarray)
+
+
+@pytest.mark.xfail
+def test_numpy_empty_string():
+    class MyModel(BaseModel):
+        array: NDArray[Any, np.str_]
+
+    inst = MyModel(array="")
+    assert isinstance(inst, np.array)
+    assert inst == np.array([""])
+    dumped = inst.model_dump_json()
+    assert dumped["array"] == [""]

@@ -107,6 +107,7 @@ format.composite = [
     "ruff check --fix",
 ]
 test = "pytest"
+docs = "sphinx-autobuild ./docs ./docs/_build"
 
 [build-system]
 requires = ["pdm-backend"]

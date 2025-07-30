@@ -163,3 +163,4 @@ ndarray.pyi
 
 prof/
 __tmp__
+docs/jupyter_execute
