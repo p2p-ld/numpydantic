@@ -82,6 +82,20 @@ SHAPE_CASES = (
         passes=False,
         id="Union incorrect both",
     ),
+    ValidationCase(
+        annotation_shape=("*", "..."),
+        shape=tuple(),
+        id="scalar",
+        marks={"scalar"},
+        passes=True,
+    ),
+    ValidationCase(
+        annotation_shape=("*", "*"),
+        shape=tuple(),
+        id="scalar-min-dimensions",
+        marks={"scalar"},
+        passes=False,
+    ),
 )
 """
 Base Shape cases

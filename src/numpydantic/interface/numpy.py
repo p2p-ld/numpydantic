@@ -106,7 +106,7 @@ class NumpyInterface(Interface):
         if not isinstance(array, np.ndarray):  # pragma: no cover
             array = np.array(array)
 
-        json_array = array.tolist()
+        json_array = [array.tolist()] if array.ndim == 0 else array.tolist()
 
         if info.round_trip:
             json_array = NumpyJsonDict(

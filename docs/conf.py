@@ -83,3 +83,4 @@ todo_link_only = True
 # myst-nb
 nb_render_markdown_format = "myst"
 nb_execution_show_tb = True
+exclude_patterns = ["_build", "jupyter_execute"]

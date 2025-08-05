@@ -4,7 +4,16 @@ from functools import reduce
 from itertools import product
 from operator import ior
 from pathlib import Path
-from typing import TYPE_CHECKING, Generator, List, Literal, Optional, Tuple, Type, Union
+from typing import (
+    TYPE_CHECKING,
+    Generator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, computed_field
@@ -123,7 +132,8 @@ class ValidationCase(BaseModel):
     String identifying the validation case
     """
     annotation_shape: Union[
-        Tuple[Union[int, str], ...], Tuple[Tuple[Union[int, str], ...], ...]
+        Tuple[Union[int, str], ...],
+        Tuple[Tuple[Union[int, str], ...], ...],
     ] = (10, 10, "*", "*")
     """
     Shape to use in computed annotation used to validate against
@@ -153,7 +163,10 @@ class ValidationCase(BaseModel):
         Annotation used in the model we validate against
         """
         # make a union type if we need to
-        shape_union = all(isinstance(s, Sequence) for s in self.annotation_shape)
+        shape_union = all(
+            isinstance(s, Sequence) and not isinstance(s, str)
+            for s in self.annotation_shape
+        )
         dtype_union = isinstance(self.annotation_dtype, Sequence) and all(
             isinstance(s, Sequence) for s in self.annotation_dtype
         )

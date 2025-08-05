@@ -3,7 +3,11 @@ from typing import Any, Optional, Union
 
 import numpy as np
 import pytest
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationError,
+)
 
 from numpydantic import NDArray, Shape, dtype
 from numpydantic.dtype import Number

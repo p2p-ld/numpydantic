@@ -1,4 +1,6 @@
+import json
 from datetime import datetime
+from typing import Any
 
 import numpy as np
 import pytest
@@ -49,3 +51,50 @@ def test_numpy_coercion(model_blank):
     """If no other interface matches, we try and coerce to a numpy array"""
     instance = model_blank(array=[1, 2, 3])
     assert isinstance(instance.array, np.ndarray)
+
+
+@pytest.mark.scalar
+@pytest.mark.serialization
+def test_numpy_empty_string():
+    """
+    Empty strings are coerced to arrays and serialzied as such.
+
+    Mildly redundant with test_serialize_scalars_as_arrays below,
+    but a specific regression test for issue #52
+
+    References:
+        - https://github.com/p2p-ld/numpydantic/issues/52
+    """
+
+    class MyModel(BaseModel):
+        array: NDArray[Any, np.str_]
+
+    inst = MyModel(array="")
+    assert isinstance(inst.array, np.ndarray)
+    assert inst.array == np.array([""])
+    dumped = inst.model_dump_json()
+    assert json.loads(dumped)["array"] == [""]
+
+
+@pytest.mark.serialization
+@pytest.mark.scalar
+@pytest.mark.parametrize("scalar", ("", 0, 0.5))
+@pytest.mark.parametrize("as_json", (True, False))
+def test_serialize_scalars_as_arrays(scalar, as_json: bool):
+    """
+    The numpy interface matches scalar values, coerces them to arrays,
+    and serializes them as arrays in both python and json.
+    """
+
+    class MyModel(BaseModel):
+        array: NDArray
+
+    inst = MyModel(array=scalar)
+    assert isinstance(inst.array, np.ndarray)
+    assert inst.array == np.array([scalar])
+    if as_json:
+        dumped = inst.model_dump_json()
+        assert json.loads(dumped)["array"] == [scalar]
+    else:
+        dumped = inst.model_dump()
+        assert dumped["array"] == np.array([scalar])
