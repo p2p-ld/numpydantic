@@ -1,6 +1,6 @@
 [project]
 name = "numpydantic"
-version = "1.6.9"
+version = "1.6.10"
 description = "Type and shape validation and serialization for arbitrary array types in pydantic models"
 authors = [
     {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
@@ -123,7 +123,9 @@ testpaths = [
 ]
 filterwarnings = [
     # nptyping's alias warnings
-    'ignore:.*deprecated alias.*Deprecated NumPy 1\.24.*'
+    'ignore:.*deprecated alias.*Deprecated NumPy 1\.24.*',
+    # zarr chunk size estimation for scalar arrays
+    'ignore:.*divide by zero encountered in log10.*',
 ]
 markers = [
     "dtype: mark test related to dtype validation",
@@ -138,6 +140,7 @@ markers = [
     "zarr: zarr interface",
     "union: union dtypes",
     "pipe_union: union dtypes specified with a pipe",
+    "scalar: scalar values",
 ]
 
 [tool.black]

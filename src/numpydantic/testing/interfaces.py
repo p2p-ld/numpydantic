@@ -39,6 +39,8 @@ class NumpyCase(InterfaceCase):
             return np.array(array, dtype=dtype)
         elif issubclass(dtype, BaseModel):
             return np.full(shape=shape, fill_value=dtype(x=1))
+        elif len(shape) == 0:
+            return dtype()
         else:
             return np.zeros(shape=shape, dtype=dtype)
 
@@ -110,12 +112,12 @@ class HDF5CompoundCase(_HDF5MetaCase):
             data = np.array(array, dtype=dtype)
         elif dtype in (str, np.str_):
             dt = np.dtype([("data", np.dtype("S10")), ("extra", "i8")])
-            data = np.array([("hey", 0)] * np.prod(shape), dtype=dt).reshape(shape)
+            data = np.array([("hey", 0)] * int(np.prod(shape)), dtype=dt).reshape(shape)
         elif dtype is datetime:
             dt = np.dtype([("data", np.dtype("S32")), ("extra", "i8")])
             data = np.array(
                 [(datetime.now(timezone.utc).isoformat().encode("utf-8"), 0)]
-                * np.prod(shape),
+                * int(np.prod(shape)),
                 dtype=dt,
             ).reshape(shape)
         else:

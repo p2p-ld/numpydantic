@@ -4,6 +4,17 @@
 
 ### 1.6.*
 
+#### 1.6.10 - 25-08-04
+
+**Bugfix**
+
+- [#52](https://github.com/p2p-ld/numpydantic/issues/52), [#53](https://github.com/p2p-ld/numpydantic/pull/53) - 
+  Scalars were incorrectly not coerced to arrays, 
+  and serialization failed with an unintelligible error message.
+  Add specific support and tests for scalar data, 
+  ensuring they are coerced to arrays
+  in both python and JSON serialization.
+
 #### 1.6.9 - 25-05-09
 
 **Bugfix**
