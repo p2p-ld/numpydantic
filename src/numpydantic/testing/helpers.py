@@ -134,7 +134,6 @@ class ValidationCase(BaseModel):
     annotation_shape: Union[
         Tuple[Union[int, str], ...],
         Tuple[Tuple[Union[int, str], ...], ...],
-        type[Shape],
     ] = (10, 10, "*", "*")
     """
     Shape to use in computed annotation used to validate against

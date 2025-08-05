@@ -15,6 +15,9 @@
   ensuring they are coerced to arrays
   in both python and JSON serialization.
 
+**Docs**
+- Improve the description of dtype handling in the docs :)
+
 #### 1.6.9 - 25-05-09
 
 **Bugfix**
