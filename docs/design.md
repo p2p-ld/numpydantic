@@ -2,7 +2,7 @@
 
 ## Why do this?
 
-We want to bring the tidyness of modeling data with pydantic to the universe of
+We want to bring the tidiness of modeling data with pydantic to the universe of
 software that uses arrays - particularly formats and packages that need to be very 
 particular about what *kind* of arrays they are able to handle or match a specific schema.
 
