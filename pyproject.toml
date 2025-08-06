@@ -210,3 +210,9 @@ plugins = [
 omit = [
     "src/numpydantic/vendor/*"
 ]
+[tool.codespell]
+# Ref: https://github.com/codespell-project/codespell#using-a-config-file
+skip = '.git*,vendor,*.lock,*.css'
+check-hidden = true
+# ignore-regex = ''
+ignore-words-list = 'afile'
