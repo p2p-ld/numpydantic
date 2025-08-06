@@ -140,7 +140,7 @@ pip install 'numpydantic[video]'
 # zarr
 pip install 'numpydantic[zarr]'
 # all array formats
-pip intsall 'numpydantic[array]'
+pip install 'numpydantic[array]'
 ```
 
 ## Usage
@@ -258,7 +258,7 @@ object and leave the file open between calls:
 
 ```python
 >>> dataset = h5f_image.array.open()
->>> # do some stuff that requires the datset to be held open
+>>> # do some stuff that requires the dataset to be held open
 >>> h5f_image.array.close()
 ```
 

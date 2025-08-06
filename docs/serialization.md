@@ -259,7 +259,7 @@ A reference listing of all the things that can be passed to
 
 ### `mark_interface`
 
-Nest an additional layer of metadata for unambigous serialization that
+Nest an additional layer of metadata for unambiguous serialization that
 can be absolutely resolved across numpydantic versions 
 (for now for downstream metadata purposes only, 
 automatically resolving to a numpydantic version is not yet possible.)

@@ -64,7 +64,7 @@ class VideoProxy:
             if self.path is None:  # pragma: no cover
                 raise RuntimeError(
                     "Instantiated with a VideoCapture object that has been closed, "
-                    "and it cant be reopened since source path cant be gotten "
+                    "and it can't be reopened since source path can't be gotten "
                     "from VideoCapture objects"
                 )
             if not self.path.exists():
@@ -182,7 +182,7 @@ class VideoProxy:
 
             elif isinstance(item[0], slice):
                 frames = []
-                # make a new slice since range cant take Nones, filling in missing vals
+                # make a new slice since range can't take Nones, filling in missing vals
                 fslice = self._complete_slice(item[0])
 
                 for i in range(fslice.start, fslice.stop, fslice.step):
