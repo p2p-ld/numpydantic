@@ -138,7 +138,7 @@ pip install 'numpydantic[video]'
 # zarr
 pip install 'numpydantic[zarr]'
 # all array formats
-pip intsall 'numpydantic[array]'
+pip install 'numpydantic[array]'
 ```
 
 ## Usage

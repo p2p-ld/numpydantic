@@ -57,7 +57,7 @@ def test_numpy_coercion(model_blank):
 @pytest.mark.serialization
 def test_numpy_empty_string():
     """
-    Empty strings are coerced to arrays and serialzied as such.
+    Empty strings are coerced to arrays and serialized as such.
 
     Mildly redundant with test_serialize_scalars_as_arrays below,
     but a specific regression test for issue #52
