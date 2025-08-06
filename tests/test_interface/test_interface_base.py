@@ -120,7 +120,7 @@ def test_interface_match_fast(interfaces):
     """
     Interface.interfaces()[0].checked = False
     Interface.interfaces()[1].checked = False
-    # this doesnt' raise an error
+    # this doesn't raise an error
     matched = Interface.match([1, 2, 3], fast=True)
     assert matched == Interface.interfaces()[0]
     assert Interface.interfaces()[0].checked
@@ -189,7 +189,7 @@ def test_jsondict_is_valid():
     A JsonDict should return a bool true/false if it is valid or not,
     and raise an error when requested
     """
-    invalid = {"doesnt": "have", "the": "props"}
+    invalid = {"doesnt": "have", "the": "props"}  # codespell:ignore
     valid = {"type": "my_json_dict", "field": "a_field", "number": 1}
     assert MyJsonDict.is_valid(valid)
     assert not MyJsonDict.is_valid(invalid)
