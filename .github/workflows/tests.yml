@@ -68,12 +68,19 @@ jobs:
         run: pytest
 
       - name: Coveralls Parallel
-        uses: coverallsapp/github-action@v2.3.0
+        uses: coverallsapp/github-action@v2.3
         if: runner.os != 'macOS'
+        id: coveralls-parallel
+        continue-on-error: true
         with:
           flag-name: run-${{ join(matrix.*, '-') }}
           parallel: true
           debug: true
+
+      # job shouldn't fail if coveralls fails. it's very patchy lately.
+      - name: Unfail coveralls
+        if: job.steps.coveralls-parallel.status == failure()
+        run: echo "OK"
 
   finish-coverage:
     needs: test
@@ -81,6 +88,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2.3.0
+        continue-on-error: true
+        id: coveralls-finish
+        uses: coverallsapp/github-action@v2.3
         with:
           parallel-finished: true
+      - name: Unfail coveralls
+        if: job.steps.coveralls-finish.status == failure()
+        run: echo "OK"
