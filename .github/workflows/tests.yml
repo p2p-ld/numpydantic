@@ -65,6 +65,7 @@ jobs:
         run: pip install "pydantic==${{ matrix.pydantic-version }} "
 
       - name: Run Tests
+        id: tests
         run: pytest
 
       - name: Coveralls Parallel
@@ -79,7 +80,7 @@ jobs:
 
       # job shouldn't fail if coveralls fails. it's very patchy lately.
       - name: Unfail coveralls
-        if: job.steps.coveralls-parallel.status == failure()
+        if: job.steps.coveralls-parallel.status == failure() && job.steps.tests.status != failure()
         run: echo "OK"
 
   finish-coverage:
