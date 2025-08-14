@@ -31,7 +31,6 @@ import numpy as np
 from numpydantic.vendor.nptyping import InvalidArgumentsError
 from numpydantic.vendor.nptyping.base_meta_classes import (
     FinalMeta,
-    ImmutableMeta,
     InconstructableMeta,
     MaybeCheckableMeta,
     PrintableMeta,
@@ -52,7 +51,6 @@ except ImportError:  # pragma: no cover
 class DataFrameMeta(
     SubscriptableMeta,
     InconstructableMeta,
-    ImmutableMeta,
     FinalMeta,
     MaybeCheckableMeta,
     PrintableMeta,
