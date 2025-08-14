@@ -36,9 +36,6 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install dynamic versioning plugin
-        run: poetry self add "poetry-dynamic-versioning[plugin]"
-
       - name: Set up python
         uses: actions/setup-python@v5
         with:
