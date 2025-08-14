@@ -162,9 +162,15 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
     Constrained array type allowing npytyping syntax for dtype and shape validation
     and serialization.
 
-    This class is not intended to be instantiated or used for type checking, it
-    implements the ``__get_pydantic_core_schema__` method to invoke
+    This class is not intended to be instantiable, and support for static type
+    checking is limited,
+    it implements the ``__get_pydantic_core_schema__`` method to invoke
     the relevant :ref:`interface <Interfaces>` for validation and serialization.
+
+    It is callable, however, which validates and attempts to coerce input to a
+    supported array type.
+    There is no such thing as an "NDArray instance," but one can think of it
+    as a validating passthrough callable.
 
     References:
         - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types

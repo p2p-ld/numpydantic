@@ -1,10 +1,11 @@
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pytest
 from pydantic import BaseModel, ValidationError
 
 from numpydantic import NDArray, Shape
+from numpydantic.exceptions import ShapeError
 
 pytestmark = pytest.mark.shape
 
@@ -77,3 +78,20 @@ def test_range_shape_schema():
     assert "maxItems" not in schema["properties"]["array_range_min"]
     assert schema["properties"]["array_range_max"]["maxItems"] == 4
     assert "minItems" not in schema["properties"]["array_range_max"]
+
+
+def test_shape_literal():
+    """
+    We can use `Literal` instead of the `Shape` object.
+
+    We do not test for correctness of validation here,
+    assuming that it handles `Literal` strings exactly the same
+    way that it does `Shape[]` strings.
+    """
+    array_type = NDArray[Literal["1, 2, ..."], Any]
+
+    # validates
+    _ = array_type(np.zeros((1, 2, 3)))
+    # fails to validate
+    with pytest.raises(ShapeError):
+        _ = array_type(np.zeros((4, 5)))

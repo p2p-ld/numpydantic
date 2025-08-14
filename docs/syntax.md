@@ -6,6 +6,14 @@ General form:
 field: NDArray[Shape["{shape_expression}"], dtype]
 ```
 
+For better compatibility with static type checkers,
+rather than `Shape` with a string literal, you can use {class}`typing.Literal`
+anywhere you can use `Shape`.
+
+```python
+field: NDArray[Literal["{shape_expression"], dtype]
+```
+
 ## Dtype
 
 Dtype checking is for the most part as simple as an `isinstance` check - 

@@ -8,6 +8,14 @@ from warnings import warn
 from numpydantic.interface import Interface
 
 _BUILTIN_IMPORTS = ("import typing", "import pathlib")
+_PREAMBLE = """
+# Add mypy-style generic params to a static type
+# https://mypy.readthedocs.io/en/stable/generics.html#generic-type-aliases
+TShape = typing.TypeVar('TShape')
+TDtype = typing.TypeVar('TDtype')
+
+"""
+_STATIC_TYPES = ("TShape", "TDtype")
 
 
 def generate_ndarray_stub() -> str:
@@ -16,7 +24,7 @@ def generate_ndarray_stub() -> str:
     """
 
     import_strings = []
-    type_names = []
+    type_names = [*_STATIC_TYPES]
     for arr in Interface.input_types():
         if arr.__module__ == "builtins":
             continue
@@ -46,7 +54,7 @@ def generate_ndarray_stub() -> str:
     class_union = " | ".join(type_names)
     ndarray_type = "NDArray = " + class_union
 
-    stub_string = "\n".join([import_string, ndarray_type])
+    stub_string = "\n".join([import_string, _PREAMBLE, ndarray_type])
     return stub_string
 
 

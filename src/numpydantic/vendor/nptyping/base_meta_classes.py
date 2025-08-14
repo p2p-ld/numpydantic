@@ -51,16 +51,6 @@ class InconstructableMeta(ABCMeta):
         )
 
 
-class ImmutableMeta(ABCMeta):
-    """
-    Makes it impossible to changes values on a class.
-    """
-
-    def __setattr__(cls, key: str, value: Any) -> None:
-        if key not in ("_abc_impl", "__abstractmethods__"):
-            raise NPTypingError(f"Cannot set values to nptyping.{cls.__name__}.")
-
-
 class FinalMeta(ABCMeta):
     """
     Makes it impossible for classes to inherit from some class.
@@ -190,7 +180,6 @@ class ComparableByArgsMeta(ABCMeta):
 
 class ContainerMeta(
     InconstructableMeta,
-    ImmutableMeta,
     FinalMeta,
     MaybeCheckableMeta,
     PrintableMeta,

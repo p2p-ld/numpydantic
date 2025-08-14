@@ -30,7 +30,6 @@ import numpy as np
 
 from numpydantic.vendor.nptyping.base_meta_classes import (
     FinalMeta,
-    ImmutableMeta,
     MaybeCheckableMeta,
     PrintableMeta,
     SubscriptableMeta,
@@ -53,7 +52,6 @@ from numpydantic.vendor.nptyping.typing_ import (
 
 class NDArrayMeta(
     SubscriptableMeta,
-    ImmutableMeta,
     FinalMeta,
     MaybeCheckableMeta,
     PrintableMeta,
