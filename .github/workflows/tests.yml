@@ -69,7 +69,7 @@ jobs:
         run: pytest
 
       - name: Coveralls Parallel
-        uses: coverallsapp/github-action@v2.3
+        uses: coverallsapp/github-action@v2
         if: runner.os != 'macOS'
         id: coveralls-parallel
         continue-on-error: true
@@ -91,7 +91,7 @@ jobs:
       - name: Coveralls Finished
         continue-on-error: true
         id: coveralls-finish
-        uses: coverallsapp/github-action@v2.3
+        uses: coverallsapp/github-action@v2
         with:
           parallel-finished: true
       - name: Unfail coveralls
