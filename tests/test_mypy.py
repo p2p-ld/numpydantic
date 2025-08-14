@@ -31,4 +31,4 @@ def refresh_stubs():
 def test_mypy(test_file: Path):
     """The mypy examples should pass static type checking"""
     res = mypy.api.run([str(test_file)])
-    breakpoint()
+    assert res == ("Success: no issues found in 1 source file\n", "", 0)
