@@ -42,3 +42,7 @@ def test_stub_revealed_type():
     Check that the revealed type matches the stub
     """
     _ = reveal_type(NDArray)
+
+def test_always_fails():
+    """temporarily testing that ci still fails if the tests do"""
+    assert False
