@@ -1,6 +1,6 @@
 [project]
 name = "numpydantic"
-version = "1.6.10"
+dynamic = ["version"]
 description = "Type and shape validation and serialization for arbitrary array types in pydantic models"
 authors = [
     {name = "sneakers-the-rat", email = "sneakers-the-rat@protonmail.com"},
@@ -109,6 +109,11 @@ format.composite = [
 ]
 test = "pytest"
 docs = "sphinx-autobuild ./docs ./docs/_build"
+
+[tool.pdm.version]
+source = "scm"
+tag_filter = "v*"
+tag_regex = 'v(?P<version>([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|c|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$)$'
 
 [build-system]
 requires = ["pdm-backend"]
