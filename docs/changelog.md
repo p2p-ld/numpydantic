@@ -4,6 +4,34 @@
 
 ### 1.6.*
 
+#### 1.6.11 - 25-08-13
+
+**Static Typing**
+
+- [#55](https://github.com/p2p-ld/numpydantic/pull/55) - ([@jorenham](https://github.com/jorenham)) - 
+  add `py.typed` for signaling static typing support
+- [#56](https://github.com/p2p-ld/numpydantic/pull/56) - Basic mypy compatibility
+  - Add `Generic` params to `NDArray` and `Shape` 
+    to suppress warnings about improper param counts
+
+**Removed**
+
+- `nptyping.Immutable` metaclass and immutable overrides in Shape.
+  This is not considered a breaking change because (not) inheriting from or mutating
+  numpydantic objects is not considered part of the public API,
+  and these metaclasses serve very little function beyond being obnoxious.
+
+**Docs**
+
+- Some clarification on using `Literal` for shapes to better support static checkers
+- Updating the NDArray docstring
+
+**Testing**
+
+- Add `mypy` testing
+- Fix linkml tests, as linkml uses uv not poetry now
+- Coveralls is increasingly flaky, don't make that fail tests.
+
 #### 1.6.10 - 25-08-04
 
 **Bugfix**
