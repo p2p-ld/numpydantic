@@ -25,13 +25,16 @@ jobs:
           path: linkml
           ref: main
           fetch-depth: 0
+
       - name: Checkout numpydantic
         uses: actions/checkout@v4
         with:
           path: numpydantic
 
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Install uv and setup uv caching
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
 
       - name: Install dynamic versioning plugin
         run: poetry self add "poetry-dynamic-versioning[plugin]"
@@ -40,28 +43,25 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: poetry
-          cache-dependency-path: |
-            linkml/poetry.lock
 
       - name: Add checked out numpydantic to poetry deps
         working-directory: linkml
-        run: poetry add '../numpydantic' --python='>=3.9' --editable
+        run: uv add --editable '../numpydantic'
 
       - name: Install dependencies
         working-directory: linkml
-        run: poetry install --no-interaction -E tests
+        run: uv sync --all-groups
 
       - name: Force uninstall and reinstall
         working-directory: linkml
         run: |
-          poetry run pip uninstall -y numpydantic
-          poetry run pip install -e ../numpydantic
+          uv run pip uninstall -y numpydantic
+          uv run pip install -e ../numpydantic
 
       - name: print numpydantic version and path
         working-directory: linkml
-        run: poetry run python -c 'import numpydantic; from importlib.metadata import version; print(numpydantic.__file__); print(version("numpydantic"))'
+        run: uv run python -c 'import numpydantic; from importlib.metadata import version; print(numpydantic.__file__); print(version("numpydantic"))'
 
       - name: Run LinkML Numpydantic Tests
-        run: poetry run python -m pytest -m pydanticgen_npd
+        run: uv run pytest -m pydanticgen_npd
         working-directory: linkml
