@@ -83,7 +83,7 @@ SHAPE_CASES = (
         id="Union incorrect both",
     ),
     ValidationCase(
-        annotation_shape=("*", "..."),
+        annotation_shape=None,
         shape=tuple(),
         id="scalar",
         marks={"scalar"},

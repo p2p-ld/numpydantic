@@ -6,6 +6,7 @@ from operator import ior
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Any,
     Generator,
     List,
     Literal,
@@ -132,6 +133,7 @@ class ValidationCase(BaseModel):
     String identifying the validation case
     """
     annotation_shape: Union[
+        None,
         Tuple[Union[int, str], ...],
         Tuple[Tuple[Union[int, str], ...], ...],
     ] = (10, 10, "*", "*")
@@ -163,9 +165,13 @@ class ValidationCase(BaseModel):
         Annotation used in the model we validate against
         """
         # make a union type if we need to
-        shape_union = all(
-            isinstance(s, Sequence) and not isinstance(s, str)
-            for s in self.annotation_shape
+        shape_union = (
+            False
+            if self.annotation_shape is None
+            else all(
+                isinstance(s, Sequence) and not isinstance(s, str)
+                for s in self.annotation_shape
+            )
         )
         dtype_union = isinstance(self.annotation_dtype, Sequence) and all(
             isinstance(s, Sequence) for s in self.annotation_dtype
@@ -179,13 +185,19 @@ class ValidationCase(BaseModel):
             )
             annotations: List[type] = []
             for shape, dtype in product(shape_iter, dtype_iter):
-                shape_str = ", ".join([str(i) for i in shape])
-                annotations.append(NDArray[Shape[shape_str], dtype])
+                if shape is None:
+                    annotations.append(NDArray[Any, dtype])
+                else:
+                    shape_str = ", ".join([str(i) for i in shape])
+                    annotations.append(NDArray[Shape[shape_str], dtype])
             return Union[tuple(annotations)]
 
         else:
-            shape_str = ", ".join([str(i) for i in self.annotation_shape])
-            return NDArray[Shape[shape_str], self.annotation_dtype]
+            if self.annotation_shape is None:
+                return NDArray[Any, self.annotation_dtype]
+            else:
+                shape_str = ", ".join([str(i) for i in self.annotation_shape])
+                return NDArray[Shape[shape_str], self.annotation_dtype]
 
     @computed_field()
     def model(self) -> Type[BaseModel]:
