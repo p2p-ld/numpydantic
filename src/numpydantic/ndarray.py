@@ -13,7 +13,16 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 
 """
 
-from typing import TYPE_CHECKING, Any, Literal, Tuple, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Protocol,
+    Tuple,
+    TypeVar,
+    get_origin,
+    runtime_checkable,
+)
 
 import numpy as np
 from pydantic import GetJsonSchemaHandler
@@ -32,7 +41,6 @@ from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.validation.dtype import is_union
 from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 from numpydantic.vendor.nptyping.ndarray import NDArrayMeta as _NDArrayMeta
-from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
 from numpydantic.vendor.nptyping.structure import Structure
 from numpydantic.vendor.nptyping.structure_expression import check_type_names
 from numpydantic.vendor.nptyping.typing_ import (
@@ -87,64 +95,6 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
         except InterfaceError:
             return False
 
-    def _is_literal_like(cls, item: Any) -> bool:
-        """
-        Changes from nptyping:
-        - doesn't just ducktype for literal but actually, yno, checks for being literal
-        """
-        return get_origin(item) is Literal
-
-    def _get_shape(cls, dtype_candidate: Any) -> "Shape":
-        """
-        Override of base method to use our local definition of shape
-        """
-        from numpydantic.validation.shape import Shape
-
-        if dtype_candidate is Any or dtype_candidate is Shape:
-            shape = Any
-        elif issubclass(dtype_candidate, Shape):
-            shape = dtype_candidate
-        elif cls._is_literal_like(dtype_candidate):
-            shape_expression = dtype_candidate.__args__[0]
-            shape = Shape[shape_expression]
-        else:
-            raise InvalidArgumentsError(
-                f"Unexpected argument '{dtype_candidate}', expecting"
-                " Shape[<ShapeExpression>]"
-                " or Literal[<ShapeExpression>]"
-                " or typing.Any."
-            )
-        return shape
-
-    def _get_dtype(cls, dtype_candidate: Any) -> DType:
-        """
-        Override of base _get_dtype method to allow for compound tuple types
-        """
-        if dtype_candidate in python_to_nptyping:
-            dtype_candidate = python_to_nptyping[dtype_candidate]
-        is_dtype = isinstance(dtype_candidate, type) and issubclass(
-            dtype_candidate, np.generic
-        )
-
-        if dtype_candidate is Any:
-            dtype = Any
-        elif is_dtype or is_union(dtype_candidate):
-            dtype = dtype_candidate
-        elif issubclass(dtype_candidate, Structure):  # pragma: no cover
-            dtype = dtype_candidate
-            check_type_names(dtype, dtype_per_name)
-        elif cls._is_literal_like(dtype_candidate):  # pragma: no cover
-            structure_expression = dtype_candidate.__args__[0]
-            dtype = Structure[structure_expression]
-            check_type_names(dtype, dtype_per_name)
-        elif isinstance(dtype_candidate, tuple):  # pragma: no cover
-            dtype = tuple([cls._get_dtype(dt) for dt in dtype_candidate])
-        else:
-            # arbitrary dtype - allow failure elsewhere :)
-            dtype = dtype_candidate
-
-        return dtype
-
     def _dtype_to_str(cls, dtype: Any) -> str:
         if dtype is Any:
             result = "Any"
@@ -157,7 +107,73 @@ class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
         return result
 
 
-class NDArray(NPTypingType, metaclass=NDArrayMeta):
+def _is_literal_like(item: Any) -> bool:
+    """
+    Changes from nptyping:
+    - doesn't just ducktype for literal but actually, yno, checks for being literal
+    """
+    return get_origin(item) is Literal
+
+
+def _get_shape(dtype_candidate: Any) -> "Shape":
+    """
+    Override of base method to use our local definition of shape
+    """
+    from numpydantic.validation.shape import Shape
+
+    if dtype_candidate is Any or dtype_candidate is Shape:
+        shape = Any
+    elif issubclass(dtype_candidate, Shape):
+        shape = dtype_candidate
+    elif _is_literal_like(dtype_candidate):
+        shape_expression = dtype_candidate.__args__[0]
+        shape = Shape[shape_expression]
+    else:
+        raise InvalidArgumentsError(
+            f"Unexpected argument '{dtype_candidate}', expecting"
+            " Shape[<ShapeExpression>]"
+            " or Literal[<ShapeExpression>]"
+            " or typing.Any."
+        )
+    return shape
+
+
+def _get_dtype(dtype_candidate: Any) -> DType:
+    """
+    Override of base _get_dtype method to allow for compound tuple types
+    """
+    if dtype_candidate in python_to_nptyping:
+        dtype_candidate = python_to_nptyping[dtype_candidate]
+    is_dtype = isinstance(dtype_candidate, type) and issubclass(
+        dtype_candidate, np.generic
+    )
+
+    if dtype_candidate is Any:
+        dtype = Any
+    elif is_dtype or is_union(dtype_candidate):
+        dtype = dtype_candidate
+    elif issubclass(dtype_candidate, Structure):  # pragma: no cover
+        dtype = dtype_candidate
+        check_type_names(dtype, dtype_per_name)
+    elif _is_literal_like(dtype_candidate):  # pragma: no cover
+        structure_expression = dtype_candidate.__args__[0]
+        dtype = Structure[structure_expression]
+        check_type_names(dtype, dtype_per_name)
+    elif isinstance(dtype_candidate, tuple):  # pragma: no cover
+        dtype = tuple([_get_dtype(dt) for dt in dtype_candidate])
+    else:
+        # arbitrary dtype - allow failure elsewhere :)
+        dtype = dtype_candidate
+
+    return dtype
+
+
+TShape = TypeVar("TShape", bound=ShapeType)
+TDType = TypeVar("TDType", bound=DtypeType)
+
+
+@runtime_checkable
+class NDArray(Protocol[TShape, TDType]):
     """
     Constrained array type allowing npytyping syntax for dtype and shape validation
     and serialization.
@@ -177,6 +193,20 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
     """
 
     __args__: Tuple[ShapeType, DtypeType] = (Any, Any)
+
+    def __class_getitem__(cls, args: type[Any] | tuple[type[Any], type[Any]]):
+        if not isinstance(args, tuple) or (isinstance(args, tuple) and len(args) == 1):
+            # just shape passed
+            shape = args if not isinstance(args, TypeVar) else Any
+            dtype = Any
+        else:
+            shape = args[0] if not isinstance(args[0], TypeVar) else Any
+            dtype = args[1] if not isinstance(args[0], TypeVar) else Any
+
+        shape = _get_shape(shape)
+        dtype = _get_dtype(dtype)
+
+        return type(cls.__name__, (cls,), {**cls.__dict__, "__args__": (shape, dtype)})
 
     @classmethod
     def __get_pydantic_core_schema__(
