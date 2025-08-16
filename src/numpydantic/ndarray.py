@@ -123,8 +123,8 @@ def _get_dtype(dtype_candidate: Any) -> DType:
     return dtype
 
 
-TShape = TypeVar("TShape", bound=ShapeType)
-TDType = TypeVar("TDType", bound=DtypeType)
+TShape = TypeVar("TShape")
+TDType = TypeVar("TDType")
 
 
 class NDArrayMeta(_ProtocolMeta):
@@ -176,46 +176,7 @@ class NDArrayMeta(_ProtocolMeta):
             result = str(dtype)
         return result
 
-
-@runtime_checkable
-class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
-    """
-    Constrained array type allowing npytyping syntax for dtype and shape validation
-    and serialization.
-
-    This class is not intended to be instantiable, and support for static type
-    checking is limited,
-    it implements the ``__get_pydantic_core_schema__`` method to invoke
-    the relevant :ref:`interface <Interfaces>` for validation and serialization.
-
-    It is callable, however, which validates and attempts to coerce input to a
-    supported array type.
-    There is no such thing as an "NDArray instance," but one can think of it
-    as a validating passthrough callable.
-
-    References:
-        - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
-    """
-
-    __args__: Tuple[ShapeType, DtypeType] = (Any, Any)
-
-    @property
-    def dtype(self) -> DtypeType:
-        """the dtype of the ndarray"""
-
-    @property
-    def shape(self) -> ShapeType:
-        """the shape of the ndarray"""
-
-    def __getitem__(
-        self, key: Union[int, slice, tuple[Union[int, slice], ...]]
-    ) -> "NDArray": ...
-
-    def __setitem__(
-        self, key: Union[int, slice], value: Union[Self, int, float]
-    ) -> None: ...
-
-    def __class_getitem__(cls, args: Union[type[Any], tuple[type[Any], type[Any]]]):
+    def __getitem__(cls, args: Union[type[Any], tuple[type[Any], type[Any]]]):
         if not isinstance(args, tuple) or (isinstance(args, tuple) and len(args) == 1):
             # just shape passed
             shape = args if not isinstance(args, TypeVar) else Any
@@ -229,7 +190,6 @@ class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
 
         return type(cls.__name__, (cls,), {**cls.__dict__, "__args__": (shape, dtype)})
 
-    @classmethod
     def __get_pydantic_core_schema__(
         cls,
         _source_type: "NDArray",
@@ -251,7 +211,6 @@ class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
             metadata=json_schema,
         )
 
-    @classmethod
     def __get_pydantic_json_schema__(
         cls, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
     ) -> core_schema.JsonSchema:
@@ -272,3 +231,35 @@ class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
             json_schema["dtype"] = ".".join([dtype.__module__, dtype.__name__])
 
         return json_schema
+
+
+@runtime_checkable
+class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
+    """
+    Constrained array type allowing npytyping syntax for dtype and shape validation
+    and serialization.
+
+    This class is not intended to be instantiable, and support for static type
+    checking is limited,
+    it implements the ``__get_pydantic_core_schema__`` method to invoke
+    the relevant :ref:`interface <Interfaces>` for validation and serialization.
+
+    It is callable, however, which validates and attempts to coerce input to a
+    supported array type.
+    There is no such thing as an "NDArray instance," but one can think of it
+    as a validating passthrough callable.
+
+    References:
+        - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
+    """
+
+    dtype = np.ndarray.dtype
+    shape = np.ndarray.shape
+
+    def __getitem__(
+        self, key: Union[int, slice, tuple[Union[int, slice], ...]]
+    ) -> "NDArray": ...
+
+    def __setitem__(
+        self, key: Union[int, slice], value: Union[Self, int, float]
+    ) -> None: ...
