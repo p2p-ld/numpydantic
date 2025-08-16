@@ -13,12 +13,12 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 
 """
 
+import sys
 from typing import (
     TYPE_CHECKING,
     Any,
     Literal,
     Protocol,
-    Self,
     Tuple,
     TypeVar,
     Union,
@@ -48,6 +48,11 @@ from numpydantic.vendor.nptyping.structure_expression import check_type_names
 from numpydantic.vendor.nptyping.typing_ import (
     dtype_per_name,
 )
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 if TYPE_CHECKING:  # pragma: no cover
     from pydantic._internal._schema_generation_shared import (
