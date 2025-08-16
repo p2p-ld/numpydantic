@@ -253,13 +253,8 @@ class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
         - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
     """
 
-    dtype = np.ndarray.dtype
-    shape = np.ndarray.shape
+    shape = property(np.ndarray.shape)
 
-    def __getitem__(
-        self, key: Union[int, slice, tuple[Union[int, slice], ...]]
-    ) -> "NDArray": ...
+    def __getitem__(self: Any, key: Any) -> Self: ...
 
-    def __setitem__(
-        self, key: Union[int, slice], value: Union[Self, int, float]
-    ) -> None: ...
+    def __setitem__(self: Any, key: Any, value: Any) -> Any: ...
