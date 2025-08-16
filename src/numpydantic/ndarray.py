@@ -20,6 +20,7 @@ from typing import (
     Protocol,
     Tuple,
     TypeVar,
+    _ProtocolMeta,
     get_origin,
     runtime_checkable,
 )
@@ -40,7 +41,6 @@ from numpydantic.serialization import jsonize_array
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.validation.dtype import is_union
 from numpydantic.vendor.nptyping.error import InvalidArgumentsError
-from numpydantic.vendor.nptyping.ndarray import NDArrayMeta as _NDArrayMeta
 from numpydantic.vendor.nptyping.structure import Structure
 from numpydantic.vendor.nptyping.structure_expression import check_type_names
 from numpydantic.vendor.nptyping.typing_ import (
@@ -48,63 +48,11 @@ from numpydantic.vendor.nptyping.typing_ import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from nptyping.base_meta_classes import SubscriptableMeta
     from pydantic._internal._schema_generation_shared import (
         CallbackGetCoreSchemaHandler,
     )
 
     from numpydantic import Shape
-
-
-class NDArrayMeta(_NDArrayMeta, implementation="NDArray"):
-    """
-    Hooking into nptyping's array metaclass to override methods pending
-    completion of the transition away from nptyping
-    """
-
-    if TYPE_CHECKING:  # pragma: no cover
-        __getitem__ = SubscriptableMeta.__getitem__
-
-    def __call__(cls, val: NDArrayType) -> NDArrayType:
-        """Call ndarray as a validator function"""
-        return get_validate_interface(cls.__args__[0], cls.__args__[1])(val)
-
-    def __instancecheck__(self, instance: Any):
-        """
-        Extended type checking that determines whether
-
-        1) the ``type`` of the given instance is one of those in
-            :meth:`.Interface.input_types`
-
-        but also
-
-        2) it satisfies the constraints set on the :class:`.NDArray` annotation
-
-        Args:
-            instance (:class:`typing.Any`): Thing to check!
-
-        Returns:
-            bool: ``True`` if matches constraints, ``False`` otherwise.
-        """
-        shape, dtype = self.__args__
-        try:
-            interface_cls = Interface.match(instance, fast=True)
-            interface = interface_cls(shape, dtype)
-            _ = interface.validate(instance)
-            return True
-        except InterfaceError:
-            return False
-
-    def _dtype_to_str(cls, dtype: Any) -> str:
-        if dtype is Any:
-            result = "Any"
-        elif issubclass(dtype, Structure):
-            result = str(dtype)
-        elif isinstance(dtype, tuple):
-            result = ", ".join([str(dt) for dt in dtype])
-        else:
-            result = str(dtype)
-        return result
 
 
 def _is_literal_like(item: Any) -> bool:
@@ -172,8 +120,58 @@ TShape = TypeVar("TShape", bound=ShapeType)
 TDType = TypeVar("TDType", bound=DtypeType)
 
 
+class NDArrayMeta(_ProtocolMeta):
+    """
+    Metaclass to provide class-level methods to NDArray protocol
+    without suggesting they are part of the protocol definition.
+    """
+
+    __args__: Tuple[ShapeType, DtypeType] = (Any, Any)
+
+    def __call__(cls, val: NDArrayType) -> NDArrayType:
+        """Call ndarray as a validator function"""
+        return get_validate_interface(cls.__args__[0], cls.__args__[1])(val)
+
+    def __instancecheck__(self, instance: Any):
+        """
+        Extended type checking that determines whether
+
+        1) the ``type`` of the given instance is one of those in
+            :meth:`.Interface.input_types`
+
+        but also
+
+        2) it satisfies the constraints set on the :class:`.NDArray` annotation
+
+        Args:
+            instance (:class:`typing.Any`): Thing to check!
+
+        Returns:
+            bool: ``True`` if matches constraints, ``False`` otherwise.
+        """
+        shape, dtype = self.__args__
+        try:
+            interface_cls = Interface.match(instance, fast=True)
+            interface = interface_cls(shape, dtype)
+            _ = interface.validate(instance)
+            return True
+        except InterfaceError:
+            return False
+
+    def _dtype_to_str(cls, dtype: Any) -> str:
+        if dtype is Any:
+            result = "Any"
+        elif issubclass(dtype, Structure):
+            result = str(dtype)
+        elif isinstance(dtype, tuple):
+            result = ", ".join([str(dt) for dt in dtype])
+        else:
+            result = str(dtype)
+        return result
+
+
 @runtime_checkable
-class NDArray(Protocol[TShape, TDType]):
+class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
     """
     Constrained array type allowing npytyping syntax for dtype and shape validation
     and serialization.
