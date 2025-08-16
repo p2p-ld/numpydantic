@@ -18,6 +18,7 @@ from typing import (
     Any,
     Literal,
     Protocol,
+    Self,
     TypeVar,
     Union,
     _ProtocolMeta,
@@ -191,6 +192,22 @@ class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
     """
 
     __args__: tuple[ShapeType, DtypeType] = (Any, Any)
+
+    @property
+    def dtype(self) -> DtypeType:
+        """the dtype of the ndarray"""
+
+    @property
+    def shape(self) -> ShapeType:
+        """the shape of the ndarray"""
+
+    def __getitem__(
+        self, key: int | slice | tuple[int | slice, ...]
+    ) -> "NDArray": ...
+
+    def __setitem__(
+        self, key: int | slice, value: Self | int | float
+    ) -> None: ...
 
     def __class_getitem__(cls, args: type[Any] | tuple[type[Any], type[Any]]):
         if not isinstance(args, tuple) or (isinstance(args, tuple) and len(args) == 1):
