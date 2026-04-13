@@ -598,3 +598,19 @@ class Interface(ABC, Generic[T]):
         return InterfaceMark(
             module=interface_module, cls=cls.__name__, name=cls.name, version=v
         )
+
+
+class Proxy(ABC):
+    """
+    A proxy class that exposes some non-array data source (like a video) as an array
+    """
+
+    @classmethod
+    @abstractmethod
+    def proxy_for(cls) -> type[Interface]:
+        """
+        Declare the interface that this is a proxy for,
+        allowing the proxy to be used with the NDArraySchema annotation
+        with any of the input types that the Interface supports.
+        """
+        raise NotImplementedError()

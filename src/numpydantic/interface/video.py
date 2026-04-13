@@ -58,6 +58,11 @@ class VideoProxy:
         self._shape = None  # type: Optional[Tuple[int, ...]]
         self._sample_frame = None  # type: Optional[np.ndarray]
 
+    @classmethod
+    def proxy_for(cls) -> type["VideoInterface"]:
+        """Declare this class as a proxy for the VideoInterface"""
+        return VideoInterface
+
     @property
     def video(self) -> VideoCapture:
         """Opened video capture object"""

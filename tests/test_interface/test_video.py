@@ -3,12 +3,13 @@ Needs to be refactored to DRY, but works for now
 """
 
 from pathlib import Path
+from typing import Annotated as A
 
 import cv2
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from numpydantic import NDArray, Shape
+from numpydantic import NDArray, NDArraySchema, Shape
 from numpydantic import dtype as dt
 from numpydantic.interface.video import VideoProxy
 
@@ -196,3 +197,17 @@ def test_video_proxy_eq(comparison, valid):
     else:
         with pytest.raises(valid):
             assert proxy_a == comparison
+
+
+@pytest.mark.proxy
+def test_path_input_with_proxy_schema(avi_video):
+    """When we use the NDArraySchema and VideoProxy, we can use Path as an input"""
+
+    shape = (100, 50)
+    vid = avi_video(shape=shape, is_color=True)
+
+    class MyModel(BaseModel):
+        array: A[VideoProxy, NDArraySchema(Shape["*", 100, 50, 3], dt.UInt8)]
+
+    instance = MyModel(array=vid)
+    assert instance.array.path == vid

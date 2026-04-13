@@ -200,9 +200,20 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
             not hasattr(_source_type, "__class__")
             or _source_type.__class__ is not NDArrayMeta
         ):
+            if hasattr(_source_type, "proxy_for"):
+                interface: type[Interface] = _source_type.proxy_for()
+                isinstance_schema = core_schema.union_schema(
+                    [
+                        core_schema.is_instance_schema(itype)
+                        for itype in list(interface.input_types) + [_source_type]
+                    ]
+                )
+            else:
+                isinstance_schema = core_schema.is_instance_schema(_source_type)
+
             return core_schema.chain_schema(
                 [
-                    core_schema.is_instance_schema(_source_type),
+                    isinstance_schema,
                     core_schema.with_info_plain_validator_function(
                         get_validate_interface(shape, dtype)
                     ),
@@ -211,7 +222,6 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
                 metadata=json_schema,
             )
         else:
-
             return core_schema.with_info_plain_validator_function(
                 get_validate_interface(shape, dtype),
                 serialization=serialization,
