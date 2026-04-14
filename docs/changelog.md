@@ -4,6 +4,25 @@
 
 ### 1.8.*
 
+#### 1.8.1 - 26-04-13
+
+**Added**
+
+- [#67](https://github.com/p2p-ld/numpydantic/pull/67) -
+  When using `NDArraySchema` with one of the Proxy classes (like VideoProxy, HDF5Proxy),
+  allow their nonstandard input types to be used:
+  e.g. allow a Path to be used for a `VideoProxy` annotation like
+
+  ```python
+  class MyModel(BaseModel):
+      video: Annotated[VideoProxy, NDArraySchema()]
+  
+  instance = MyModel(video=Path("some_video.avi"))
+  ```
+  
+  Create a `Proxy` class that provides a reference to the interface that the proxy is for,
+  and then use the interface's input types in the instancecheck.
+
 #### 1.8.0 - 26-02-26
 
 **Version Support**
