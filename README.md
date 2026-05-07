@@ -494,3 +494,5 @@ We have vendored dependencies in the `src/numpydantic/vendor` package,
 and reproduced their licenses in the `licenses` directory.
 
 - [nptyping](https://github.com/ramonhagenaars/nptyping) - `numpydantic.vendor.nptyping` - `/licenses/nptyping.txt`
+
+(nothing)
