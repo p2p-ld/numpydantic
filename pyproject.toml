@@ -69,10 +69,11 @@ tests = [
     "pytest>=7.4.0",
     "pytest-depends<2.0.0,>=1.0.1",
     "coverage>=6.1.1",
-    "pytest-cov<5.0.0,>=4.1.0",
+    "pytest-cov>=4.1.0",
     "coveralls<4.0.0,>=3.3.1",
     "mypy>=1.17.1",
     "pyright>=1.1.408",
+    "pytest-xdist>=3.8.0",
 ]
 docs = [
     "numpydantic[arrays]",
@@ -208,7 +209,15 @@ fixable = ["ALL"]
 
 [tool.mypy]
 plugins = [
-    "pydantic.mypy"
+    "pydantic.mypy",
+    "numpydantic.mypy",
+]
+
+[tool.numpydantic.mypy]
+interfaces = [
+    "numpy",
+    "dask",
+    "zarr",
 ]
 
 [tool.coverage.run]
