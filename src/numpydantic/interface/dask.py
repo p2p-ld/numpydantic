@@ -67,12 +67,9 @@ class DaskTyping(InterfaceTyping):
         return ["import dask.array", "import numpy"]
 
     @classmethod
-    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: type) -> str | None:
+    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: str) -> str | None:
         """render a call to dask.array.zeros"""
-        dtype_src = cls._render_dtype(dtype)
-        if dtype_src is None:
-            return None
-        return f"dask.array.zeros({tuple(shape)!r}, dtype={dtype_src})"
+        return f"dask.array.zeros({tuple(shape)!r}, dtype={dtype})"
 
 
 class DaskInterface(Interface):

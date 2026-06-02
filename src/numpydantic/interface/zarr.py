@@ -85,24 +85,21 @@ class ZarrTyping(InterfaceTyping):
     """Static-typing companion for :class:`ZarrInterface`."""
 
     constructors = (
-        ConstructorSpec(fullname="zarr.zeros"),
-        ConstructorSpec(fullname="zarr.ones"),
-        ConstructorSpec(fullname="zarr.empty"),
-        ConstructorSpec(fullname="zarr.full"),
+        ConstructorSpec(fullname="zarr.creation.zeros"),
+        ConstructorSpec(fullname="zarr.creation.ones"),
+        ConstructorSpec(fullname="zarr.creation.empty"),
+        ConstructorSpec(fullname="zarr.creation.full"),
     )
 
     @classmethod
     def emit_imports(cls) -> list[str]:
         """import zarr and numpy!"""
-        return ["import zarr", "import numpy"]
+        return ["import zarr"]
 
     @classmethod
-    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: type) -> str | None:
+    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: str) -> str | None:
         """array constructor using :func:`zarr.zeros`"""
-        dtype_src = cls._render_dtype(dtype)
-        if dtype_src is None:
-            return None
-        return f"zarr.zeros({tuple(shape)!r}, dtype={dtype_src})"
+        return f"zarr.zeros({tuple(shape)!r}, dtype={dtype})"
 
 
 class ZarrInterface(Interface):
