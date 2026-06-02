@@ -63,16 +63,11 @@ class InterfaceTyping:
         return []
 
     @classmethod
-    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: type) -> str | None:
+    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: str) -> str | None:
         """Source-text for a constructor call producing the given array.
 
         Returns a Python expression string (no trailing newline), e.g.
         ``"np.zeros((3, 3), dtype=np.uint8)"``.
-
-        Returns ``None`` when the interface cannot statically render this
-        ``(shape, dtype)`` — e.g. a ``BaseModel`` dtype or a dtype the backend
-        does not support. Returns ``None`` for all inputs when the interface
-        has no shape-based constructor at all.
 
         Only needs to render one of the constructors that the interface supports -
         we assume if we detect one, they should all work the same way.
