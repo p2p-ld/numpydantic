@@ -8,7 +8,7 @@ from typing import Any, Literal, TypeAlias
 import numpy as np
 from pydantic_core.core_schema import SerializationInfo
 
-from numpydantic.interface import JsonDict
+from numpydantic.interface import JsonDict, Proxy
 from numpydantic.interface.interface import Interface
 
 try:
@@ -37,7 +37,7 @@ class VideoJsonDict(JsonDict):
         return VideoProxy(path=Path(self.file))
 
 
-class VideoProxy:
+class VideoProxy(Proxy):
     """
     Passthrough proxy class to interact with videos as arrays
     """
@@ -57,6 +57,11 @@ class VideoProxy:
         self._dtype = None  # type: Optional[np.dtype]
         self._shape = None  # type: Optional[Tuple[int, ...]]
         self._sample_frame = None  # type: Optional[np.ndarray]
+
+    @classmethod
+    def proxy_for(cls) -> type["VideoInterface"]:
+        """Declare this class as a proxy for the VideoInterface"""
+        return VideoInterface
 
     @property
     def video(self) -> VideoCapture:

@@ -7,6 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, SerializationInfo
 
 from numpydantic.interface.interface import Interface, JsonDict
+from numpydantic.interface.typing import ConstructorSpec, InterfaceTyping
 
 try:
     import numpy as np
@@ -41,6 +42,37 @@ class NumpyJsonDict(JsonDict):
         return array
 
 
+class NumpyTyping(InterfaceTyping):
+    """Static-typing companion for :class:`NumpyInterface`."""
+
+    constructors = (
+        ConstructorSpec(fullname="numpy.ones"),
+        ConstructorSpec(fullname="numpy.zeros"),
+        ConstructorSpec(fullname="numpy.empty"),
+        ConstructorSpec(fullname="numpy.full"),
+        # Newer numpy stubs route the public ``np.zeros`` etc. through a
+        # ``Final[_ConstructorEmpty]`` protocol instance, so mypy sees the
+        # call as a method on that protocol.
+        ConstructorSpec(
+            fullname="numpy._core.multiarray._ConstructorEmpty.__call__",
+            is_method=True,
+        ),
+    )
+
+    @classmethod
+    def emit_imports(cls) -> list[str]:
+        """Just importing numpy over here!"""
+        return ["import numpy"]
+
+    @classmethod
+    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: type) -> str | None:
+        """Constructor using :func:`numpy.zeros`"""
+        dtype_src = cls._render_dtype(dtype)
+        if dtype_src is None:
+            return None
+        return f"numpy.zeros({tuple(shape)!r}, dtype={dtype_src})"
+
+
 class NumpyInterface(Interface):
     """
     Numpy :class:`~numpy.ndarray` s!
@@ -57,6 +89,7 @@ class NumpyInterface(Interface):
     because the numpy interface checks for anything that could be coerced
     to a numpy array (see :meth:`.NumpyInterface.check` )
     """
+    typing = NumpyTyping
 
     @classmethod
     def check(cls, array: Any) -> bool:

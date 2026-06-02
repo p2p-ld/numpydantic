@@ -8,7 +8,10 @@ from abc import ABC, abstractmethod
 from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, version
 from operator import attrgetter
-from typing import Any, Generic, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, Union
+
+if TYPE_CHECKING:
+    from numpydantic.interface.typing import InterfaceTyping
 
 import numpy as np
 from pydantic import BaseModel, SerializationInfo, ValidationError
@@ -192,6 +195,12 @@ class Interface(ABC, Generic[T]):
     input_types: tuple[Any, ...]
     return_type: type[T]
     priority: int = 0
+    typing: ClassVar[type["InterfaceTyping"] | None] = None
+    """
+    Optional static-typing companion class used by the mypy plugin and
+    the mypy test generator. ``None`` means this interface does not opt
+    into static constructor inference.
+    """
 
     def __init__(self, shape: ShapeType = Any, dtype: DtypeType = Any) -> None:
         self.shape = shape
@@ -598,3 +607,19 @@ class Interface(ABC, Generic[T]):
         return InterfaceMark(
             module=interface_module, cls=cls.__name__, name=cls.name, version=v
         )
+
+
+class Proxy(ABC):
+    """
+    A proxy class that exposes some non-array data source (like a video) as an array
+    """
+
+    @classmethod
+    @abstractmethod
+    def proxy_for(cls) -> type[Interface]:
+        """
+        Declare the interface that this is a proxy for,
+        allowing the proxy to be used with the NDArraySchema annotation
+        with any of the input types that the Interface supports.
+        """
+        raise NotImplementedError()

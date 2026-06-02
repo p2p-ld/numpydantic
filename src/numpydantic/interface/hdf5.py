@@ -48,7 +48,7 @@ from typing import Any, NamedTuple, TypeVar
 import numpy as np
 from pydantic import SerializationInfo
 
-from numpydantic.interface.interface import Interface, JsonDict
+from numpydantic.interface.interface import Interface, JsonDict, Proxy
 from numpydantic.types import DtypeType, NDArrayType
 
 try:
@@ -91,7 +91,7 @@ class H5JsonDict(JsonDict):
         )
 
 
-class H5Proxy:
+class H5Proxy(Proxy):
     """
     Proxy class to mimic numpy-like array behavior with an HDF5 array
 
@@ -126,6 +126,11 @@ class H5Proxy:
         self.field = field
         self._annotation_dtype = annotation_dtype
         self._h5arraypath = H5ArrayPath(self.file, self.path, self.field)
+
+    @classmethod
+    def proxy_for(cls) -> type[Interface]:
+        """Declare this class as a proxy for the H5Interface"""
+        return H5Interface
 
     def array_exists(self) -> bool:
         """Check that there is in fact an array at :attr:`.path` within :attr:`.file`"""
