@@ -1,7 +1,5 @@
 """Interface-declared input types are allowed when used within a pydantic model"""
 
-from typing import reveal_type
-
 from pydantic import BaseModel
 
 from numpydantic import NDArray
@@ -15,8 +13,3 @@ class MyModel(BaseModel):
 
 
 instance = MyModel(array=H5ArrayPath("/tmp/test.h5", "some/dataset"), something=2)
-
-reveal_type(instance)
-reveal_type(instance.array)
-reveal_type(MyModel)
-reveal_type(H5ArrayPath("/tmp/test.h5", "some/dataset"))
