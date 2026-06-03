@@ -73,25 +73,3 @@ class InterfaceTyping:
         we assume if we detect one, they should all work the same way.
         """
         return None
-
-    @staticmethod
-    def _render_dtype(dtype: type) -> str | None:
-        """Render ``dtype`` as a source-string fragment."""
-        if not isinstance(dtype, type):
-            # Tuples like `numpydantic.dtype.Integer` aren't types — bail.
-            return None
-        module = getattr(dtype, "__module__", "") or ""
-        name = getattr(dtype, "__name__", "") or ""
-        if not name:
-            return None
-        if module == "builtins" and name in {
-            "int",
-            "float",
-            "str",
-            "bool",
-            "complex",
-            "bytes",
-        }:
-            return name
-        else:
-            return f"{module}.{name}"

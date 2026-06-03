@@ -282,7 +282,7 @@ class ValidationCase(BaseModel):
         typer: InterfaceTyping = self.interface.interface.typing
 
         imports = typer.emit_imports() + [
-            "from typing import Any, reveal_type",
+            "from typing import Any",
             "from numpydantic import NDArray, Shape",
             "from numpydantic.dtype import Integer, Float",
             "import numpy",
@@ -313,6 +313,11 @@ class ValidationCase(BaseModel):
 
 _MYPY_TEMPLATE = """
 {imports}
+import sys
+if sys.version_info < (3, 11):
+    from typing_extensions import reveal_type
+else:
+    from typing import reveal_type
 
 def make() -> {rhs_annotation}:
     array = {constructor}
