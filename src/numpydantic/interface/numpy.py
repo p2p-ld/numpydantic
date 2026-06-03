@@ -76,7 +76,7 @@ class NumpyInterface(Interface):
     """
 
     name = "numpy"
-    input_types = (ndarray, list)
+    input_types = (ndarray,)
     return_type = ndarray
     json_model = NumpyJsonDict
     priority = -999

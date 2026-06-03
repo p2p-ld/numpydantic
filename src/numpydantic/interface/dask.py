@@ -78,7 +78,7 @@ class DaskInterface(Interface):
     """
 
     name = "dask"
-    input_types = (DaskArray, dict)
+    input_types = (DaskArray,)
     return_type = DaskArray
     json_model = DaskJsonDict
     typing = DaskTyping

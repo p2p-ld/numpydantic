@@ -220,6 +220,9 @@ interfaces = [
     "zarr",
 ]
 
+[tool.pydantic-mypy]
+init_typed = true
+
 [tool.coverage.run]
 omit = [
     "src/numpydantic/vendor/*"

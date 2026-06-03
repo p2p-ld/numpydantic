@@ -32,9 +32,11 @@ using the ``name`` attribute of the interface to enable.
 
 from __future__ import annotations
 
+import contextlib
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Any, Final, Self
 
 import tomllib
@@ -55,6 +57,7 @@ try:
     )
     from mypy.types import (
         AnyType,
+        CallableType,
         Instance,
         LiteralType,
         ProperType,
@@ -138,6 +141,7 @@ class NumpydanticMypyPlugin(Plugin):
         self.config = MypyPluginOptions.from_options(options)
         self._functions: dict[str, ConstructorSpec] = {}
         self._methods: dict[str, ConstructorSpec] = {}
+        self._interface_inputs: list[str] = []
         self._load_interfaces()
 
     def get_type_analyze_hook(
@@ -145,7 +149,9 @@ class NumpydanticMypyPlugin(Plugin):
     ) -> Callable[[AnalyzeTypeContext], Type] | None:
         """Convert an NDArray annotation to an enriched np.ndarray annotation"""
         if fullname == NDARRAY_FULLNAME:
-            return _analyze_ndarray_type
+            return partial(
+                _analyze_ndarray_type, interface_inputs=self._interface_inputs
+            )
         return None
 
     def get_function_hook(
@@ -187,6 +193,8 @@ class NumpydanticMypyPlugin(Plugin):
                     self._methods[spec.fullname] = spec
                 else:
                     self._functions[spec.fullname] = spec
+
+        self._interface_inputs = _load_interface_input_fullnames()
 
 
 class RangeValue(str):
@@ -237,7 +245,7 @@ def plugin(version: str) -> type[NumpydanticMypyPlugin]:  # noqa: ARG001
 # ---------------------------------------------------------------------------
 
 
-def _analyze_ndarray_type(ctx: AnalyzeTypeContext) -> Type:
+def _analyze_ndarray_type(ctx: AnalyzeTypeContext, interface_inputs: list[str]) -> Type:
     """
     Render ``NDArray[shape, dtype]`` as a static numpy.ndarray type.
 
@@ -252,9 +260,7 @@ def _analyze_ndarray_type(ctx: AnalyzeTypeContext) -> Type:
     args = ctx.type.args
 
     if len(args) == 0:
-        return _build_ndarray_type(
-            ctx, shape=None, dtype=AnyType(TypeOfAny.special_form)
-        )
+        shape_arg, dtype_arg = None, AnyType(TypeOfAny.special_form)
     elif len(args) == 1:
         shape_arg, dtype_arg = args[0], AnyType(TypeOfAny.special_form)
     elif len(args) == 2:
@@ -267,31 +273,38 @@ def _analyze_ndarray_type(ctx: AnalyzeTypeContext) -> Type:
 
     shape = _parse_shape_arg(shape_arg, ctx)
     dtype = _parse_dtype_arg(dtype_arg, ctx)
-    return _build_ndarray_type(ctx, shape=shape, dtype=dtype)
+    ndarray_type = _build_ndarray_type(ctx, shape=shape, dtype=dtype)
+    if _inside_pydantic_model(ctx):
+        # mypy crashes if try to refer to an untyped package like zarr
+        # being defensive, it treats them like an Any type anyway.
+        in_types = []
+        for name in interface_inputs:
+            with contextlib.suppress(AssertionError):
+                in_types.append(ctx.api.named_type(name, []))
+        return UnionType([ndarray_type, *in_types])
+    else:
+        return ndarray_type
 
 
 def _build_ndarray_type(
-    ctx: AnalyzeTypeContext, shape: ProperType | None, dtype: ProperType
+    ctx: AnalyzeTypeContext | FunctionContext | MethodContext,
+    shape: ProperType | None,
+    dtype: ProperType,
 ) -> Type:
     """
     Build the rendered ``NDArray`` type as its final np.ndarray form
     """
     api = ctx.api
 
-    dtype_instance = api.named_type("numpy.dtype", [dtype])
-    numpy_variant = api.named_type("numpy.ndarray", [shape, dtype_instance])
+    if shape is None:
+        shape = AnyType(TypeOfAny.special_form)
 
-    # TODO: Detect if we are inside of a pydantic model and allow transformable inputs
-    # backend_types: list[Type] = []
-    # for fullname in _backend_input_type_fullnames():
-    #     if fullname == NUMPY_NDARRAY:
-    #         continue
-    #     try:
-    #         backend_types.append(api.named_type(fullname, []))
-    #     except Exception:
-    #         # If a backend type isn't importable in this mypy invocation
-    #         # (e.g. user without zarr installed), silently skip it.
-    #         continue
+    if isinstance(ctx, AnalyzeTypeContext):
+        dtype_instance = api.named_type("numpy.dtype", [dtype])
+        numpy_variant = api.named_type("numpy.ndarray", [shape, dtype_instance])
+    else:
+        dtype_instance = api.named_generic_type("numpy.dtype", [dtype])
+        numpy_variant = api.named_generic_type("numpy.ndarray", [shape, dtype_instance])
 
     return numpy_variant
 
@@ -402,24 +415,34 @@ def _parse_dtype_arg(arg: Type, ctx: AnalyzeTypeContext) -> ProperType:
     return _dtype_as_numpy(analyzed, ctx)
 
 
-def _dtype_as_numpy(t: ProperType, ctx: AnalyzeTypeContext) -> ProperType:
+def _dtype_as_numpy(
+    t: ProperType, ctx: AnalyzeTypeContext | FunctionContext | MethodContext
+) -> ProperType:
     """Cast the dtype arg into a numpy generic type that can be used in ndarray"""
+    # first part, unwrapping containers, either recursively or falling through
     if isinstance(t, AnyType):
         return t
-    if isinstance(t, UnionType):
+    elif isinstance(t, UnionType):
         items = [_dtype_as_numpy(get_proper_type(item), ctx) for item in t.items]
         return UnionType.make_union(items)
-    if isinstance(t, TupleType):
+    elif isinstance(t, TupleType):
         # Tuple-as-union shorthand: NDArray[shape, (a, b)] - rare in static
         # type annotations but valid at runtime. Treat as union.
         items = [_dtype_as_numpy(get_proper_type(item), ctx) for item in t.items]
         return UnionType.make_union(items)
+    elif isinstance(t, CallableType):
+        t = get_proper_type(t.ret_type)
+
+    # second part,
     if isinstance(t, Instance):
         if not _is_numpy_generic(t.type):
             numpy_equivalent = BUILTIN_TO_NUMPY.get(
                 t.type.fullname, BUILTIN_TO_NUMPY["builtins.object"]
             )
-            symbol = ctx.api.lookup_fully_qualified(numpy_equivalent)
+            if isinstance(ctx, AnalyzeTypeContext):
+                symbol = ctx.api.lookup_fully_qualified(numpy_equivalent)
+            else:
+                symbol = ctx.api.lookup_qualified(numpy_equivalent)
             node = symbol.node
             if isinstance(node, TypeAlias):
                 t = node.target
@@ -427,7 +450,7 @@ def _dtype_as_numpy(t: ProperType, ctx: AnalyzeTypeContext) -> ProperType:
                 t = symbol.node.type_object_type.ret_type
 
         return t
-    if isinstance(t, LiteralType):
+    elif isinstance(t, LiteralType):
         ctx.api.fail(
             f"invalid dtype Literal[{t.value!r}]; expected a numpy generic",
             ctx.context,
@@ -437,6 +460,60 @@ def _dtype_as_numpy(t: ProperType, ctx: AnalyzeTypeContext) -> ProperType:
     return AnyType(TypeOfAny.from_error)
 
 
+# --------------------------------------------------
+# Etcetera
+# --------------------------------------------------
+
+
 def _is_numpy_generic(info: TypeInfo) -> bool:
     """Whether a TypeInfo derives from numpy.generic."""
     return any(base.fullname == "numpy.generic" for base in info.mro)
+
+
+def _inside_pydantic_model(ctx: AnalyzeTypeContext) -> bool:
+    """
+    Detect if an NDArray is being declared inside a pydantic model
+    """
+
+    semantic = ctx.api.api
+    outer_cls: TypeInfo | None = getattr(semantic, "type", None)
+    return outer_cls is not None and outer_cls.has_base("pydantic.main.BaseModel")
+
+
+def _load_interface_input_fullnames() -> list[str]:
+    """
+    Get all allowable input types defined by interfaces,
+    used when NDArray is declared within a pydantic model.
+
+    This does *not* filter using the `pyproject.toml` config's
+    enabled interfaces list - that is for controlling whether
+    we modify the types from those interfaces when enriching constructors,
+    this is for determining what input types are allowed
+    to a pydantic model.
+
+    filter out builtin inputs types, if any exist -
+    they are too generic, and mypy plugin should enforce stricter typing habits.
+    All the builtins that are allowed at runtime like a string for VideoInterface
+    have typed counterparts, like H5ArrayPath and ZarrArrayPath.
+    """
+    fullnames = []
+    for interface in Interface.interfaces(with_disabled=False):
+        inputs = interface.input_types
+        fullnames.extend(
+            f"{t.__module__}.{t.__qualname__}"
+            for t in inputs
+            if t.__module__ != "builtins"
+        )
+
+    fullnames = set(fullnames)
+
+    # FIXME: bit of a hack - pathlib's actual loc is pathlib._local.Path
+    # but mypy can't find this name
+    if "pathlib._local.Path" in fullnames:
+        fullnames.discard("pathlib._local.Path")
+        fullnames.add("pathlib.Path")
+
+    # we don't allow the generic Any form of numpy ndarray,
+    # a spec'd numpy.ndarray type is union'd to these types
+    fullnames = list(set(fullnames) - {"numpy.ndarray"})
+    return fullnames

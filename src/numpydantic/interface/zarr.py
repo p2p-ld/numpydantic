@@ -108,7 +108,7 @@ class ZarrInterface(Interface):
     """
 
     name = "zarr"
-    input_types = (Path, ZarrArray, ZarrArrayPath)
+    input_types = (ZarrArray, ZarrArrayPath)
     return_type = ZarrArray
     json_model = ZarrJsonDict
     typing = ZarrTyping

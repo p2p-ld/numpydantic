@@ -295,7 +295,7 @@ class H5Interface(Interface):
         return h5py is not None
 
     @classmethod
-    def check(cls, array: H5ArrayPath | tuple[Path | str, str]) -> bool:
+    def check(cls, array: H5ArrayPath | H5Arraylike) -> bool:
         """
         Check that the given array is a :class:`.H5ArrayPath` or something that
         resembles one.
