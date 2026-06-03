@@ -1,5 +1,11 @@
 # Changelog
 
+## Upcoming
+
+**Breaking**
+
+- Drop numpy<2.0 support - it's been two years. numpy 1 doesn't support typing with shapes and dtypes! 
+
 ## 1.*
 
 ### 1.8.*

@@ -34,12 +34,19 @@ from __future__ import annotations
 
 import contextlib
 import re
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Any, Final, Self
+from typing import Any, Final
 
-import tomllib
+if sys.version_info < (3, 11):
+    from tomli import load as load_toml
+    from typing_extensions import Self
+else:
+    from typing import Self
+
+    from tomllib import load as load_toml
 
 from numpydantic.interface import ConstructorSpec, Interface
 
@@ -122,7 +129,7 @@ class MypyPluginOptions:
             return MypyPluginOptions()
 
         with open(options.config_file, "rb") as f:
-            toml_config = tomllib.load(f)
+            toml_config = load_toml(f)
 
         if toml_config is None:
             return MypyPluginOptions()

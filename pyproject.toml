@@ -7,8 +7,8 @@ authors = [
 ]
 dependencies = [
     "pydantic>=2.7.0",
-    "numpy>=1.24.0",
-    "typing-extensions>=4.11.0;python_version<'3.11'"
+    "numpy>=2.0.0",
+    "typing-extensions>=4.11.0;python_version<'3.11'",
 ]
 requires-python = "<4.0,>=3.10"
 readme = "README.md"
@@ -64,14 +64,17 @@ zarr = [
 arrays = [
     "numpydantic[dask,hdf5,zarr,video]"
 ]
+mypy = [
+    "mypy>=1.17.1",
+    "tomli>=2.4.1;python_version<'3.11'"
+]
 tests = [
-    "numpydantic[arrays]",
+    "numpydantic[arrays,mypy]",
     "pytest>=7.4.0",
     "pytest-depends<2.0.0,>=1.0.1",
     "coverage>=6.1.1",
     "pytest-cov>=4.1.0",
     "coveralls<4.0.0,>=3.3.1",
-    "mypy>=1.17.1",
     "pyright>=1.1.408",
     "pytest-xdist>=3.8.0",
 ]
@@ -108,6 +111,11 @@ lint.composite = [
 format.composite = [
     "black .",
     "ruff check --fix",
+]
+lock.composite = [
+    'pdm lock --with :all --python=">=3.10,<3.12"',
+    'pdm lock --with :all --python=">=3.12,<3.14" --append',
+    'pdm lock --with :all --python=">=3.14" --append'
 ]
 test = "pytest"
 docs = "sphinx-autobuild ./docs ./docs/_build"
