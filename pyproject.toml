@@ -79,7 +79,7 @@ tests = [
     "pytest-xdist>=3.8.0",
 ]
 docs = [
-    "numpydantic[arrays]",
+    "numpydantic[arrays,mypy]",
     "sphinx>=8.0.0;python_version>='3.11'",
     "furo>=2024.1.29",
     "myst-parser>=2.0.0",

@@ -8,6 +8,16 @@
 
 ## 1.*
 
+### 1.9.*
+
+#### 1.9.0 - 26-06-05
+
+
+**Added**
+Mypy type checking has arrived! See the full details in the [Typechecker Integration](typecheckers) page.
+
+Static type checking for shape and dtype constraints is real!
+
 ### 1.8.*
 
 #### 1.8.1 - 26-04-13

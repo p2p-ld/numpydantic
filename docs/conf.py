@@ -84,7 +84,7 @@ todo_link_only = True
 nb_render_markdown_format = "myst"
 nb_execution_show_tb = True
 exclude_patterns = ["_build", "jupyter_execute"]
-myst_heading_anchors = 3
+myst_heading_anchors = 4
 
 # programoutput
 # enable when these are fixed:
@@ -92,3 +92,7 @@ myst_heading_anchors = 3
 # https://github.com/OpenNTI/sphinxcontrib-programoutput/issues/82
 programoutput_use_ansi = False
 # os.environ["MYPY_FORCE_COLOR"] = "true"
+
+# Warnings
+# the lexer trivially fails on the tuples-of-types example in dtype
+suppress_warnings = ["misc.highlighting_failure"]

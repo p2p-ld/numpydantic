@@ -6,42 +6,6 @@ General form:
 field: NDArray[Shape["{shape_expression}"], dtype]
 ```
 
-## Type checker compatibility
-
-For better compatibility with static type checkers,
-rather than `Shape` with a string literal, you can use {class}`typing.Literal`
-anywhere you can use `Shape`.
-
-```python
-field: NDArray[Literal["{shape_expression"], dtype]
-```
-
-Or, if you don't need axis labels, you can pass the parts of a shape expression as separate args
-
-```python
-field: NDArray[Shape[1, 2, 3], dtype]
-```
-
-And if your type checker complains about using a string literal as a generic,
-Shape can also be invoked as a callable
-
-```python
-field: NDArray[Shape(1, 2, 3), dtype]
-```
-
-If you don't need compatibility with multiple array backends,
-Within pydantic models, you can use the annotated schema form with :func:`.NDArraySchema`
-
-```python
-from numpydantic import NDArraySchema
-class MyModel(BaseModel):
-    field = Annotated[np.ndarray, NDArraySchema(Shape("{shape_expression}"), dtype)]
-```
-
-:func:`.NDArraySchema` also validates that the given array is of the specified type,
-rather than any array backend that matches the dtype and shape.
-
-
 ## Dtype
 
 Dtype checking is for the most part as simple as an `isinstance` check - 
@@ -147,6 +111,46 @@ If a `dtype` is being passed, use the `'*'` wildcard along with the `'...'`
 field: NDArray[Shape['*, ...'], int]
 ```
 
+
+## Type checker compatibility
+
+```{tip}
+See also: [Typechecker Integration](typecheckers)
+```
+
+For better compatibility with static type checkers,
+rather than `Shape` with a string literal, you can use {class}`typing.Literal`
+anywhere you can use `Shape`.
+
+```python
+field: NDArray[Literal["{shape_expression"], dtype]
+```
+
+Or, if you don't need axis labels, you can pass the parts of a shape expression as separate args
+
+```python
+field: NDArray[Shape[1, 2, 3], dtype]
+```
+
+And if your type checker complains about using a string literal as a generic,
+Shape can also be invoked as a callable
+
+```python
+field: NDArray[Shape(1, 2, 3), dtype]
+```
+
+If you don't need compatibility with multiple array backends,
+Within pydantic models, you can use the annotated schema form with :func:`.NDArraySchema`
+
+```python
+from numpydantic import NDArraySchema
+class MyModel(BaseModel):
+    field = Annotated[np.ndarray, NDArraySchema(Shape("{shape_expression}"), dtype)]
+```
+
+:func:`.NDArraySchema` also validates that the given array is of the specified type,
+rather than any array backend that matches the dtype and shape.
+
 ## Caveats
 
 ```{todo}
@@ -170,3 +174,4 @@ schema with a warning that the equal shape constraint will not be represented.
 See: https://github.com/orgs/json-schema-org/discussions/730
 
 ````
+

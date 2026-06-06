@@ -4,6 +4,7 @@ Numpydantic does things with the python type system that are not formally suppor
 it tries to have permissive behavior by default for typecheckers,
 but provides plugins for strict static type checking.
 
+(mypy-plugin)=
 ## Mypy Plugin
 
 ```{versionadded} 1.9.0
@@ -240,7 +241,7 @@ Constructor inference works by modifying the type returned from supported array 
 
 Each interface may support constructor inference by declaring a {class}`~.interface.typing.InterfaceTyping` class with a set of {class}`~.interface.typing.ConstructorSpec` objects.
 You can see the currently supported constructors on the relevant interface pages
-(e.g. for [numpy](numpydantic.interface.numpy.NumpyTyping), [zarr]([numpy](numpydantic.interface.zarr.ZarrTyping))).
+(e.g. for [numpy](numpydantic.interface.numpy.NumpyTyping), [zarr](numpydantic.interface.zarr.ZarrTyping)).
 
 The {class}`~.interface.typing.ConstructorSpec`s declare how to locate the shape and dtype args or kwargs,
 (these are almost always shape in the first positional arg and the dtype specified as a kwarg,
