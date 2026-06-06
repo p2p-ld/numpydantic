@@ -120,6 +120,12 @@ class MypyPluginOptions:
     """
 
     interfaces: list[str] = field(default_factory=list)
+    """
+    A list of interface names that should have their constructor return types
+    enriched (and replaced with np.ndarray types).
+    
+    Numpy constructors are always enriched (to disable them, disable the plugin). 
+    """
 
     @classmethod
     def from_options(cls, options: Options) -> Self:
@@ -196,7 +202,7 @@ class NumpydanticMypyPlugin(Plugin):
             if typing_cls is None:
                 continue
             for spec in typing_cls.constructors:
-                if spec.is_method:
+                if spec.mode == "method":
                     self._methods[spec.fullname] = spec
                 else:
                     self._functions[spec.fullname] = spec

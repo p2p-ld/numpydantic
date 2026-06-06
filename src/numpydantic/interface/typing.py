@@ -14,7 +14,7 @@ A backend interface may attach an :class:`InterfaceTyping` subclass to its
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 
 @dataclass(frozen=True)
@@ -37,10 +37,10 @@ class ConstructorSpec:
     """
     dtype_arg: str | None = "dtype"
     """Keyword name for the dtype argument, if any"""
-    is_method: bool = False
+    mode: Literal["function", "method"] = "function"
     """
-    ``True`` if mypy sees this constructor as a method (``get_method_hook``), 
-    ``False`` for a free function (``get_function_hook``).
+    ``method`` if mypy sees this constructor as a method (``get_method_hook``), 
+    ``function`` for a free function or class instantiation (``get_function_hook``).
     """
 
 

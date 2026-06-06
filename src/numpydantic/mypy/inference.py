@@ -7,9 +7,10 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from mypy.nodes import Expression, IntExpr, ListExpr, TupleExpr
-from mypy.plugin import FunctionContext, MethodContext
+from mypy.plugin import DynamicClassDefContext, FunctionContext, MethodContext
 from mypy.types import (
     AnyType,
+    Instance,
     LiteralType,
     TupleType,
     Type,
@@ -43,7 +44,7 @@ def _make_method_hook(
 
 
 def _refine_constructor_return(
-    ctx: FunctionContext | MethodContext,
+    ctx: FunctionContext | MethodContext | DynamicClassDefContext,
     spec: ConstructorSpec,
 ) -> Type:
     """
@@ -58,17 +59,18 @@ def _refine_constructor_return(
 
     int_instance = ctx.api.named_generic_type("builtins.int", [])
 
-    shape_expr = _find_arg(ctx.args, ctx.callee_arg_names, spec.shape_arg)
-    if shape_expr is not None:
-        literal_dims = _literal_dims_from_expr(shape_expr)
+    shape_expr = _find_arg(ctx.args, ctx.arg_names, spec.shape_arg)
+    if shape_expr is not None and isinstance(shape_expr, TupleExpr):
+        # TODO: forwarding shape inference from e.g. indexing array.shape
+        literal_dims = _literal_dims_from_expr(shape_expr, int_instance)
         shape = TupleType(
-            [LiteralType(dim, fallback=int_instance) for dim in literal_dims],
+            literal_dims,
             fallback=int_instance,
         )
     else:
         shape = AnyType(TypeOfAny.special_form)
 
-    dtype_expr = _find_arg(ctx.args, ctx.callee_arg_names, spec.dtype_arg)
+    dtype_expr = _find_arg(ctx.args, ctx.arg_names, spec.dtype_arg)
     if dtype_expr is not None:
         dtype = _dtype_as_numpy(
             get_proper_type(ctx.api.get_expression_type(dtype_expr)), ctx
@@ -81,21 +83,29 @@ def _refine_constructor_return(
 
 def _find_arg(
     args: list[list[Expression]],
-    callee_arg_names: list[str | None],
+    arg_names: list[list[str | None]],
     arg: int | str,
 ) -> Expression | None:
     """Resolve a shape argument by positional index or keyword name."""
+    # flatten args
+    args = [inner for outer in args for inner in outer]
+
     if isinstance(arg, int):
         if 0 <= arg < len(args) and args[arg]:
-            return args[arg][0]
+            return args[arg]
         return None
     else:
-        for i, candidate in enumerate(callee_arg_names):
+        # flatten arg_names
+        flat_args = [inner for outer in arg_names for inner in outer]
+
+        for i, candidate in enumerate(flat_args):
             if candidate == arg and i < len(args) and args[i]:
-                return args[i][0]
+                return args[i]
 
 
-def _literal_dims_from_expr(expr: Expression) -> list[int | None] | None:
+def _literal_dims_from_expr(
+    expr: Expression, int_instance: Instance
+) -> list[LiteralType | Instance] | None:
     """
     If ``expr`` is a literal tuple/list of integers, return them.
 
@@ -103,7 +113,14 @@ def _literal_dims_from_expr(expr: Expression) -> list[int | None] | None:
     (the 1-D form ``np.empty(5)``).
     """
     if isinstance(expr, (TupleExpr, ListExpr)):
-        dims: list[int | None] = [item.value for item in expr.items]
+        dims: list[LiteralType | Instance] = [
+            (
+                LiteralType(item.value, fallback=int_instance)
+                if isinstance(item, IntExpr)
+                else int_instance
+            )
+            for item in expr.items
+        ]
         return dims
     elif isinstance(expr, IntExpr):
         # 1-D constructor: np.empty(5) -> tuple[Literal[5]]

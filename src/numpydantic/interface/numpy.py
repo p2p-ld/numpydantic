@@ -55,7 +55,7 @@ class NumpyTyping(InterfaceTyping):
         # call as a method on that protocol.
         ConstructorSpec(
             fullname="numpy._core.multiarray._ConstructorEmpty.__call__",
-            is_method=True,
+            mode="method",
         ),
     )
 
