@@ -133,7 +133,10 @@ class H5Proxy(Proxy):
         return H5Interface
 
     def array_exists(self) -> bool:
-        """Check that there is in fact an array at :attr:`.path` within :attr:`.file`"""
+        """
+        Check that there is in fact an array at :attr:`.H5Proxy.path`
+        within :attr:`.H5Proxy.file`
+        """
         with h5py.File(self.file, "r") as h5f:
             obj = h5f.get(self.path)
             return obj is not None
@@ -395,8 +398,8 @@ class H5Interface(Interface):
 
         If ``round_trip == True``, we dump just the proxy info, a dictionary like:
 
-        * ``file``: :attr:`.file`
-        * ``path``: :attr:`.path`
+        * ``file``: :attr:`.H5Proxy.file`
+        * ``path``: :attr:`.H5Proxy.path`
         * ``attrs``: Any HDF5 attributes on the dataset
         * ``array``: The array as a list of lists
 

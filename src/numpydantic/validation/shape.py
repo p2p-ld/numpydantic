@@ -11,13 +11,13 @@ Modifications from nptyping:
   as the last dimension. ie ``Shape[2, ...]`` means "any number of 2-length
   dimensions. Here ``'...'`` always means "any number of any-shape dimensions"
 - **Ranges** - (inclusive) shape ranges are allowed. eg. to specify an array
-  where the first dimension can be 2, 3, or 4 length:
+  where the first dimension can be 2, 3, or 4 length::
 
      Shape["2-4, ..."]
 
   To specify a range with an unbounded min or max, use wildcards, eg. for
   an array with the first dimension at least length 2, and the second dimension
-  at most length 5 (both inclusive):
+  at most length 5 (both inclusive)::
 
       Shape["2-*, *-5"]
 
@@ -85,7 +85,7 @@ class Shape(NPTypingType, ABC, Generic[T], metaclass=ShapeMeta):
 
     >>> Shape['2, 2'] == Shape('2, 2')
 
-    And its arguments can be pased as *args, with ints and strings as appropriate
+    And its arguments can be pased as ``args``, with ints and strings as appropriate
 
     >>> Shape(2, 2, "...") == Shape("2, 2, ...")
 

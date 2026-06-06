@@ -4,12 +4,12 @@
 Jonny write the contribution docs
 ```
 
-### Issues
+## Issues
 
-### Development Environment
+## Development Environment
 
-### Testing
+## Testing
 
-### Linting
+## Linting
 
-### Pull Requests
+## Pull Requests

@@ -240,12 +240,16 @@ class Interface(ABC, Generic[T]):
         Implementing an interface subclass largely consists of overriding these methods
         as needed.
 
+        If validation fails, rather than eg. returning ``False``, exceptions will
+        be raised (to halt the rest of the pydantic validation process).
+        When using interfaces outside of pydantic, you must catch both
+        :class:`.DtypeError` and :class:`.ShapeError` (both of which are children
+        of :class:`.InterfaceError` )
+
         Raises:
-            If validation fails, rather than eg. returning ``False``, exceptions will
-            be raised (to halt the rest of the pydantic validation process).
-            When using interfaces outside of pydantic, you must catch both
-            :class:`.DtypeError` and :class:`.ShapeError` (both of which are children
-            of :class:`.InterfaceError` )
+            :class:`.DtypeError`: Dtype of data doesn't match specification
+            :class:`.ShapeError`: Shape of data doesn't match specification
+
         """
         array = self.deserialize(array)
 
@@ -416,8 +420,8 @@ class Interface(ABC, Generic[T]):
     @abstractmethod
     def to_json(cls, array: type[T], info: SerializationInfo) -> list | JsonDict:
         """
-        Convert an array of :attr:`.return_type` to a JSON-compatible format using
-        base python types
+        Convert an array of :attr:`.Interface.return_type` to a JSON-compatible format
+        using base python types
         """
 
     @classmethod

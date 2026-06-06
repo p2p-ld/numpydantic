@@ -152,7 +152,7 @@ the `shape` of the array will be preserved in the JSON form,
 and during validation the interface will attempt to reshape the input array to the stored shape.
 ````
 
-#### Controlling paths
+### Controlling paths
 
 When possible, the full content of the array is omitted in favor
 of the path to the file that provided it.
@@ -179,7 +179,7 @@ where they are making an index file that refers to datasets in a directory
 as part of a data standard or vernacular format.
 
 By default, numpydantic uses the current working directory as the root to find
-paths relative to, but this can be controlled by the [`relative_to`](#relative_to)
+paths relative to, but this can be controlled by the [`relative_to`](#relative-to)
 context parameter:
 
 For example if you're working on data in many subdirectories,
@@ -225,7 +225,7 @@ print_json(
     ))
 ```
 
-#### Durable Interface Metadata
+### Durable Interface Metadata
 
 Numpydantic tries to be [stable](./development.md#api-stability),
 but we're not perfect. To preserve the full information about the
