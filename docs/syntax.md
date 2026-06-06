@@ -64,7 +64,7 @@ Shape["3, *"]
 (shape-ranges)=
 ### Ranges
 
-Dimension sizes can also be specified as ranges[^ranges].
+Dimension sizes can also be specified as ranges[^rangesnote].
 Ranges must have no whitespace, and may use integers or wildcards.
 Range specifications are **inclusive** on both ends.
 
@@ -77,7 +77,7 @@ For an array whose...
 Shape["2-4, 2-*, *-4"]
 ```
 
-[^ranges]: This is an extension to nptyping's syntax, and so using `nptyping.Shape` is unsupported - use {class}`numpydantic.Shape`
+[^rangesnote]: This is an extension to nptyping's syntax, and so using `nptyping.Shape` is unsupported - use {class}`numpydantic.Shape`
 
 ### Labels
 

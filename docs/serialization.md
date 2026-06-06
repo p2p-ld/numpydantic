@@ -179,7 +179,7 @@ where they are making an index file that refers to datasets in a directory
 as part of a data standard or vernacular format.
 
 By default, numpydantic uses the current working directory as the root to find
-paths relative to, but this can be controlled by the [`relative_to`](#relative-to)
+paths relative to, but this can be controlled by the [`relative_to`](relative-to)
 context parameter:
 
 For example if you're working on data in many subdirectories,
@@ -311,6 +311,7 @@ data = model.model_dump_json(
 print_json(data)
 ```
 
+(relative-to)=
 ### `relative_to`
 
 Make all paths (that exist) relative to the given path
