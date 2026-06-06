@@ -16,4 +16,5 @@ interfaces
 .. automodule:: numpydantic.testing
     :members:
     :undoc-members:
+    :no-index:
 ```

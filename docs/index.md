@@ -514,6 +514,7 @@ syntax
 dtype
 serialization
 interfaces
+typecheckers
 ```
 
 ```{toctree}

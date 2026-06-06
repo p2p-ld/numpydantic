@@ -6,4 +6,5 @@ Top-level API contents
 .. automodule:: numpydantic
     :members:
     :imported-members:
+    :no-index:
 ```
