@@ -17,6 +17,7 @@ release = metadata.version("numpydantic")
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "erbsland.sphinx.ansi",
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
     "sphinxcontrib.autodoc_pydantic",
@@ -25,6 +26,7 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx_design",
     "sphinxcontrib.mermaid",
+    "sphinxcontrib.programoutput",
     "myst_nb",
     "sphinx.ext.todo",
 ]
@@ -35,10 +37,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
-    "pydantic": ("https://docs.pydantic.dev/latest/", None),
+    "pydantic": ("https://pydantic.dev/docs/validation/latest/", None),
     "linkml": ("https://linkml.io/linkml/", None),
-    "linkml_runtime": ("https://linkml.io/linkml/", None),
-    "linkml-runtime": ("https://linkml.io/linkml/", None),
     "dask": ("https://docs.dask.org/en/stable/", None),
     "h5py": ("https://docs.h5py.org/en/stable/", None),
     "zarr": ("https://zarr.readthedocs.io/en/stable/", None),
@@ -84,3 +84,11 @@ todo_link_only = True
 nb_render_markdown_format = "myst"
 nb_execution_show_tb = True
 exclude_patterns = ["_build", "jupyter_execute"]
+myst_heading_anchors = 3
+
+# programoutput
+# enable when these are fixed:
+# https://github.com/erbsland-dev/erbsland-sphinx-ansi/issues/6
+# https://github.com/OpenNTI/sphinxcontrib-programoutput/issues/82
+programoutput_use_ansi = False
+# os.environ["MYPY_FORCE_COLOR"] = "true"
