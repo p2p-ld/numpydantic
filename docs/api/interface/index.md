@@ -6,6 +6,7 @@
 ```
 
 ```{toctree}
+typing
 dask
 hdf5
 numpy

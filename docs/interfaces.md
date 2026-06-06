@@ -1,3 +1,4 @@
+(interfaces)=
 # Interfaces
 
 Interfaces are the bridge between the abstract {class}`~numpydantic.NDArray` specification

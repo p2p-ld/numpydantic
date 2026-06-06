@@ -1,0 +1,5 @@
+[tool.mypy]
+
+[[tool.mypy.overrides]]
+module = ["zarr.*"]
+follow_untyped_imports = true

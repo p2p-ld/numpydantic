@@ -1,6 +1,22 @@
 # Changelog
 
+## Upcoming
+
+**Breaking**
+
+- Drop numpy<2.0 support - it's been two years. numpy 1 doesn't support typing with shapes and dtypes! 
+
 ## 1.*
+
+### 1.9.*
+
+#### 1.9.0 - 26-06-05
+
+
+**Added**
+Mypy type checking has arrived! See the full details in the [Typechecker Integration](typecheckers) page.
+
+Static type checking for shape and dtype constraints is real!
 
 ### 1.8.*
 

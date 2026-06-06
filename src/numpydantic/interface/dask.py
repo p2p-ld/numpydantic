@@ -9,6 +9,7 @@ import numpy as np
 from pydantic import BaseModel, SerializationInfo
 
 from numpydantic.interface.interface import Interface, JsonDict
+from numpydantic.interface.typing import ConstructorSpec, InterfaceTyping
 from numpydantic.types import DtypeType, NDArrayType
 
 try:
@@ -50,15 +51,37 @@ class DaskJsonDict(JsonDict):
         return array
 
 
+class DaskTyping(InterfaceTyping):
+    """Static-typing companion for :class:`DaskInterface`."""
+
+    constructors = (
+        ConstructorSpec(fullname="dask.array.zeros"),
+        ConstructorSpec(fullname="dask.array.ones"),
+        ConstructorSpec(fullname="dask.array.empty"),
+        ConstructorSpec(fullname="dask.array.full"),
+    )
+
+    @classmethod
+    def emit_imports(cls) -> list[str]:
+        """import dask.array and numpy"""
+        return ["import dask.array", "import numpy"]
+
+    @classmethod
+    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: str) -> str | None:
+        """render a call to dask.array.zeros"""
+        return f"dask.array.zeros({tuple(shape)!r}, dtype={dtype})"
+
+
 class DaskInterface(Interface):
     """
     Interface for Dask :class:`~dask.array.core.Array`
     """
 
     name = "dask"
-    input_types = (DaskArray, dict)
+    input_types = (DaskArray,)
     return_type = DaskArray
     json_model = DaskJsonDict
+    typing = DaskTyping
 
     @classmethod
     def check(cls, array: Any) -> bool:

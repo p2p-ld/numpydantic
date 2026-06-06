@@ -12,6 +12,7 @@ import numpy as np
 from pydantic import SerializationInfo
 
 from numpydantic.interface.interface import Interface, JsonDict
+from numpydantic.interface.typing import ConstructorSpec, InterfaceTyping
 from numpydantic.types import DtypeType
 
 try:
@@ -80,15 +81,37 @@ class ZarrJsonDict(JsonDict):
         return array
 
 
+class ZarrTyping(InterfaceTyping):
+    """Static-typing companion for :class:`ZarrInterface`."""
+
+    constructors = (
+        ConstructorSpec(fullname="zarr.creation.zeros"),
+        ConstructorSpec(fullname="zarr.creation.ones"),
+        ConstructorSpec(fullname="zarr.creation.empty"),
+        ConstructorSpec(fullname="zarr.creation.full"),
+    )
+
+    @classmethod
+    def emit_imports(cls) -> list[str]:
+        """import zarr and numpy!"""
+        return ["import zarr"]
+
+    @classmethod
+    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: str) -> str | None:
+        """array constructor using :func:`zarr.zeros`"""
+        return f"zarr.zeros({tuple(shape)!r}, dtype={dtype})"
+
+
 class ZarrInterface(Interface):
     """
     Interface to in-memory or on-disk zarr arrays
     """
 
     name = "zarr"
-    input_types = (Path, ZarrArray, ZarrArrayPath)
+    input_types = (ZarrArray, ZarrArrayPath)
     return_type = ZarrArray
     json_model = ZarrJsonDict
+    typing = ZarrTyping
 
     @classmethod
     def enabled(cls) -> bool:

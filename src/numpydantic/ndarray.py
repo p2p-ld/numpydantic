@@ -165,7 +165,7 @@ class NDArray(NPTypingType, metaclass=NDArrayMeta):
     This class is not intended to be instantiable, and support for static type
     checking is limited,
     it implements the ``__get_pydantic_core_schema__`` method to invoke
-    the relevant :ref:`interface <Interfaces>` for validation and serialization.
+    the relevant `interface <Interfaces>` for validation and serialization.
 
     It is callable, however, which validates and attempts to coerce input to a
     supported array type.

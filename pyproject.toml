@@ -7,8 +7,8 @@ authors = [
 ]
 dependencies = [
     "pydantic>=2.7.0",
-    "numpy>=1.24.0",
-    "typing-extensions>=4.11.0;python_version<'3.11'"
+    "numpy>=2.0.0",
+    "typing-extensions>=4.11.0;python_version<'3.11'",
 ]
 requires-python = "<4.0,>=3.10"
 readme = "README.md"
@@ -64,26 +64,32 @@ zarr = [
 arrays = [
     "numpydantic[dask,hdf5,zarr,video]"
 ]
+mypy = [
+    "mypy>=1.17.1",
+    "tomli>=2.4.1;python_version<'3.11'"
+]
 tests = [
-    "numpydantic[arrays]",
+    "numpydantic[arrays,mypy]",
     "pytest>=7.4.0",
     "pytest-depends<2.0.0,>=1.0.1",
     "coverage>=6.1.1",
-    "pytest-cov<5.0.0,>=4.1.0",
+    "pytest-cov>=4.1.0",
     "coveralls<4.0.0,>=3.3.1",
-    "mypy>=1.17.1",
     "pyright>=1.1.408",
+    "pytest-xdist>=3.8.0",
 ]
 docs = [
-    "numpydantic[arrays]",
-    "sphinx<8.0.0,>=7.2.6",
+    "numpydantic[arrays,mypy]",
+    "sphinx>=8.0.0;python_version>='3.11'",
     "furo>=2024.1.29",
-    "myst-parser<3.0.0,>=2.0.0",
-    "autodoc-pydantic<3.0.0,>=2.0.1",
-    "sphinx-design<1.0.0,>=0.5.0",
+    "myst-parser>=2.0.0",
+    "autodoc-pydantic>=2.0.1",
+    "sphinx-design>=0.5.0",
     "sphinxcontrib-mermaid>=0.9.2",
     "myst-nb>=1.1.1",
     "rich>=13.8.1",
+    "erbsland-sphinx-ansi>=1.2.0",
+    "sphinxcontrib-programoutput>=0.19",
 ]
 dev = [
     "numpydantic[tests,docs]",
@@ -108,8 +114,14 @@ format.composite = [
     "black .",
     "ruff check --fix",
 ]
+lock.composite = [
+    'pdm lock --with :all --python=">=3.10,<3.12"',
+    'pdm lock --with :all --python=">=3.12,<3.14" --append',
+    'pdm lock --with :all --python=">=3.14" --append'
+]
 test = "pytest"
 docs = "sphinx-autobuild ./docs ./docs/_build"
+docs-prod = "python -m sphinx -M html ./docs ./docs/_build -W -E -a --keep-going"
 
 [tool.pdm.version]
 source = "scm"
@@ -208,8 +220,23 @@ fixable = ["ALL"]
 
 [tool.mypy]
 plugins = [
-    "pydantic.mypy"
+    "pydantic.mypy",
+    "numpydantic.mypy",
 ]
+
+[[tool.mypy.overrides]]
+module = ["zarr.*"]
+follow_untyped_imports = true
+
+[tool.numpydantic.mypy]
+interfaces = [
+    "numpy",
+    "dask",
+    "zarr",
+]
+
+[tool.pydantic-mypy]
+init_typed = true
 
 [tool.coverage.run]
 omit = [

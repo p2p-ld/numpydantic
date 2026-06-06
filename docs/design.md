@@ -65,6 +65,8 @@ type that was passed on model instantiation, as well as potentially
 do shape and dtype checks during type checking (eg. so a wrongly shaped or dtyped 
 array assignment will be highlighted as wrong), we will be exploring adding 
 mypy/pylance/pyright hooks for dynamic type evaluation.
+
+As of 1.9.0 - we have added [an experimental mypy plugin](mypy-plugin)
 ```
 
 Since type annotations are static, each `NDArray[]` usage effectively creates a new
