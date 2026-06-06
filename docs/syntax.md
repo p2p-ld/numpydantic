@@ -148,7 +148,7 @@ class MyModel(BaseModel):
     field = Annotated[np.ndarray, NDArraySchema(Shape("{shape_expression}"), dtype)]
 ```
 
-:func:`.NDArraySchema` also validates that the given array is of the specified type,
+{func}`.NDArraySchema` also validates that the given array is of the specified type,
 rather than any array backend that matches the dtype and shape.
 
 ## Caveats

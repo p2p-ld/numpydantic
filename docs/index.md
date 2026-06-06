@@ -525,6 +525,7 @@ typecheckers
 api/index
 api/interface/index
 api/validation/index
+api/annotation
 api/dtype
 api/ndarray
 api/maps

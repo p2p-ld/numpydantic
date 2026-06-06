@@ -296,9 +296,42 @@ def make_zarr() -> A[zarr.Array, NDArraySchema(Shape(1, 2, 3))]:
 ### Pydantic Models
 
 When used as a type on a pydantic model,
-numpydantic is able to coerce convenience input types into arrays
+numpydantic is able to coerce convenience input types into arrays.
+This means that we should consider some decidedly non-array inputs as satisfying
+an array type - like paths and strings - which makes sense for pydantic models,
+but would be bad to accept as a function param.
 
-(input types)
+The mypy plugin can detect when the annotation is being used within a pydantic model,
+and allows the items within the enabled interfaces {meth}`~.Interface.input_types` list,
+and otherwise refuses them.
+
+When checking non-array input types like a path, shape and dtype checking is unsupported,
+as it would be an absolutely absurd thing to do to open on-disk array stores or analyze videos while type checking.
+
+**Correct**
+
+```{literalinclude} examples/correct/pydantic_field.py
+:lines: 7-
+:linenos:
+:lineno-start: 7
+```
+
+```{program-output} mypy --pretty examples/correct/pydantic_field.py
+```
+
+**Incorrect**
+
+```{literalinclude} examples/incorrect/pydantic_field.py
+:lines: 7-
+:linenos:
+:lineno-start: 7
+```
+
+```{program-output} mypy --pretty examples/incorrect/pydantic_field.py
+:returncode: 1
+```
+
+
 
 ### Known Limitations
 
