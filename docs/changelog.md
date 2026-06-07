@@ -6,6 +6,13 @@
 
 - Drop numpy<2.0 support - it's been two years. numpy 1 doesn't support typing with shapes and dtypes! 
 
+**Fixed**
+
+- [#46](https://github.com/p2p-ld/numpydantic/issues/46) -
+  A `datetime` annotation now accepts both a numpy `datetime64` array and an
+  object array of python `datetime` objects. `datetime` maps to
+  `np.datetime64 | datetime` so either form validates.
+
 ## 1.*
 
 ### 1.9.*
