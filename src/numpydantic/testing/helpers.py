@@ -129,7 +129,9 @@ class ValidationCase(BaseModel):
     """
     String identifying the validation case
     """
-    annotation_shape: None | tuple[int | str, ...] | tuple[tuple[int | str, ...], ...] = (
+    annotation_shape: (
+        None | tuple[int | str, ...] | tuple[tuple[int | str, ...], ...]
+    ) = (
         10,
         10,
         "*",

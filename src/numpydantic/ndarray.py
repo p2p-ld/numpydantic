@@ -13,14 +13,14 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
 
 """
 
-import sys
+from __future__ import annotations
+
 from typing import (
     TYPE_CHECKING,
     Any,
     Literal,
     Protocol,
     TypeVar,
-    Union,
     _ProtocolMeta,
     get_origin,
     runtime_checkable,
@@ -48,11 +48,6 @@ from numpydantic.vendor.nptyping.typing_ import (
     dtype_per_name,
 )
 
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-
 if TYPE_CHECKING:  # pragma: no cover
     from pydantic._internal._schema_generation_shared import (
         CallbackGetCoreSchemaHandler,
@@ -69,7 +64,7 @@ def _is_literal_like(item: Any) -> bool:
     return get_origin(item) is Literal
 
 
-def _get_shape(dtype_candidate: Any) -> "Shape":
+def _get_shape(dtype_candidate: Any) -> Shape:
     """
     Override of base method to use our local definition of shape
     """
@@ -132,7 +127,7 @@ class NDArrayMeta(_ProtocolMeta):
     without suggesting they are part of the protocol definition.
     """
 
-    __args__: Tuple[ShapeType, DtypeType] = (Any, Any)
+    __args__: tuple[ShapeType, DtypeType] = (Any, Any)
 
     def __call__(cls, val: NDArrayType) -> NDArrayType:
         """Call ndarray as a validator function"""
@@ -191,8 +186,8 @@ class NDArrayMeta(_ProtocolMeta):
 
     def __get_pydantic_core_schema__(
         cls,
-        _source_type: Union["NDArray", Any],
-        _handler: "CallbackGetCoreSchemaHandler",
+        _source_type: NDArray | Any,
+        _handler: CallbackGetCoreSchemaHandler,
     ) -> core_schema.CoreSchema:
         shape, dtype = cls.__args__
         shape: ShapeType
@@ -282,6 +277,6 @@ class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
 
     shape = property(np.ndarray.shape)
 
-    def __getitem__(self: Any, key: Any) -> Self: ...
+    def __getitem__(self: Any, key: Any) -> Any: ...
 
     def __setitem__(self: Any, key: Any, value: Any) -> Any: ...
