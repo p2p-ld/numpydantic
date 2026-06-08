@@ -2,23 +2,34 @@
 
 ## Upcoming
 
-**Breaking**
-
-- Drop numpy<2.0 support - it's been two years. numpy 1 doesn't support typing with shapes and dtypes! 
-
-**Fixed**
-
-- [#46](https://github.com/p2p-ld/numpydantic/issues/46) -
-  A `datetime` annotation now accepts both a numpy `datetime64` array and an
-  object array of python `datetime` objects. `datetime` maps to
-  `np.datetime64 | datetime` so either form validates.
-
 ## 1.*
 
 ### 1.9.*
 
+#### 1.9.1 - 26-06-08
+
+**Added**
+
+- [#71](https://github.com/p2p-ld/numpydantic/pulls/71) - 
+  An `object_cls` field in roundtripped JSON now indicates the python class for object arrays.
+  When deserializing, attempt to cast the values back to those classes.
+- [#71](https://github.com/p2p-ld/numpydantic/pulls/71) - 
+  A generic `dtype.Datetime` union for {class}`numpy.datetime64` and {class}`datetime.datetime` objects.
+
+**Fixed**
+
+- [#46](https://github.com/p2p-ld/numpydantic/issues/46) - [@gaoflow](https://github.com/gaoflow) -
+  A `datetime` annotation now accepts both a numpy `datetime64` array and an
+  object array of python `datetime` objects. `datetime` maps to
+  `np.datetime64 | datetime` so either form validates.
+- [#71](https://github.com/p2p-ld/numpydantic/pulls/71) - 
+  Support for serializing/roundtripping {class}`datetime.datetime` objects
+
 #### 1.9.0 - 26-06-05
 
+**Breaking**
+
+- Drop numpy<2.0 support - it's been two years. numpy 1 doesn't support typing with shapes and dtypes! 
 
 **Added**
 Mypy type checking has arrived! See the full details in the [Typechecker Integration](typecheckers) page.
