@@ -26,7 +26,6 @@ except ImportError:  # pragma: no cover
     storage = None
     Pickle = None
     VLenUTF8 = None
-    
 
 
 @dataclass
