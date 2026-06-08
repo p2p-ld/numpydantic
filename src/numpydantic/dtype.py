@@ -18,6 +18,7 @@ see :mod:`numpydantic.validation.dtype`
 """
 
 import sys
+from datetime import datetime
 
 if sys.version_info.minor >= 10:
     from typing import TypeAlias
@@ -104,6 +105,8 @@ Bytes = np.bytes_
 Str = np.str_
 String = np.str_
 Unicode = np.str_
+
+Datetime: TypeAlias = datetime | np.datetime64
 
 Number = tuple(
     [

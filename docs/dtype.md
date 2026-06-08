@@ -113,7 +113,12 @@ Numpydantic treats `float` and `int` as *any float* or *any integer*[^icanchange
 since it is the parsimonious way to express "any float/integer" 
 when thinking across, rather than within a single array library,
 and is common need in data standards.
-`numpy.int64` and `float64` already have specific dtypes! they are them!
+This is true for any python -> numpy mapping:
+the python type is considered generic across its numpy representations,
+(e.g. {class}`~datetime.datetime` as an annotation validates against both 
+{class}`~datetime.datetime` and {class}`~numpy.datetime64`).
+
+{class}`numpy.int64` and {class}`numpy.float64` already have specific dtypes! they are them!
 
 ```{code-cell}
 print(

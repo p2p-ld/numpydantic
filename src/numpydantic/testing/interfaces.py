@@ -1,9 +1,12 @@
+import contextlib
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
 import dask.array as da
 import h5py
+import numcodecs
 import numpy as np
 import zarr
 from pydantic import BaseModel
@@ -19,6 +22,13 @@ from numpydantic.interface import (
 )
 from numpydantic.testing.helpers import InterfaceCase
 from numpydantic.types import DtypeType, NDArrayType
+
+if sys.version_info < (3, 11):
+    from datetime import timezone
+
+    UTC = timezone.utc
+else:
+    from datetime import UTC
 
 
 class NumpyCase(InterfaceCase):
@@ -38,6 +48,10 @@ class NumpyCase(InterfaceCase):
             return np.array(array, dtype=dtype)
         elif issubclass(dtype, BaseModel):
             return np.full(shape=shape, fill_value=dtype(x=1))
+        elif dtype is datetime:
+            return np.full(shape=shape, fill_value=datetime.now(UTC))
+        elif dtype is np.datetime64:
+            return np.full(shape=shape, fill_value=np.datetime64("now", "ms"))
         elif len(shape) == 0:
             return dtype()
         else:
@@ -81,6 +95,10 @@ class HDF5Case(_HDF5MetaCase):
         elif dtype is datetime:
             data = np.empty(shape, dtype="S32")
             data.fill(datetime.now(timezone.utc).isoformat().encode("utf-8"))
+        elif dtype is np.datetime64:
+            dtype = np.dtype("M8[ms]")
+            data = np.full(shape, dtype=dtype, fill_value=np.datetime64("now", "ms"))
+            data = data.astype(h5py.opaque_dtype(data.dtype))
         else:
             data = generator.random(shape).astype(dtype)
 
@@ -128,6 +146,13 @@ class HDF5CompoundCase(_HDF5MetaCase):
             _ = h5f.create_dataset(array_path, data=data)
         return h5path
 
+    @classmethod
+    def skip(cls, shape: tuple[int, ...], dtype: DtypeType) -> bool:
+        if dtype is np.datetime64:
+            # can't store opaque objects in compound arrays
+            return True
+        return super().skip(shape, dtype)
+
 
 class DaskCase(InterfaceCase):
     """In-memory dask array"""
@@ -146,6 +171,8 @@ class DaskCase(InterfaceCase):
             return da.array(array, dtype=dtype)
         if issubclass(dtype, BaseModel):
             return da.full(shape=shape, fill_value=dtype(x=1), chunks=-1)
+        elif dtype is datetime:
+            return da.full(shape=shape, fill_value=datetime.now(UTC), chunks=-1)
         else:
             return da.zeros(shape=shape, dtype=dtype, chunks=10)
 
@@ -171,8 +198,18 @@ class ZarrCase(_ZarrMetaCase):
         path: Path | None = None,
         array: NDArrayType | None = None,
     ) -> zarr.Array | None:
+        if issubclass(dtype, np.datetime64):
+            dtype = np.dtype("M8[ns]")
         if array is not None:
             return zarr.array(array, dtype=dtype, chunks=-1)
+        elif dtype is datetime:
+            z = zarr.empty(
+                shape=shape, dtype=object, object_codec=numcodecs.pickles.Pickle()
+            )
+            # e.g. from zero-shaped arrays
+            with contextlib.suppress(IndexError):
+                z[:] = datetime.now(UTC)
+            return z
         else:
             return zarr.zeros(shape=shape, dtype=dtype)
 
@@ -188,9 +225,22 @@ class ZarrDirCase(_ZarrMetaCase):
         path: Path | None = None,
         array: NDArrayType | None = None,
     ) -> zarr.Array | None:
+        if issubclass(dtype, np.datetime64):
+            dtype = np.dtype("M8[ns]")
         store = zarr.DirectoryStore(str(path / "array.zarr"))
         if array is not None:
             return zarr.array(array, dtype=dtype, store=store, chunks=-1)
+        elif dtype is datetime:
+            z = zarr.empty(
+                shape=shape,
+                dtype=object,
+                store=store,
+                object_codec=numcodecs.pickles.Pickle(),
+            )
+            # e.g. from zero-shaped arrays
+            with contextlib.suppress(IndexError):
+                z[:] = datetime.now(UTC)
+            return z
         else:
             return zarr.zeros(shape=shape, dtype=dtype, store=store)
 
@@ -206,9 +256,22 @@ class ZarrZipCase(_ZarrMetaCase):
         path: Path | None = None,
         array: NDArrayType | None = None,
     ) -> zarr.Array | None:
+        if issubclass(dtype, np.datetime64):
+            dtype = np.dtype("M8[ns]")
         store = zarr.ZipStore(str(path / "array.zarr"), mode="w")
         if array is not None:
             return zarr.array(array, dtype=dtype, store=store, chunks=-1)
+        elif dtype is datetime:
+            z = zarr.empty(
+                shape=shape,
+                dtype=object,
+                store=store,
+                object_codec=numcodecs.pickles.Pickle(),
+            )
+            # e.g. from zero-shaped arrays
+            with contextlib.suppress(IndexError):
+                z[:] = datetime.now(UTC)
+            return z
         else:
             return zarr.zeros(shape=shape, dtype=dtype, store=store)
 
@@ -224,11 +287,24 @@ class ZarrNestedCase(_ZarrMetaCase):
         path: Path | None = None,
         array: NDArrayType | None = None,
     ) -> ZarrArrayPath:
+        if issubclass(dtype, np.datetime64):
+            dtype = np.dtype("M8[ns]")
         file = str(path / "nested.zarr")
         root = zarr.open(file, mode="w")
         subpath = "a/b/c"
         if array is not None:
             _ = root.array(subpath, array, dtype=dtype)
+        elif dtype is datetime:
+            z = root.empty(
+                subpath,
+                shape=shape,
+                dtype=object,
+                object_codec=numcodecs.pickles.Pickle(),
+            )
+            # e.g. from zero-shaped arrays
+            with contextlib.suppress(IndexError):
+                z[:] = datetime.now(UTC)
+            return z
         else:
             _ = root.zeros(subpath, shape=shape, dtype=dtype)
         return ZarrArrayPath(file=file, path=subpath)

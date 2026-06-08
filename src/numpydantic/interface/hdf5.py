@@ -43,7 +43,7 @@ import sys
 from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, NamedTuple, TypeVar
+from typing import Any, NamedTuple, TypeVar, get_args
 
 import numpy as np
 from pydantic import SerializationInfo
@@ -64,6 +64,19 @@ else:
 H5Arraylike: TypeAlias = tuple[Path | str, str]
 
 T = TypeVar("T")
+
+
+def _targets_datetime64(annotation_dtype: Any) -> bool:
+    """
+    Whether an annotation dtype is ``np.datetime64`` or a union that includes it.
+
+    ``datetime`` annotations map to ``np.datetime64 | datetime`` (see
+    :data:`numpydantic.maps.python_to_nptyping`), so the hdf5 datetime handling
+    has to match the bare numpy type and the union alike.
+    """
+    return annotation_dtype is np.datetime64 or np.datetime64 in get_args(
+        annotation_dtype
+    )
 
 
 class H5ArrayPath(NamedTuple):
@@ -190,14 +203,14 @@ class H5Proxy(Proxy):
                     try:
                         # single string
                         val = obj[item].decode(encoding.encoding)
-                        if self._annotation_dtype is np.datetime64:
+                        if _targets_datetime64(self._annotation_dtype):
                             return np.datetime64(val)
                         else:
                             return val
                     except AttributeError:
                         # numpy array of bytes
                         val = np.char.decode(obj[item], encoding=encoding.encoding)
-                        if self._annotation_dtype is np.datetime64:
+                        if _targets_datetime64(self._annotation_dtype):
                             return val.astype(np.datetime64)
                         else:
                             return val
@@ -209,7 +222,7 @@ class H5Proxy(Proxy):
                     obj = obj.asstr()
 
             val = obj[item]
-            if self._annotation_dtype is np.datetime64:
+            if _targets_datetime64(self._annotation_dtype):
                 if isinstance(val, str):
                     return np.datetime64(val)
                 else:
@@ -271,7 +284,7 @@ class H5Proxy(Proxy):
         """
         Convert a datetime into a bytestring
         """
-        if self._annotation_dtype is np.datetime64:
+        if _targets_datetime64(self._annotation_dtype):
             if not isinstance(v, Iterable):
                 v = [v]
             v = np.array(v).astype("S32")
@@ -384,7 +397,9 @@ class H5Interface(Interface):
             except (IndexError, ValueError):
                 # if the dataset is empty, we can't tell if something is a datetime
                 # or not, so we just tell the validation method what it wants to hear
-                if self.dtype in (np.datetime64, str):
+                if _targets_datetime64(self.dtype):
+                    return np.datetime64
+                elif self.dtype is str:
                     return self.dtype
                 else:
                     return str

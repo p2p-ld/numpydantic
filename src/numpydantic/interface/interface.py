@@ -2,9 +2,13 @@
 Base Interface metaclass
 """
 
+import builtins
+import importlib
 import inspect
+import sys
 import warnings
 from abc import ABC, abstractmethod
+from datetime import datetime
 from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, version
 from operator import attrgetter
@@ -158,6 +162,38 @@ class JsonDict(BaseModel):
                     stacklevel=1,
                 )
         return value
+
+    @staticmethod
+    def resolve_python_identifier(ref: str) -> Any:
+        """
+        Given some fully-qualified package.subpackage.Class identifier,
+        return the referenced object, importing if needed.
+        """
+        if "." not in ref:
+            return getattr(builtins, ref)
+        else:
+            module_name, obj = ref.rsplit(".", 1)
+            module = sys.modules.get(module_name, importlib.import_module(module_name))
+
+            return getattr(module, obj)
+
+    def cast_objects(self, array: T, object_cls_name: str) -> T:
+        """
+        Recast objects in object arrays to the type they were before serialization
+        """
+        if object_cls_name == "datetime.datetime":
+            # special case: must use constructor method
+            array = np.vectorize(lambda x: datetime.fromisoformat(x))(array)
+        else:
+            object_cls = self.resolve_python_identifier(object_cls_name)
+            if isinstance(object_cls, type) and issubclass(object_cls, BaseModel):
+                # mild code duplication but we want both -
+                # convert back to proper object type when deserializing from JSON,
+                # and also coerce dicts to objects when given on object instantiation
+                array = np.vectorize(lambda x: object_cls(**x))(array)
+            else:
+                array = np.vectorize(lambda x: object_cls(x))(array)
+        return array
 
 
 class MarkedJson(BaseModel):

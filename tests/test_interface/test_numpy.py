@@ -4,7 +4,7 @@ from typing import Any
 
 import numpy as np
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from numpydantic import NDArray, Shape
 from numpydantic.testing.cases import NumpyCase
@@ -45,6 +45,30 @@ def test_numpy_datetime64():
         array: annotation
 
     _ = MyModel(array=arr)
+
+
+def test_numpy_python_datetime():
+    """
+    A ``datetime`` annotation accepts both a numpy ``datetime64`` array and an
+    object array of python ``datetime`` objects, since ``datetime`` maps to
+    ``np.datetime64 | datetime``. See #46.
+    """
+    annotation = NDArray[Shape["*"], datetime]
+
+    class MyModel(BaseModel):
+        array: annotation
+
+    # an object array of python datetimes
+    _ = MyModel(
+        array=np.array([datetime(2025, 2, 25), datetime(2025, 2, 26)], dtype=object)
+    )
+
+    # a numpy datetime64 array
+    _ = MyModel(array=np.array([np.datetime64(datetime.now())], dtype=np.datetime64))
+
+    # a non-datetime object array must still be rejected
+    with pytest.raises(ValidationError):
+        MyModel(array=np.array([1, 2, 3], dtype=object))
 
 
 def test_numpy_coercion(model_blank):
