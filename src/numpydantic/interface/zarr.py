@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-import numcodecs
 import numpy as np
 from pydantic import SerializationInfo
 
@@ -18,14 +17,16 @@ from numpydantic.types import DtypeType
 
 try:
     import zarr
-    from numcodecs import VLenUTF8
+    from numcodecs import Pickle, VLenUTF8
     from zarr.core import Array as ZarrArray
     from zarr.storage import StoreLike
 except ImportError:  # pragma: no cover
     ZarrArray = None
     StoreLike = None
     storage = None
+    Pickle = None
     VLenUTF8 = None
+    
 
 
 @dataclass
@@ -94,7 +95,7 @@ class ZarrJsonDict(JsonDict):
                 # FIXME: infer codec from roundtrip info.
                 # Zarr encodes object codecs as strings, hard without eval'ing a string
                 # Just try pickle and bail - we need to update to zarr 3 anyway.
-                array = zarr.array(value, dtype=dtype, object_codec=numcodecs.Pickle())
+                array = zarr.array(value, dtype=dtype, object_codec=Pickle())
         return array
 
 
