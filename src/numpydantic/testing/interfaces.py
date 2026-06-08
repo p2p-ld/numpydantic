@@ -1,5 +1,6 @@
 import contextlib
-from datetime import UTC, datetime, timezone
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
@@ -21,6 +22,13 @@ from numpydantic.interface import (
 )
 from numpydantic.testing.helpers import InterfaceCase
 from numpydantic.types import DtypeType, NDArrayType
+
+if sys.version_info < (3, 11):
+    from datetime import timezone
+
+    UTC = timezone.utc
+else:
+    from datetime import UTC
 
 
 class NumpyCase(InterfaceCase):
