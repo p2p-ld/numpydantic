@@ -39,6 +39,15 @@ def test_hdf5_shape(shape_cases, hdf5_cases):
 
 @pytest.mark.dtype
 def test_hdf5_dtype(dtype_cases, hdf5_cases):
+    if (
+        dtype_cases.dtype is datetime
+        and dtype_cases.annotation_dtype is np.datetime64
+        and not dtype_cases.passes
+    ):
+        pytest.xfail(
+            "We construct datetimes as strings in the testing helpers,"
+            "spuriously passes dtype validation"
+        )
     dtype_cases.interface = hdf5_cases
     dtype_cases.validate_case()
 
