@@ -64,8 +64,6 @@ python_to_nptyping = {
     int: dt.Int,
     bool: dt.Bool,
     complex: dt.Complex,
-    # A ``datetime`` annotation accepts both a numpy ``datetime64`` array and an
-    # object array of python ``datetime`` objects (#46).
-    datetime: np.datetime64 | datetime,
+    datetime: dt.Datetime,
 }
 """Map from python types to nptyping types"""
