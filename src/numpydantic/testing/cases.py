@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, TypeAlias
 
 import numpy as np
@@ -216,6 +217,34 @@ DTYPE_CASES = [
         passes=False,
         id="union-type-str",
         marks={"union"},
+    ),
+    ValidationCase(
+        annotation_dtype=datetime,
+        dtype=datetime,
+        passes=True,
+        id="datetime-datetime",
+        marks={"datetime"},
+    ),
+    ValidationCase(
+        annotation_dtype=datetime,
+        dtype=np.datetime64,
+        passes=True,
+        id="datetime-datetime64",
+        marks={"datetime"},
+    ),
+    ValidationCase(
+        annotation_dtype=np.datetime64,
+        dtype=datetime,
+        passes=False,
+        id="datetime64-datetime",
+        marks={"datetime"},
+    ),
+    ValidationCase(
+        annotation_dtype=np.datetime64,
+        dtype=np.datetime64,
+        passes=True,
+        id="datetime64-datetime64",
+        marks={"datetime"},
     ),
 ]
 """
