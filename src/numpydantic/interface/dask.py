@@ -2,6 +2,7 @@
 Interface for Dask arrays
 """
 
+import contextlib
 from collections.abc import Iterable
 from typing import Any, Literal
 
@@ -37,10 +38,14 @@ class DaskJsonDict(JsonDict):
     dtype: str
     shape: tuple[int, ...] | None = None
     value: list
+    object_cls: str | None = None
+    """fully qualified python identifier for object type, if object-typed array"""
 
     def to_array_input(self) -> DaskArray:
         """Construct a dask array"""
         np_array = np.array(self.value, dtype=self.dtype)
+        if self.dtype == "object" and self.object_cls is not None:
+            np_array = self.cast_objects(np_array, self.object_cls)
         if self.shape is not None and np_array.shape != self.shape:
             np_array = self.reshape_input(np_array, self.shape)
         array = from_array(
@@ -160,6 +165,14 @@ class DaskInterface(Interface):
         if not isinstance(as_json, list):
             as_json = [as_json]
         if info.round_trip:
+            # store object dtype
+            dtype = str(array.dtype)
+            object_cls = None
+            if dtype == "object":
+                with contextlib.suppress(AttributeError, IndexError):
+                    obj = array.ravel()[0].compute().__class__
+                    object_cls = f"{obj.__module__}.{obj.__name__}"
+
             as_json = DaskJsonDict(
                 type=cls.name,
                 value=as_json,
@@ -167,5 +180,6 @@ class DaskInterface(Interface):
                 chunks=array.chunks,
                 dtype=str(np_array.dtype),
                 shape=array.shape,
+                object_cls=object_cls,
             )
         return as_json

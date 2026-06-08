@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+import numcodecs
 import numpy as np
 from pydantic import SerializationInfo
 
@@ -66,6 +67,7 @@ class ZarrJsonDict(JsonDict):
     file: str | None = None
     path: str | None = None
     dtype: str | None = None
+    object_cls: str | None = None
     value: list | None = None
 
     def to_array_input(self) -> ZarrArray | ZarrArrayPath:
@@ -77,7 +79,22 @@ class ZarrJsonDict(JsonDict):
             array = ZarrArrayPath(file=self.file, path=self.path)
         else:
             dtype = np.str_ if self.dtype == "str" else self.dtype
-            array = zarr.array(self.value, dtype=dtype)
+            if self.dtype == "object" and self.object_cls is not None:
+                try:
+                    value = self.cast_objects(np.array(self.value), self.object_cls)
+                except (TypeError, ValueError):
+                    # pickled objects, deserialize below.
+                    value = self.value
+            else:
+                value = self.value
+
+            try:
+                array = zarr.array(value, dtype=dtype)
+            except ValueError:
+                # FIXME: infer codec from roundtrip info.
+                # Zarr encodes object codecs as strings, hard without eval'ing a string
+                # Just try pickle and bail - we need to update to zarr 3 anyway.
+                array = zarr.array(value, dtype=dtype, object_codec=numcodecs.Pickle())
         return array
 
 
@@ -221,6 +238,7 @@ class ZarrInterface(Interface):
 
             as_json = {"type": cls.name}
             as_json["dtype"] = array.dtype.name
+            as_json["object_cls"] = None
             if hasattr(array.store, "dir_path"):
                 is_file = True
                 as_json["file"] = array.store.dir_path()
@@ -230,6 +248,10 @@ class ZarrInterface(Interface):
 
             if dump_array or not is_file:
                 as_json["value"] = array[:].tolist()
+                if as_json["dtype"] == "object":
+                    with contextlib.suppress(AttributeError, IndexError):
+                        obj = np.array(array).ravel()[0].__class__
+                        as_json["object_cls"] = f"{obj.__module__}.{obj.__name__}"
 
             as_json = ZarrJsonDict(**as_json)
         else:

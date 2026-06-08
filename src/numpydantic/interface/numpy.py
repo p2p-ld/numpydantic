@@ -2,6 +2,7 @@
 Interface to numpy arrays
 """
 
+import contextlib
 from typing import Any, Literal
 
 from pydantic import BaseModel, SerializationInfo
@@ -31,12 +32,19 @@ class NumpyJsonDict(JsonDict):
     value: list
     # allow shape to be None for backwards compatibility.
     shape: tuple[int, ...] | None = None
+    # store absolute python identifier for objects
+    object_cls: str | None = None
 
     def to_array_input(self) -> ndarray:
         """
         Construct a numpy array
         """
         array = np.array(self.value, dtype=self.dtype)
+
+        # recast to object, if relevant
+        if self.dtype == "object" and self.object_cls is not None:
+            array = self.cast_objects(array, self.object_cls)
+
         if self.shape is not None and array.shape != self.shape:
             array = self.reshape_input(array, self.shape)
         return array
@@ -117,6 +125,11 @@ class NumpyInterface(Interface):
             array = np.array(array)
 
         try:
+            # try to convert a dict to a basemodel, if relevant
+            # this is the *only* dtype coercion that we should attempt to do,
+            # because pydantic treats dicts as equivalent to models in inputs.
+            # other coercion when e.g. deserializing from JSON should go
+            # in the JSONDict object's deserialization methods.
             if (
                 issubclass(self.dtype, BaseModel)
                 and len(array) > 0
@@ -146,10 +159,19 @@ class NumpyInterface(Interface):
         json_array = [array.tolist()] if array.ndim == 0 else array.tolist()
 
         if info.round_trip:
+            # store object dtype
+            dtype = str(array.dtype)
+            object_cls = None
+            if dtype == "object":
+                with contextlib.suppress(AttributeError, IndexError):
+                    obj = array.ravel()[0].__class__
+                    object_cls = f"{obj.__module__}.{obj.__name__}"
+
             json_array = NumpyJsonDict(
                 type=cls.name,
-                dtype=str(array.dtype),
+                dtype=dtype,
                 value=json_array,
                 shape=array.shape,
+                object_cls=object_cls,
             )
         return json_array
