@@ -2,13 +2,20 @@
 Base Interface metaclass
 """
 
+import builtins
+import importlib
 import inspect
+import sys
 import warnings
 from abc import ABC, abstractmethod
+from datetime import datetime
 from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, version
 from operator import attrgetter
-from typing import Any, Generic, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, Union
+
+if TYPE_CHECKING:
+    from numpydantic.interface.typing import InterfaceTyping
 
 import numpy as np
 from pydantic import BaseModel, SerializationInfo, ValidationError
@@ -156,6 +163,38 @@ class JsonDict(BaseModel):
                 )
         return value
 
+    @staticmethod
+    def resolve_python_identifier(ref: str) -> Any:
+        """
+        Given some fully-qualified package.subpackage.Class identifier,
+        return the referenced object, importing if needed.
+        """
+        if "." not in ref:
+            return getattr(builtins, ref)
+        else:
+            module_name, obj = ref.rsplit(".", 1)
+            module = sys.modules.get(module_name, importlib.import_module(module_name))
+
+            return getattr(module, obj)
+
+    def cast_objects(self, array: T, object_cls_name: str) -> T:
+        """
+        Recast objects in object arrays to the type they were before serialization
+        """
+        if object_cls_name == "datetime.datetime":
+            # special case: must use constructor method
+            array = np.vectorize(lambda x: datetime.fromisoformat(x))(array)
+        else:
+            object_cls = self.resolve_python_identifier(object_cls_name)
+            if isinstance(object_cls, type) and issubclass(object_cls, BaseModel):
+                # mild code duplication but we want both -
+                # convert back to proper object type when deserializing from JSON,
+                # and also coerce dicts to objects when given on object instantiation
+                array = np.vectorize(lambda x: object_cls(**x))(array)
+            else:
+                array = np.vectorize(lambda x: object_cls(x))(array)
+        return array
+
 
 class MarkedJson(BaseModel):
     """
@@ -192,6 +231,12 @@ class Interface(ABC, Generic[T]):
     input_types: tuple[Any, ...]
     return_type: type[T]
     priority: int = 0
+    typing: ClassVar[type["InterfaceTyping"] | None] = None
+    """
+    Optional static-typing companion class used by the mypy plugin and
+    the mypy test generator. ``None`` means this interface does not opt
+    into static constructor inference.
+    """
 
     def __init__(self, shape: ShapeType = Any, dtype: DtypeType = Any) -> None:
         self.shape = shape
@@ -231,12 +276,16 @@ class Interface(ABC, Generic[T]):
         Implementing an interface subclass largely consists of overriding these methods
         as needed.
 
+        If validation fails, rather than eg. returning ``False``, exceptions will
+        be raised (to halt the rest of the pydantic validation process).
+        When using interfaces outside of pydantic, you must catch both
+        :class:`.DtypeError` and :class:`.ShapeError` (both of which are children
+        of :class:`.InterfaceError` )
+
         Raises:
-            If validation fails, rather than eg. returning ``False``, exceptions will
-            be raised (to halt the rest of the pydantic validation process).
-            When using interfaces outside of pydantic, you must catch both
-            :class:`.DtypeError` and :class:`.ShapeError` (both of which are children
-            of :class:`.InterfaceError` )
+            :class:`.DtypeError`: Dtype of data doesn't match specification
+            :class:`.ShapeError`: Shape of data doesn't match specification
+
         """
         array = self.deserialize(array)
 
@@ -407,8 +456,8 @@ class Interface(ABC, Generic[T]):
     @abstractmethod
     def to_json(cls, array: type[T], info: SerializationInfo) -> list | JsonDict:
         """
-        Convert an array of :attr:`.return_type` to a JSON-compatible format using
-        base python types
+        Convert an array of :attr:`.Interface.return_type` to a JSON-compatible format
+        using base python types
         """
 
     @classmethod

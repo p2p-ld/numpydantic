@@ -1,4 +1,5 @@
-import sys
+from datetime import datetime
+from typing import Any, TypeAlias
 
 import numpy as np
 from pydantic import BaseModel
@@ -16,15 +17,6 @@ from numpydantic.testing.interfaces import (
     ZarrNestedCase,
     ZarrZipCase,
 )
-
-if sys.version_info.minor >= 10:
-    from typing import TypeAlias
-
-    YES_PIPE = True
-else:
-    from typing import TypeAlias
-
-    YES_PIPE = False
 
 
 class BasicModel(BaseModel):
@@ -226,54 +218,38 @@ DTYPE_CASES = [
         id="union-type-str",
         marks={"union"},
     ),
+    ValidationCase(
+        annotation_dtype=datetime,
+        dtype=datetime,
+        passes=True,
+        id="datetime-datetime",
+        marks={"datetime"},
+    ),
+    ValidationCase(
+        annotation_dtype=datetime,
+        dtype=np.datetime64,
+        passes=True,
+        id="datetime-datetime64",
+        marks={"datetime"},
+    ),
+    ValidationCase(
+        annotation_dtype=np.datetime64,
+        dtype=datetime,
+        passes=False,
+        id="datetime64-datetime",
+        marks={"datetime"},
+    ),
+    ValidationCase(
+        annotation_dtype=np.datetime64,
+        dtype=np.datetime64,
+        passes=True,
+        id="datetime64-datetime64",
+        marks={"datetime"},
+    ),
 ]
 """
 Base Dtype cases
 """
-
-
-if YES_PIPE:
-    UNION_PIPE: TypeAlias = np.uint32 | np.float32
-
-    DTYPE_CASES.extend(
-        [
-            ValidationCase(
-                annotation_dtype=UNION_PIPE,
-                dtype=np.uint32,
-                passes=True,
-                id="union-pipe-uint32",
-                marks={"union", "pipe_union"},
-            ),
-            ValidationCase(
-                annotation_dtype=UNION_PIPE,
-                dtype=np.float32,
-                passes=True,
-                id="union-pipe-float32",
-                marks={"union", "pipe_union"},
-            ),
-            ValidationCase(
-                annotation_dtype=UNION_PIPE,
-                dtype=np.uint64,
-                passes=False,
-                id="union-pipe-uint64",
-                marks={"union", "pipe_union"},
-            ),
-            ValidationCase(
-                annotation_dtype=UNION_PIPE,
-                dtype=np.float64,
-                passes=False,
-                id="union-pipe-float64",
-                marks={"union", "pipe_union"},
-            ),
-            ValidationCase(
-                annotation_dtype=UNION_PIPE,
-                dtype=str,
-                passes=False,
-                id="union-pipe-str",
-                marks={"union", "pipe_union"},
-            ),
-        ]
-    )
 
 INTERFACE_CASES = [
     ValidationCase(interface=NumpyCase, id="numpy"),
@@ -325,3 +301,133 @@ Merged product of all cases, but only those that pass
 """
 
 ZERO_LENGTH_CASES_PASSING = [c for c in ALL_CASES_PASSING if "zero-length" in c.id]
+
+
+# ---------------------------------------------------------------------------
+# Mypy cases
+# ---------------------------------------------------------------------------
+#
+# Slight repetition, but more focused than the above cases -
+# we only want to check the general typing forms, rather than be exhaustive about
+# all combinations of shapes and dtypes, as we do with actual runtime tests.
+
+MYPY_SHAPE_CASES = [
+    ValidationCase(
+        id="mypy-literal", annotation_shape=(3, 3), shape=(3, 3), passes=True
+    ),
+    ValidationCase(
+        id="mypy-literal-badshape", annotation_shape=(3, 3), shape=(2, 4), passes=False
+    ),
+    ValidationCase(
+        id="mypy-literal-badcardinality",
+        annotation_shape=(3, 3),
+        shape=(3, 3, 3),
+        passes=False,
+    ),
+    ValidationCase(
+        id="mypy-wildcard", annotation_shape=(3, "*"), shape=(3, 5), passes=True
+    ),
+    ValidationCase(
+        id="mypy-wildcard-badshape",
+        annotation_shape=(3, "*"),
+        shape=(2, 5),
+        passes=False,
+    ),
+    ValidationCase(
+        id="mypy-wildcard-badcardinality",
+        annotation_shape=(3, "*"),
+        shape=(3, 3, 3),
+        passes=False,
+    ),
+    ValidationCase(
+        id="mypy-ellipsis",
+        annotation_shape=(3, 3, "..."),
+        shape=(3, 3, 3, 3),
+        passes=True,
+    ),
+    ValidationCase(
+        id="mypy-ellipsis-samecardinality",
+        annotation_shape=(3, 3, "..."),
+        shape=(3, 3),
+        passes=True,
+    ),
+    ValidationCase(
+        id="mypy-ellipsis-badshape",
+        annotation_shape=(3, 3, "..."),
+        shape=(2, 2),
+        passes=False,
+    ),
+    ValidationCase(
+        id="mypy-range",
+        annotation_shape=("2-5", "2-5", "2-*"),
+        shape=(2, 5, 10),
+        passes=True,
+    ),
+    ValidationCase(
+        id="mypy-range-badshape",
+        annotation_shape=("2-5", "2-5", "2-*"),
+        shape=(1, 6, 10),
+        passes=False,
+    ),
+    ValidationCase(
+        id="mypy-range-badwildcard",
+        annotation_shape=("2-5", "2-5", "2-*"),
+        shape=(2, 5, 1),
+        passes=False,
+    ),
+]
+
+MYPY_DTYPE_CASES = [
+    ValidationCase(
+        id="mypy-uint8", annotation_dtype=np.uint8, dtype=np.uint8, passes=True
+    ),
+    ValidationCase(
+        id="mypy-uint8-baddtype",
+        annotation_dtype=np.uint8,
+        dtype=np.float64,
+        passes=False,
+    ),
+    ValidationCase(
+        id="mypy-uint8-builtin", annotation_dtype=np.uint8, dtype=int, passes=False
+    ),
+    ValidationCase(id="mypy-builtin", annotation_dtype=float, dtype=float, passes=True),
+    ValidationCase(
+        id="mypy-builtin-float64", annotation_dtype=float, dtype=np.float64, passes=True
+    ),
+    ValidationCase(
+        id="mypy-builtin-float64", annotation_dtype=float, dtype=int, passes=False
+    ),
+    ValidationCase(id="mypy-any", annotation_dtype=Any, dtype=np.float64, passes=True),
+    ValidationCase(
+        id="mypy-union-int32",
+        annotation_dtype=np.uint32 | np.float32,
+        dtype=np.uint32,
+        passes=True,
+    ),
+    ValidationCase(
+        id="mypy-union-float32",
+        annotation_dtype=np.uint32 | np.float32,
+        dtype=np.float32,
+        passes=True,
+    ),
+    ValidationCase(
+        id="mypy-union-uint8",
+        annotation_dtype=np.uint32 | np.float32,
+        dtype=np.uint8,
+        passes=False,
+    ),
+    ValidationCase(
+        id="mypy-tuple", annotation_dtype="Integer", dtype=np.uint8, passes=True
+    ),
+    ValidationCase(
+        id="mypy-tuple-baddtype",
+        annotation_dtype="Integer",
+        dtype=np.float64,
+        passes=False,
+    ),
+]
+
+MYPY_CASES = merged_product(
+    MYPY_SHAPE_CASES + MYPY_DTYPE_CASES,
+    [c for c in INTERFACE_CASES if c.interface in (NumpyCase, DaskCase, ZarrCase)],
+)

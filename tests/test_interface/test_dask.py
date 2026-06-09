@@ -1,9 +1,13 @@
 import json
+from typing import Any
 
 import dask.array as da
 import pytest
+from pydantic import BaseModel
 
+from numpydantic import NDArray
 from numpydantic.interface import DaskInterface
+from numpydantic.testing.cases import BasicModel
 from numpydantic.testing.interfaces import DaskCase
 
 pytestmark = pytest.mark.dask
@@ -45,3 +49,14 @@ def test_dask_to_json(array_model):
     instance = model(array=array)
     jsonified = json.loads(instance.model_dump_json())
     assert jsonified["array"] == array_list
+
+
+def test_dask_model_from_dict():
+    """Basemodel objects are reconstructed from dask arrays of dicts"""
+
+    class MyModel(BaseModel):
+        array: NDArray[Any, BasicModel]
+
+    arr = da.full(shape=(2, 2), fill_value={"x": 1}, chunks=-1)
+    model = MyModel(array=arr)
+    assert isinstance(model.array.compute().ravel()[0], BasicModel)

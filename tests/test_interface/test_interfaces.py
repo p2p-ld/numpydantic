@@ -3,6 +3,8 @@ Tests that should be applied to all interfaces
 """
 
 import json
+import sys
+from datetime import datetime
 from importlib.metadata import version
 
 import dask.array as da
@@ -111,6 +113,8 @@ def test_interface_roundtrip_json(dtype_by_interface, tmp_output_dir_func):
     case = dtype_by_interface
     if "subclass" in case.id.lower():
         pytest.xfail()
+    if sys.version_info < (3, 11) and case.dtype == datetime:
+        pytest.xfail("Python 3.10 doesn't support timezones in isoformatted strings")
 
     array = case.array(path=tmp_output_dir_func)
     instance = case.model(array=array)
@@ -162,6 +166,8 @@ def test_interface_mark_roundtrip(dtype_by_interface, valid, tmp_output_dir_func
     """
     if "subclass" in dtype_by_interface.id.lower():
         pytest.xfail()
+    if sys.version_info < (3, 11) and dtype_by_interface.dtype == datetime:
+        pytest.xfail("Python 3.10 doesn't support timezones in isoformatted strings")
 
     array = dtype_by_interface.array(path=tmp_output_dir_func)
     case = dtype_by_interface.model(array=array)

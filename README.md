@@ -5,7 +5,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/p2p-ld/numpydantic/badge.svg)](https://coveralls.io/github/p2p-ld/numpydantic)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-A python package for specifying, validating, and serializing arrays with arbitrary backends in pydantic.
+A python package for specifying, validating, and serializing arrays with arbitrary backends with or without pydantic. Static typing and type checker integration for array constraints.
 
 **Problem:** 
 1) Pydantic is great for modeling data. 
@@ -62,6 +62,35 @@ model = MyModel(array=('data.zarr', '/nested/dataset'))
 model = MyModel(array="data.mp4")
 ```
 
+*(New in 1.9.0): *
+Use NDArray annotations and get static shape and dtype checking with our mypy plugin.
+Never forget how you oriented your arrays or how you've dtyped them again!
+
+```python
+GRAYSCALE = NDArray[Shape["* x, * y"], np.uint8]
+
+def grayscale_mask(frame: GRAYSCALE) -> GRAYSCALE:
+    # Probably something fancier than this...
+    mask = np.zeros((frame.shape[0], frame.shape[1]), np.uint8)
+    mask[frame > 5] = 1
+    return mask
+
+# not today satan!
+rgb_image = np.zeros((1920, 1080, 3), dtype=np.uint8)
+typing.reveal_type(rgb_image)
+grayscale_mask(rgb_image)
+```
+
+```python
+note: Revealed type is "numpy.ndarray[
+    tuple[Literal[1920], Literal[1080], Literal[3], fallback=int], 
+    numpy.dtype[numpy.unsignedinteger[numpy._typing._nbit_base._8Bit]]
+]"
+error: Argument 1 to "grayscale_mask" has incompatible type 
+    "ndarray[int, dtype[unsignedinteger[_8Bit]]]"; 
+    expected "ndarray[tuple[int, int], dtype[unsignedinteger[_8Bit]]]"  [arg-type]
+```
+
 `numpydantic` supports pydantic but none of its behavior is dependent on it!
 Use the `NDArray` type annotation like a regular type outside
 of pydantic -- eg. to validate an array anywhere, use `isinstance`:
@@ -95,7 +124,7 @@ array([[0, 0, 0],
 
 ## Features:
 - **Types** - Annotations (based on [npytyping](https://github.com/ramonhagenaars/nptyping))
-  for specifying arrays in pydantic models
+  for specifying arrays in pydantic models, with static type checker support!
 - **Validation** - Shape, dtype, and other array validations
 - **Interfaces** - Works with [`numpy`](https://numpydantic.readthedocs.io/en/latest/api/interface/numpy.html), 
   [`dask`](https://numpydantic.readthedocs.io/en/latest/api/interface/dask.html), 

@@ -1,3 +1,5 @@
+import types
+import typing
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import reduce
@@ -6,6 +8,7 @@ from operator import ior
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Any,
     Literal,
     Union,
 )
@@ -15,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, computed_fie
 
 from numpydantic import NDArray, Shape
 from numpydantic.dtype import Float
-from numpydantic.interface import Interface
+from numpydantic.interface import Interface, InterfaceTyping
 from numpydantic.types import DtypeType, NDArrayType
 
 if TYPE_CHECKING:
@@ -264,6 +267,96 @@ class ValidationCase(BaseModel):
         return bool(
             self.interface is not None and self.interface.skip(self.shape, self.dtype)
         )
+
+    def emit_mypy_source(self) -> str | None:
+        """
+        Full ``.py`` source for one mypy test case,
+        assigning the dtype/shape annotation to a variable annotated with the
+        annotation_dtype/annotation_shape.
+
+        Returns ``None`` when the interface has no typing class,
+        and thus has not opted-in to static typing.
+        """
+        if not self.interface.interface.typing:
+            return None
+        typer: InterfaceTyping = self.interface.interface.typing
+
+        imports = typer.emit_imports() + [
+            "from typing import Any",
+            "from numpydantic import NDArray, Shape",
+            "from numpydantic.dtype import Integer, Float",
+            "import numpy",
+        ]
+        imports = [i for i in imports if i]
+
+        rhs_dtype = _render_dtype_annotation(self.dtype)
+        constructor = typer.emit_constructor_source(self.shape, rhs_dtype)
+        rhs_shape = ",".join(str(s) for s in self.shape)
+        rhs_annotation = f'NDArray[Shape["{rhs_shape}"], {rhs_dtype}]'
+
+        if self.annotation_dtype == Float:
+            # FIXME: tuple types were a bad idea.
+            # handle the default case, we don't want to expand the tuple,
+            # but type check as it would actually be declared.
+            lhs_dtype = "Float"
+        else:
+            lhs_dtype = _render_dtype_annotation(self.annotation_dtype)
+        lhs_shape = ",".join(str(s) for s in self.annotation_shape)
+        lhs_annotation = f'NDArray[Shape["{lhs_shape}"], {lhs_dtype}]'
+        return _MYPY_TEMPLATE.format(
+            imports="\n".join(imports),
+            constructor=constructor,
+            rhs_annotation=rhs_annotation,
+            lhs_annotation=lhs_annotation,
+        )
+
+
+_MYPY_TEMPLATE = """
+{imports}
+import sys
+if sys.version_info < (3, 11):
+    from typing_extensions import reveal_type
+else:
+    from typing import reveal_type
+
+def make() -> {rhs_annotation}:
+    array = {constructor}
+    reveal_type(array)
+    return array
+    
+reveal_type(make)
+
+x: {lhs_annotation} = make()
+reveal_type(x)
+"""
+
+
+def _render_dtype_annotation(a_dtype: type | str) -> str:
+    """
+    Render a dtype annotation as a source fragment.
+    """
+    if a_dtype is Any:
+        return "Any"
+
+    elif isinstance(a_dtype, str):
+        return a_dtype
+
+    elif isinstance(a_dtype, types.UnionType):
+        parts = []
+        for d in typing.get_args(a_dtype):
+            rendered = _render_dtype_annotation(d)
+            parts.append(rendered)
+        return " | ".join(parts)
+
+    elif isinstance(a_dtype, Sequence) and not isinstance(a_dtype, str):
+        parts = [_render_dtype_annotation(d) for d in a_dtype]
+        return " | ".join(parts) if len(parts) > 1 else parts[0]
+
+    else:
+        # finally, if we've got a type, render it as module.name
+        if a_dtype.__module__ == "builtins":
+            return a_dtype.__name__
+        return f"{a_dtype.__module__}.{a_dtype.__name__}"
 
 
 def merge_cases(*args: ValidationCase) -> ValidationCase:

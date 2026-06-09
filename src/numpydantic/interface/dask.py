@@ -2,6 +2,7 @@
 Interface for Dask arrays
 """
 
+import contextlib
 from collections.abc import Iterable
 from typing import Any, Literal
 
@@ -9,6 +10,7 @@ import numpy as np
 from pydantic import BaseModel, SerializationInfo
 
 from numpydantic.interface.interface import Interface, JsonDict
+from numpydantic.interface.typing import ConstructorSpec, InterfaceTyping
 from numpydantic.types import DtypeType, NDArrayType
 
 try:
@@ -36,10 +38,14 @@ class DaskJsonDict(JsonDict):
     dtype: str
     shape: tuple[int, ...] | None = None
     value: list
+    object_cls: str | None = None
+    """fully qualified python identifier for object type, if object-typed array"""
 
     def to_array_input(self) -> DaskArray:
         """Construct a dask array"""
         np_array = np.array(self.value, dtype=self.dtype)
+        if self.dtype == "object" and self.object_cls is not None:
+            np_array = self.cast_objects(np_array, self.object_cls)
         if self.shape is not None and np_array.shape != self.shape:
             np_array = self.reshape_input(np_array, self.shape)
         array = from_array(
@@ -50,15 +56,37 @@ class DaskJsonDict(JsonDict):
         return array
 
 
+class DaskTyping(InterfaceTyping):
+    """Static-typing companion for :class:`DaskInterface`."""
+
+    constructors = (
+        ConstructorSpec(fullname="dask.array.zeros"),
+        ConstructorSpec(fullname="dask.array.ones"),
+        ConstructorSpec(fullname="dask.array.empty"),
+        ConstructorSpec(fullname="dask.array.full"),
+    )
+
+    @classmethod
+    def emit_imports(cls) -> list[str]:
+        """import dask.array and numpy"""
+        return ["import dask.array", "import numpy"]
+
+    @classmethod
+    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: str) -> str | None:
+        """render a call to dask.array.zeros"""
+        return f"dask.array.zeros({tuple(shape)!r}, dtype={dtype})"
+
+
 class DaskInterface(Interface):
     """
     Interface for Dask :class:`~dask.array.core.Array`
     """
 
     name = "dask"
-    input_types = (DaskArray, dict)
+    input_types = (DaskArray,)
     return_type = DaskArray
     json_model = DaskJsonDict
+    typing = DaskTyping
 
     @classmethod
     def check(cls, array: Any) -> bool:
@@ -137,6 +165,14 @@ class DaskInterface(Interface):
         if not isinstance(as_json, list):
             as_json = [as_json]
         if info.round_trip:
+            # store object dtype
+            dtype = str(array.dtype)
+            object_cls = None
+            if dtype == "object":
+                with contextlib.suppress(AttributeError, IndexError):
+                    obj = array.ravel()[0].compute().__class__
+                    object_cls = f"{obj.__module__}.{obj.__name__}"
+
             as_json = DaskJsonDict(
                 type=cls.name,
                 value=as_json,
@@ -144,5 +180,6 @@ class DaskInterface(Interface):
                 chunks=array.chunks,
                 dtype=str(np_array.dtype),
                 shape=array.shape,
+                object_cls=object_cls,
             )
         return as_json

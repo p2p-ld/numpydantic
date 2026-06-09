@@ -12,17 +12,19 @@ import numpy as np
 from pydantic import SerializationInfo
 
 from numpydantic.interface.interface import Interface, JsonDict
+from numpydantic.interface.typing import ConstructorSpec, InterfaceTyping
 from numpydantic.types import DtypeType
 
 try:
     import zarr
-    from numcodecs import VLenUTF8
+    from numcodecs import Pickle, VLenUTF8
     from zarr.core import Array as ZarrArray
     from zarr.storage import StoreLike
 except ImportError:  # pragma: no cover
     ZarrArray = None
     StoreLike = None
     storage = None
+    Pickle = None
     VLenUTF8 = None
 
 
@@ -65,6 +67,7 @@ class ZarrJsonDict(JsonDict):
     file: str | None = None
     path: str | None = None
     dtype: str | None = None
+    object_cls: str | None = None
     value: list | None = None
 
     def to_array_input(self) -> ZarrArray | ZarrArrayPath:
@@ -76,8 +79,44 @@ class ZarrJsonDict(JsonDict):
             array = ZarrArrayPath(file=self.file, path=self.path)
         else:
             dtype = np.str_ if self.dtype == "str" else self.dtype
-            array = zarr.array(self.value, dtype=dtype)
+            if self.dtype == "object" and self.object_cls is not None:
+                try:
+                    value = self.cast_objects(np.array(self.value), self.object_cls)
+                except (TypeError, ValueError):
+                    # pickled objects, deserialize below.
+                    value = self.value
+            else:
+                value = self.value
+
+            try:
+                array = zarr.array(value, dtype=dtype)
+            except ValueError:
+                # FIXME: infer codec from roundtrip info.
+                # Zarr encodes object codecs as strings, hard without eval'ing a string
+                # Just try pickle and bail - we need to update to zarr 3 anyway.
+                array = zarr.array(value, dtype=dtype, object_codec=Pickle())
         return array
+
+
+class ZarrTyping(InterfaceTyping):
+    """Static-typing companion for :class:`ZarrInterface`."""
+
+    constructors = (
+        ConstructorSpec(fullname="zarr.creation.zeros"),
+        ConstructorSpec(fullname="zarr.creation.ones"),
+        ConstructorSpec(fullname="zarr.creation.empty"),
+        ConstructorSpec(fullname="zarr.creation.full"),
+    )
+
+    @classmethod
+    def emit_imports(cls) -> list[str]:
+        """import zarr and numpy!"""
+        return ["import zarr"]
+
+    @classmethod
+    def emit_constructor_source(cls, shape: tuple[int, ...], dtype: str) -> str | None:
+        """array constructor using :func:`zarr.zeros`"""
+        return f"zarr.zeros({tuple(shape)!r}, dtype={dtype})"
 
 
 class ZarrInterface(Interface):
@@ -86,9 +125,10 @@ class ZarrInterface(Interface):
     """
 
     name = "zarr"
-    input_types = (Path, ZarrArray, ZarrArrayPath)
+    input_types = (ZarrArray, ZarrArrayPath)
     return_type = ZarrArray
     json_model = ZarrJsonDict
+    typing = ZarrTyping
 
     @classmethod
     def enabled(cls) -> bool:
@@ -198,6 +238,7 @@ class ZarrInterface(Interface):
 
             as_json = {"type": cls.name}
             as_json["dtype"] = array.dtype.name
+            as_json["object_cls"] = None
             if hasattr(array.store, "dir_path"):
                 is_file = True
                 as_json["file"] = array.store.dir_path()
@@ -207,6 +248,10 @@ class ZarrInterface(Interface):
 
             if dump_array or not is_file:
                 as_json["value"] = array[:].tolist()
+                if as_json["dtype"] == "object":
+                    with contextlib.suppress(AttributeError, IndexError):
+                        obj = np.array(array).ravel()[0].__class__
+                        as_json["object_cls"] = f"{obj.__module__}.{obj.__name__}"
 
             as_json = ZarrJsonDict(**as_json)
         else:
