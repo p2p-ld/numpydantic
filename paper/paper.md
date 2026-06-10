@@ -229,6 +229,9 @@ With NWB backed by linkml arrays and numpydantic
 the specification becomes decoupled from the serialization format,
 allowing array backends to be freely swapped among any supported by numpydantic,
 and separating lightweight metadata from heavier raw array data.
+By decoupling schema, programmatic APIs, and serialization formats
+with LinkML as a *lingua franca,* we are working towards a true ecosystem of FAIR data [@wilkinsonFAIRGuidingPrinciples2016]
+where data standards only need to define the schema layer and get the rest for free.
 
 # Limitations & Future Directions
 
