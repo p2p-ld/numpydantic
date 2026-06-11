@@ -28,27 +28,3 @@ jobs:
           # paper.md
           path: paper/paper.pdf
           archive: false
-
-      - name: Find Comment
-        uses: peter-evans/find-comment@v4
-        id: find-comment
-        with:
-          issue-number: ${{ env.PR_NUMBER }}
-          comment-author: 'github-actions[bot]'
-          body-includes: "JOSS PDF Built"
-      - name: Update Comment
-        env:
-          ARTIFACT_URL: "${{ steps.upload-artifacts.outputs.artifact-url }}"
-          HEAD_SHA: "${{ env.HEAD_SHA }}"
-        uses: peter-evans/create-or-update-comment@v5
-        with:
-          issue-number: ${{ env.PR_NUMBER }}
-          comment-id: ${{ steps.find-comment.outputs.comment-id }}
-          edit-mode: replace
-          body: |-
-            JOSS PDF Built! View it below
-
-            | Name     | Link                    |
-            | -------- | ----------------------- |
-            | Commit   | ${{ env.HEAD_SHA }}     |
-            | Download | ${{ env.ARTIFACT_URL }} |
