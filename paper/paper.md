@@ -98,7 +98,7 @@ It can be used with or without pydantic:
 its annotations can be used in the typing layer without modifying existing runtime code.
 
 Support for multiple array frameworks is implemented as a set of [interface classes](https://numpydantic.readthedocs.io/en/latest/interfaces.html),
-where each framework overrides the methods needed to match input to an interface,
+where each interface overrides the methods needed to match input to an interface,
 extract shape and dtype,
 serialize and deserialize json,
 among other features.
@@ -115,16 +115,16 @@ from pydantic import BaseModel
 from numpydantic import NDArray, Shape
 
 class MyModel(BaseModel):
-    array: NDArray[Shape["* x, * y, 3 rgb, * t"], np.uint8]
+    array: NDArray[Shape["* t, * x, * y, 3 rgb"], np.uint8]
     
 # numpy
-MyModel(array=np.zeros((1080, 1920, 3, 100), dtype=np.uint8))
+MyModel(array=np.zeros((100, 1080, 1920, 3), dtype=np.uint8))
 # dask
-MyModel(array=dask.array.zeros((1080, 1920, 3, 100), dtype=np.uint8))
+MyModel(array=dask.array.zeros((100, 1080, 1920, 3), dtype=np.uint8))
 # hdf5
 MyModel(array=('data.h5', '/nested/dataset'))
 # zarr
-MyModel(array=zarr.zeros((1080, 1920, 3, 100), dtype=np.uint8))
+MyModel(array=zarr.zeros((100, 1080, 1920, 3), dtype=np.uint8))
 MyModel(array=('data.zarr', '/nested/dataset'))
 # video
 MyModel(array="data.mp4")
@@ -325,7 +325,7 @@ where data standards only need to define the schema layer and get the rest for f
 - Support for TypeVars that can indicate that a given axis can be any size,
   but all axes within a given scope must be the same size is important
   for many scientific applications 
-  (e.g. a timestamps array must be the same length as a video.
+  (e.g. a timestamps array must be the same length as a video).
   We are [actively working on this](https://github.com/p2p-ld/numpydantic/issues/70)
   in our mypy plugin and [upstream in mypy itself](https://github.com/python/mypy/issues/3345#issuecomment-4664544812)
 
