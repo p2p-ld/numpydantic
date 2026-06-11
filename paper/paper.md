@@ -307,7 +307,7 @@ By decoupling schema, programmatic APIs, and serialization formats
 with LinkML as a *lingua franca,* we are working towards a true ecosystem of FAIR data [@wilkinsonFAIRGuidingPrinciples2016]
 where data standards only need to define the schema layer and get the rest for free.
 
-[^lindi]: See also [LINDI](https://github.com/NeurodataWithoutBorders/lindi) [@neurodatawithoutbordersLindi2026],
+[^lindi]: See also [LINDI](https://github.com/NeurodataWithoutBorders/lindi) [@neurodatawithoutbordersLindi2024],
   an overlay for addressing streaming data needs with HTTP range requests.
 
 # Limitations & Future Directions
