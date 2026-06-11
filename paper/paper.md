@@ -19,7 +19,7 @@ bibliography: paper.bib
 Numpydantic is a minimalistic Python package that provides abstract types and a syntax for specifying constraint n-dimensional arrays.
 Its constraints can both be validated at runtime and statically using mypy.
 Rather than being bound to a single array framework,
-it is generic array specification with an extensible interface system
+numpydantic is a generic array specification with an extensible interface system
 that currently supports numpy, hdf5, zarr, and video files.
 When used with pydantic, its NDArray type provides support for composing multiple arrays into validating data models,
 including generation of detailed JSON schema,
@@ -33,7 +33,7 @@ and extends the quality of life improvements from static type analysis to the wo
 The shape and dtype of an n-dimensional array are an essential part of its definition as a type.
 Functions that can accept an array with any shape or dtype are the exception rather than the rule in scientific programming - 
 arrays are rarely formless bundles of numbers, 
-they are "video frames," "timeseries," "training and testing data," etc.
+they are "video frames," "time series," "training and testing data," etc.
 where the orientation, shape, and dtype are an intrinsic part of that identity.
 In Python this information lives only in docstrings, 
 is invisible to type checkers,
