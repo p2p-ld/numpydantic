@@ -92,6 +92,34 @@ class NDArrayMeta(
             )
         )
 
+    def __subclasscheck__(cls, subclass: Any) -> bool:
+        """
+        Override of base method to return False if the subclass is not a subclass of NDArrayMeta.
+
+        Args:
+            subclass: The subclass to check.
+
+        Returns:
+            bool: ``True`` if the subclass is a subclass of NDArrayMeta, ``False`` otherwise.
+        """
+
+        if not isinstance(
+            subclass, NDArrayMeta
+        ):  # Return False if the subclass is not a subclass of NDArrayMeta.
+            return False
+
+        # If both subclasses are NDArrayMeta, check if the __args__ are the same.
+        cls_shape, cls_dtype = cls.__args__
+        sub_shape, sub_dtype = subclass.__args__
+        shape_match = cls_shape is Any or (
+            sub_shape is not Any and issubclass(sub_shape, cls_shape)
+        )
+        dtype_match = cls_dtype is Any or (
+            sub_dtype is not Any and issubclass(sub_dtype, cls_dtype)
+        )
+
+        return shape_match and dtype_match
+
     def __str__(cls) -> str:
         shape, dtype = cls.__args__
         return (
