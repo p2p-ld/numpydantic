@@ -62,7 +62,7 @@ There are three major parts to a validation case:
 - **Array specification:** {attr}`~.ValidationCase.dtype` and {attr}`~.ValidationCase.shape`
   specify that array that will be generated to test against the annotation
 - **Interface specification:** An {class}`.InterfaceCase` that refers to
-  an {class}`.Interface`, and provides array generation and other auxilary logic.
+  an {class}`.Interface`, and provides array generation and other auxiliary logic.
 
 Typically, one specifies a dtype along with an annotation dtype or
 a shape along with an annotation shape (or implicitly against the defaults for either),
@@ -190,7 +190,7 @@ combinations of interfaces and test parameterizations that should be skipped.
 
 ## Making Fixtures
 
-Pytest fixtures are a useful way to re-use validation case products.
+Pytest fixtures are a useful way to reuse validation case products.
 To keep things tidy, you may want to use marks and ids when creating them
 so that you can run tests against specific interfaces or conditions
 with the `pytest -m mark` system.
