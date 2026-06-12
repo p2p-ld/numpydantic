@@ -157,6 +157,7 @@ markers = [
     "numpy: numpy interface",
     "video: video interface",
     "zarr: zarr interface",
+    "datetime: datetime handling",
     "union: union dtypes",
     "pipe_union: union dtypes specified with a pipe",
     "scalar: scalar values",

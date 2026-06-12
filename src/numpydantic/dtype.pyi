@@ -7,6 +7,7 @@ values so they can be used as the dtype argument of
 :class:`numpydantic.NDArray`.
 """
 
+from datetime import datetime
 from typing import TypeAlias
 
 import numpy as np
@@ -75,5 +76,7 @@ Bytes: TypeAlias = np.bytes_
 Str: TypeAlias = np.str_
 String: TypeAlias = np.str_
 Unicode: TypeAlias = np.str_
+
+Datetime: TypeAlias = datetime | np.datetime64
 
 Number: TypeAlias = Integer | Float | Complex

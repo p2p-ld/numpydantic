@@ -165,3 +165,6 @@ prof/
 __tmp__
 docs/jupyter_execute
 *.bak
+
+paper/paper.pdf
+paper/jats/
