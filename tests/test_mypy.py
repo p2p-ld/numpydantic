@@ -52,7 +52,7 @@ def all_interfaces_config(tmp_path_factory) -> Path:
     "test_file",
     [
         pytest.param(p, id=p.stem)
-        for p in sorted((DATA_DIR / "stub" / "correct").glob("*.py"))
+        for p in sorted((DATA_DIR / "general" / "correct").glob("*.py"))
     ],
 )
 def test_mypy_handwritten_correct(test_file: Path, mypy_cache_dir):
@@ -73,7 +73,7 @@ def test_mypy_handwritten_correct(test_file: Path, mypy_cache_dir):
     "test_file",
     [
         pytest.param(p, id=p.stem)
-        for p in sorted((DATA_DIR / "stub" / "correct").glob("*.py"))
+        for p in sorted((DATA_DIR / "general" / "incorrect").glob("*.py"))
     ],
 )
 def test_mypy_handwritten_incorrect(test_file: Path, mypy_cache_dir):
@@ -85,8 +85,7 @@ def test_mypy_handwritten_incorrect(test_file: Path, mypy_cache_dir):
             str(mypy_cache_dir),
         ]
     )
-    assert res[2] == 0, res[0]
-    assert "Success: no issues found in 1 source file" in res[0]
+    assert res[2] != 0, res[0] + res[1]
     assert res[1] == ""
 
 
