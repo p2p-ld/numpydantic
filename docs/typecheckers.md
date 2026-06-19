@@ -4,6 +4,11 @@ Numpydantic does things with the python type system that are not formally suppor
 it tries to have permissive behavior by default for typecheckers,
 but provides plugins for strict static type checking.
 
+By default, for non-mypy typecheckers, 
+the {class}`.NDArray` class will appear to be a {class}`numpy.ndarray` . 
+To support non-mypy arrays, you will have to use the {func}`.NDArraySchema` function
+as an annotated type, like `Annotated[zarr.Array, NDArraySchema()]`
+
 (mypy-plugin)=
 ## Mypy Plugin
 
@@ -350,3 +355,16 @@ E.g. the following should fail, but it does not:
 ```  
 
 Pull requests welcome!
+
+## pyright
+
+Pyright can only use the standard types and the type stubs by design.
+
+You will have to provide all the type annotations yourself,
+and constructs that can't be expressed in the python type system liks ranges can't be used.
+
+In general, you have to specify types using tuples and literals, like:
+
+```python
+def some_function(array: NDArray[tuple[Literal[3], Literal[3]], np.uint8]) -> None: ...
+```
