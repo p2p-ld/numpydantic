@@ -22,6 +22,7 @@ from typing import (
     Protocol,
     TypeVar,
     _ProtocolMeta,
+    get_args,
     get_origin,
     runtime_checkable,
 )
@@ -77,6 +78,8 @@ def _get_shape(dtype_candidate: Any) -> Shape:
     elif _is_literal_like(dtype_candidate):
         shape_expression = dtype_candidate.__args__[0]
         shape = Shape[shape_expression]
+    elif get_origin(dtype_candidate) is tuple:
+        shape = Shape(*get_args(dtype_candidate))
     else:
         raise InvalidArgumentsError(
             f"Unexpected argument '{dtype_candidate}', expecting"
