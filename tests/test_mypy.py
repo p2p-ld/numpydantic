@@ -28,14 +28,6 @@ TYPED_INTERFACES: list[str] = [
 ]
 
 
-@pytest.fixture
-def blank_config(tmp_path) -> Path:
-    """Nothing to see here, just a blank file without the plugins configured"""
-    config_path = tmp_path / "pyproject.toml"
-    config_path.write_text("[tool.mypy]")
-    return config_path
-
-
 @pytest.fixture(scope="module")
 def all_interfaces_config(tmp_path_factory) -> Path:
     """Nothing to see here, just a blank file without the plugins configured"""
@@ -56,9 +48,25 @@ def all_interfaces_config(tmp_path_factory) -> Path:
     return config_path
 
 
-@pytest.fixture(scope="module")
-def noplugin_cachedir(tmp_path_factory) -> Path:
-    return tmp_path_factory.mktemp("mypy-noplugin")
+@pytest.mark.parametrize(
+    "test_file",
+    [
+        pytest.param(p, id=p.stem)
+        for p in sorted((DATA_DIR / "stub" / "correct").glob("*.py"))
+    ],
+)
+def test_mypy_handwritten_correct(test_file: Path, mypy_cache_dir):
+    """The mypy examples should pass static type checking with only the stub"""
+    res = mypy.api.run(
+        [
+            str(test_file),
+            "--cache-dir",
+            str(mypy_cache_dir),
+        ]
+    )
+    assert res[2] == 0, res[0]
+    assert "Success: no issues found in 1 source file" in res[0]
+    assert res[1] == ""
 
 
 @pytest.mark.parametrize(
@@ -68,15 +76,13 @@ def noplugin_cachedir(tmp_path_factory) -> Path:
         for p in sorted((DATA_DIR / "stub" / "correct").glob("*.py"))
     ],
 )
-def test_mypy_noplugin(test_file: Path, blank_config, noplugin_cachedir):
+def test_mypy_handwritten_incorrect(test_file: Path, mypy_cache_dir):
     """The mypy examples should pass static type checking with only the stub"""
     res = mypy.api.run(
         [
-            "--config-file",
-            str(blank_config),
             str(test_file),
             "--cache-dir",
-            str(noplugin_cachedir),
+            str(mypy_cache_dir),
         ]
     )
     assert res[2] == 0, res[0]
