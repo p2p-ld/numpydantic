@@ -2,6 +2,28 @@
 
 ## Upcoming
 
+**Fix**
+
+- [`#58`](https://github.com/p2p-ld/numpydantic/pull/58) -
+  The mypy plugin would incorrectly set the ndarray type on the pydantic model *body*
+  rather than in the `__init__` method, causing invalid attribute access errors.
+  The type is now correctly set as `ndarray` on the class body,
+  and as a union of interface input types in the `__init__` method
+- [`#58`](https://github.com/p2p-ld/numpydantic/pull/58) - 
+  Numpy constructor inference for numpy>=2.5 was broken, as the fully qualified names of the constructors
+  gained annotations in `numpy._core.multiarray`. These have been restored.
+
+**Changed**
+- [`#58`](https://github.com/p2p-ld/numpydantic/pull/58) -
+  The `NDArray` class now typechecks as a numpy array for non-mypy static type checkers, greatly improving compabitility.
+
+**Removed**
+- [`#58`](https://github.com/p2p-ld/numpydantic/pull/58) -
+  The dynamically generated `ndarray.pyi` and its corresponding `meta.py` were removed,
+  as the type is now statically assigned to `np.ndarray`.
+  Extended input type checking has been fully moved to the mypy plugin.
+
+
 ## 1.*
 
 ### 1.9.*
