@@ -13,3 +13,4 @@ class MyModel(BaseModel):
 
 
 instance = MyModel(array=H5ArrayPath("/tmp/test.h5", "some/dataset"), something=2)
+instance.array.sum()

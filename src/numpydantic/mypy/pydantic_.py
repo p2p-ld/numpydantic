@@ -35,7 +35,7 @@ def _pydantic_hook(
 def _unionize_init(ctx: ClassDefContext, init: FuncDef, inputs: list[str]) -> None:
     # unionize ndarray types to accept nonstandard inputs
     input_types = None
-    for arg in init.arguments:
+    for i, arg in enumerate(init.arguments):
         if (
             not arg.type_annotation
             or not hasattr(arg.type_annotation, "type")
@@ -48,7 +48,9 @@ def _unionize_init(ctx: ClassDefContext, init: FuncDef, inputs: list[str]) -> No
                 with contextlib.suppress(AssertionError):
                     input_types.append(ctx.api.named_type(name, []))
 
-        arg.type_annotation = UnionType([arg.type_annotation, *input_types])
+        union = UnionType([arg.type_annotation, *input_types])
+        arg.type_annotation = union
+        init.type.arg_types[i] = union
 
 
 def _make_pydantic_hook(

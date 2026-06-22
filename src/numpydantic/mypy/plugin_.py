@@ -93,6 +93,7 @@ from numpydantic.vendor.nptyping.shape_expression import (
 )
 
 NDARRAY_FULLNAME: Final = "numpydantic.ndarray.NDArray"
+SHAPE_FULLNAME: Final = "numpydantic.validation.shape.Shape"
 _NUMERIC_RE = re.compile(r"^[0-9]+$")
 
 BUILTIN_TO_NUMPY = {
@@ -166,6 +167,8 @@ class NumpydanticMypyPlugin(Plugin):
         """Convert an NDArray annotation to an enriched np.ndarray annotation"""
         if fullname == NDARRAY_FULLNAME:
             return _analyze_ndarray_type
+        elif fullname == SHAPE_FULLNAME:
+            return _analyze_shape
         return None
 
     def get_function_hook(
@@ -306,6 +309,13 @@ def _analyze_ndarray_type(ctx: AnalyzeTypeContext) -> Type:
     return ndarray_type
 
 
+def _analyze_shape(ctx: AnalyzeTypeContext) -> Type:
+    parsed = _parse_shape_arg(ctx.type, ctx)
+    if parsed is None:
+        return ctx.type
+    return parsed
+
+
 def _build_ndarray_type(
     ctx: AnalyzeTypeContext | FunctionContext | MethodContext,
     shape: ProperType | None,
@@ -326,7 +336,6 @@ def _build_ndarray_type(
         dtype_instance = api.named_generic_type("numpy.dtype", [dtype])
         numpy_variant = api.named_generic_type("numpy.ndarray", [shape, dtype_instance])
     numpy_variant.type.metadata = {"numpydantic": True}
-
     return numpy_variant
 
 
@@ -360,18 +369,23 @@ def _shape_expression_from_arg(arg: Type, ctx: AnalyzeTypeContext) -> str | None
     if isinstance(arg, AnyType):
         return None
 
-    if isinstance(arg, RawExpressionType):
+    elif isinstance(arg, RawExpressionType):
         # strings, or strings inside Literal[]
         return str(arg.literal_value)
 
-    if isinstance(arg, UnboundType):
+    # elif isinstance((analyzed := ctx.api.analyze_type(arg)), LiteralType):
+    #     return str(analyzed.value)
+
+    elif isinstance(arg, UnboundType):
         if not arg.args:
             return None
 
         if len(arg.args) == 1:
             return _shape_expression_from_arg(arg.args[0], ctx)
+
+        args = [_shape_expression_from_arg(a, ctx) for a in arg.args]
         # Shape[3, 3, ...] varargs
-        return ", ".join(str(arg) for arg in arg.args)
+        return ", ".join(str(arg) for arg in args)
 
     return None
 
