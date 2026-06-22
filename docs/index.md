@@ -529,7 +529,6 @@ api/annotation
 api/dtype
 api/ndarray
 api/maps
-api/meta
 api/schema
 api/serialization
 api/types

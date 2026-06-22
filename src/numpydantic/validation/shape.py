@@ -25,9 +25,10 @@ Modifications from nptyping:
 
 import re
 import string
+import sys
 from abc import ABC
 from functools import lru_cache
-from typing import Any, Generic, Literal, TypeVar
+from typing import Any, Generic, Literal, get_args, get_origin
 
 from numpydantic.vendor.nptyping.base_meta_classes import ContainerMeta
 from numpydantic.vendor.nptyping.error import InvalidShapeError
@@ -39,7 +40,12 @@ from numpydantic.vendor.nptyping.shape_expression import (
 )
 from numpydantic.vendor.nptyping.typing_ import ShapeExpression, ShapeTuple
 
-T = TypeVar("T", bound=Literal[str])
+if sys.version_info < (3, 11):
+    from typing_extensions import TypeVarTuple, Unpack
+else:
+    from typing import TypeVarTuple, Unpack
+
+_TV = TypeVarTuple("_TV")
 
 
 class ShapeMeta(ContainerMeta["Shape"], implementation="Shape"):
@@ -57,13 +63,13 @@ class ShapeMeta(ContainerMeta["Shape"], implementation="Shape"):
 
     def _get_additional_values(cls, item: Any) -> dict[str, Any]:
         if isinstance(item, tuple):
-            item = ", ".join(str(i) for i in item)
+            item = _normalize_tuple(item)
         dim_strings = get_dimensions(item)
         dim_string_without_labels = remove_labels(dim_strings)
         return {"prepared_args": dim_string_without_labels}
 
 
-class Shape(NPTypingType, ABC, Generic[T], metaclass=ShapeMeta):
+class Shape(NPTypingType, ABC, Generic[Unpack[_TV]], metaclass=ShapeMeta):
     """
     A container for shape expressions that describe the shape of an multi
     dimensional array.
@@ -108,7 +114,7 @@ def validate_shape_expression(
     - Allow specifying as a tuple
     """
     if isinstance(shape_expression, tuple):
-        shape_expression = ", ".join(str(term) for term in shape_expression)
+        shape_expression = _normalize_tuple(shape_expression)
     shape_expression_no_quotes = shape_expression.replace("'", "").replace('"', "")
     if shape_expression is not Any and not re.match(
         _REGEX_SHAPE_EXPRESSION, shape_expression_no_quotes
@@ -117,6 +123,25 @@ def validate_shape_expression(
             f"'{shape_expression}' is not a valid shape expression."
         )
     return shape_expression
+
+
+def _normalize_tuple(expression: tuple) -> str:
+    """
+    Normalize tuple args to a nptyping string.
+
+    FIXME: This whole 'convert everything down to a string' thing has gotta go
+    """
+    terms = []
+    for t in expression:
+        if t is int:
+            t = "*"
+        elif t is Ellipsis:
+            t = "..."
+        elif get_origin(t) is Literal:
+            t = get_args(t)[0]
+
+        terms.append(t)
+    return ", ".join(str(term) for term in terms)
 
 
 @lru_cache
@@ -153,6 +178,8 @@ def _handle_ellipsis(shape: ShapeTuple, target: list[str]) -> list[str]:
     # Let the ellipsis allows for any number of dimensions by replacing the
     # ellipsis with the dimension size repeated the number of times that
     # corresponds to the shape of the instance.
+    if isinstance(target, tuple):
+        target = list(target)
     if target[-1] == "...":
         dim_to_repeat = "*"
         target = target[0:-1]
@@ -182,11 +209,13 @@ def _check_range(dim: str, target_dim: str) -> bool:
 
 def _is_wildcard(dim: str) -> bool:
     """
-    CHANGES FROM NPTYPING: added '*-*' range, which is a wildcard
+    CHANGES FROM NPTYPING:
+    - added '*-*' range, which is a wildcard
+    - treat the raw `int` class as a wildcard, as it is in numpy types
     """
     # Return whether dim is a wildcard (i.e. the character that takes any
     # dimension size).
-    return dim == "*" or dim == "*-*"
+    return dim == "*" or dim == "*-*" or dim is int
 
 
 # CHANGES FROM NPTYPING: Allow ranges

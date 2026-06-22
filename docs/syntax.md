@@ -38,10 +38,89 @@ so one might say "at least a 16-bit float" and also accept a 32-bit float.
 
 ## Shape
 
+### Shape Forms
+
+The individual constraints for a shape ([below](#shape-args)) can be expressed in several forms.
+This is for [typechecking compatibility](typecheckers.md) and historical reasons.
+
+Our goal is to converge on a type syntax that is close to numpy's:
+
+```python
+import numpy as np
+from typing import Any, TypeVar
+
+_T_Shape = TypeVar("_T_Shape", bound=tuple[Any, ...], default=tuple)
+_T_Dtype = TypeVar("_T_Dtype", bound=np.generic, default=Any)
+
+NDArray = np.ndarray[_T_Shape, np.dtype[_T_Dtype]]
+```
+
+which just treats shape as a tuple (usually `tuple[int, ...]`),
+and the dtype argument as a subscript of `np.dtype`.
+
+All the type forms below are valid at runtime,
+but only the tuple form will pass static typechecking without the mypy plugin.
+
+#### Tuple Form (Preferred in >=v2)
+
+In >v2.0, `Shape` will become an alias for `tuple`.
+
+This form is somewhat in flux as we get it nailed down,
+as certain typing constructs like ellipses and ranges are challenging to specify
+or have nonideal default behavior.
+
+The technically correct, but extremely annoying tuple form uses {class}`~typing.Literal`
+values for every argument:
+
+```python
+from typing import Literal as L
+from numpydantic import NDArray, Shape
+
+# these are equivalent
+NDArray[Shape[L[1], L["2-3"], L["*"], L["..."]]]
+NDArray[tuple[L[1], L["2-3"], L["*"], ...]]
+NDArray[tuple[L[1], L["2-3"], int, ...]]
+```
+
+Mypy, via the [plugin](mypy-plugin), will support typechecking a more reasonable form:
+
+```python
+NDArray[Shape[1, "2-3", "*", "..."]]
+NDArray[tuple[1, "2-3", "*", ...]]
+NDArray[tuple[1, "2-3", int, ...]]
+```
+
+and we will explore additional refinements as needed.
+
+#### String Form (nptyping)
+
+The pure string form is inherited from nptyping.
+Its use is discouraged in new code: it will be deprecated in v2.0 and removed in v3.0.
+
+The string form is syntactically invalid to the python type system,
+and is less inspectable than the tuple form.
+
+```python
+# these are equivalent
+NDArray[Shape["1, 2-3, *, ..."]]
+NDArray[Shape[Literal["1, 2-3, *, ..."]]]
+```
+
+#### Functional Form
+
+The functional form should only be used within {func}`.NDArraySchema` 
+or when it is otherwise the only form that satisfies static type checkers.
+
+```python
+Annotated[np.ndarray, NDArraySchema(Shape(1, "2-3", "*", "..."))]
+```
+
+### Shape Args
+
 Full documentation of nptyping's shape syntax is available in the [nptyping docs](https://github.com/ramonhagenaars/nptyping/blob/master/USERDOCS.md#Shape-expressions),
 but for the sake of self-contained docs, the high points are:
 
-### Numerical Shape
+#### Numerical Shape
 
 A comma-separated list of integers. 
 
@@ -51,7 +130,7 @@ For a 2-dimensional, 3 x 4-shaped array:
 Shape["3, 4"]
 ```
 
-### Wildcards
+#### Wildcards
 
 Wildcards indicate a dimension can be any size
 
@@ -62,7 +141,7 @@ Shape["3, *"]
 ```
 
 (shape-ranges)=
-### Ranges
+#### Ranges
 
 Dimension sizes can also be specified as ranges[^rangesnote].
 Ranges must have no whitespace, and may use integers or wildcards.
@@ -79,7 +158,7 @@ Shape["2-4, 2-*, *-4"]
 
 [^rangesnote]: This is an extension to nptyping's syntax, and so using `nptyping.Shape` is unsupported - use {class}`numpydantic.Shape`
 
-### Labels
+#### Labels
 
 Dimensions can be given labels, and in future versions these labels will be 
 propagated to the generated JSON Schema
@@ -88,7 +167,7 @@ propagated to the generated JSON Schema
 Shape["3 x, 4 y, 5 z"]
 ```
 
-### Arbitrary dimensions
+#### Arbitrary dimensions
 
 After some specified dimensions, one can express that there can be any number
 of additional dimensions with an `...` like
@@ -97,7 +176,7 @@ of additional dimensions with an `...` like
 Shape["3, 4, ..."]
 ```
 
-### Any-Shaped
+#### Any-Shaped
 
 If `dtype` is also `Any`, one can just use 
 
@@ -111,36 +190,15 @@ If a `dtype` is being passed, use the `'*'` wildcard along with the `'...'`
 field: NDArray[Shape['*, ...'], int]
 ```
 
-
-## Type checker compatibility
+## Annotated type with `NDArraySchema`
 
 ```{tip}
 See also: [Typechecker Integration](typecheckers)
 ```
 
-For better compatibility with static type checkers,
-rather than `Shape` with a string literal, you can use {class}`typing.Literal`
-anywhere you can use `Shape`.
-
-```python
-field: NDArray[Literal["{shape_expression"], dtype]
-```
-
-Or, if you don't need axis labels, you can pass the parts of a shape expression as separate args
-
-```python
-field: NDArray[Shape[1, 2, 3], dtype]
-```
-
-And if your type checker complains about using a string literal as a generic,
-Shape can also be invoked as a callable
-
-```python
-field: NDArray[Shape(1, 2, 3), dtype]
-```
-
 If you don't need compatibility with multiple array backends,
-Within pydantic models, you can use the annotated schema form with :func:`.NDArraySchema`
+or want to have an array statically type check as a single array backend type,
+Use the annotated schema form with :func:`.NDArraySchema`.
 
 ```python
 from numpydantic import NDArraySchema

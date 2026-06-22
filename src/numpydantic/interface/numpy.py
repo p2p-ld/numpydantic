@@ -58,6 +58,10 @@ class NumpyTyping(InterfaceTyping):
         ConstructorSpec(fullname="numpy.zeros"),
         ConstructorSpec(fullname="numpy.empty"),
         ConstructorSpec(fullname="numpy.full"),
+        ConstructorSpec(fullname="numpy._core.multiarray.ones"),
+        ConstructorSpec(fullname="numpy._core.multiarray.zeros"),
+        ConstructorSpec(fullname="numpy._core.multiarray.empty"),
+        ConstructorSpec(fullname="numpy._core.multiarray.full"),
         # Newer numpy stubs route the public ``np.zeros`` etc. through a
         # ``Final[_ConstructorEmpty]`` protocol instance, so mypy sees the
         # call as a method on that protocol.

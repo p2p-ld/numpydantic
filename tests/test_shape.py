@@ -109,8 +109,8 @@ def test_shape_callable():
 
 
 @pytest.mark.parametrize("form", ["square", "round"])
-def test_shape_tuple(form: str):
-    """Shape can be given as a tuple as well!"""
+def test_shape_args(form: str):
+    """Shape can be given as args as well!"""
     if form == "square":
         array_type = NDArray[Shape[1, 2, "..."], Any]
     else:
@@ -121,3 +121,22 @@ def test_shape_tuple(form: str):
     # fails to validate
     with pytest.raises(ShapeError):
         _ = array_type(np.zeros((4, 5)))
+
+
+@pytest.mark.parametrize(
+    "annotation,strict",
+    [
+        (tuple[int, ...], False),
+        (tuple[int, int, int], True),
+        (tuple[3, 3, 3], True),
+        (tuple[Literal[3], Literal[3], Literal[3]], True),
+    ],
+)
+def test_shape_tuple(annotation, strict):
+    """Shape can just be a literal tuple, as with numpy arrays"""
+    array_type = NDArray[annotation, Any]
+
+    _ = array_type(np.zeros((3, 3, 3)))
+    if strict:
+        with pytest.raises(ShapeError):
+            _ = array_type(np.zeros((6, 7)))
