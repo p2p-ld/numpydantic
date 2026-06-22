@@ -278,7 +278,8 @@ class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
         - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
     """
 
-    shape = property(np.ndarray.shape)
+    shape = np.ndarray.shape
+    dtype = np.ndarray.dtype
 
     def __getitem__(self: Any, key: Any) -> Any: ...
 
