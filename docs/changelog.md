@@ -1,6 +1,10 @@
 # Changelog
 
-## Upcoming
+## 1.*
+
+### 1.10.*
+
+#### 1.10.0 - 26-06-22
 
 **Fixed**
 
@@ -38,9 +42,6 @@
 
 - [`#58`](https://github.com/p2p-ld/numpydantic/pull/58) -
   Add support for `None` annotation shapes mapping to `Any`.
-
-
-## 1.*
 
 ### 1.9.*
 
