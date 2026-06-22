@@ -104,6 +104,12 @@ interfaces = [
 init_typed = true
 ```
 
+```{important}
+The `numpydantic.mypy` plugin **must** come before the `pydantic.mypy` plugin in the list - 
+mypy only allows one plugin to respond to a hook call,
+so we extend and replace how pydantic decorates `__init__` methods.
+```
+
 #### Configuration Reference
 
 ```{eval-rst}

@@ -224,8 +224,8 @@ fixable = ["ALL"]
 
 [tool.mypy]
 plugins = [
-    "pydantic.mypy",
     "numpydantic.mypy",
+    "pydantic.mypy",
 ]
 
 [[tool.mypy.overrides]]

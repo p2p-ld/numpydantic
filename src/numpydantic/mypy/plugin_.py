@@ -32,12 +32,10 @@ using the ``name`` attribute of the interface to enable.
 
 from __future__ import annotations
 
-import contextlib
 import re
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from functools import partial
 from typing import Any, Final
 
 if sys.version_info < (3, 11):
@@ -58,6 +56,7 @@ try:
     from mypy.options import Options
     from mypy.plugin import (
         AnalyzeTypeContext,
+        ClassDefContext,
         FunctionContext,
         MethodContext,
         Plugin,
@@ -80,6 +79,9 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise ImportError("mypy must be installed to use the numpydantic plugin") from exc
 
+from pydantic.mypy import PydanticPluginConfig
+
+from numpydantic.mypy.pydantic_ import _make_pydantic_hook
 from numpydantic.validation.shape import (
     _is_range,
     validate_shape_expression,
@@ -152,6 +154,7 @@ class NumpydanticMypyPlugin(Plugin):
     def __init__(self, options: Options):
         super().__init__(options)
         self.config = MypyPluginOptions.from_options(options)
+        self.pydantic_config = PydanticPluginConfig(options)
         self._functions: dict[str, ConstructorSpec] = {}
         self._methods: dict[str, ConstructorSpec] = {}
         self._interface_inputs: list[str] = []
@@ -162,9 +165,7 @@ class NumpydanticMypyPlugin(Plugin):
     ) -> Callable[[AnalyzeTypeContext], Type] | None:
         """Convert an NDArray annotation to an enriched np.ndarray annotation"""
         if fullname == NDARRAY_FULLNAME:
-            return partial(
-                _analyze_ndarray_type, interface_inputs=self._interface_inputs
-            )
+            return _analyze_ndarray_type
         return None
 
     def get_function_hook(
@@ -191,6 +192,21 @@ class NumpydanticMypyPlugin(Plugin):
         if spec is not None:
             return _make_method_hook(spec)
         return None
+
+    def get_base_class_hook(
+        self, fullname: str
+    ) -> Callable[[ClassDefContext], None] | None:
+        """
+        Extend how pydantic annotates its classes
+        to allow for converting additional input types to NDArrays
+        """
+        sym = self.lookup_fully_qualified(fullname)
+        if (
+            sym
+            and isinstance(sym.node, TypeInfo)
+            and sym.node.has_base("pydantic.main.BaseModel")
+        ):
+            return _make_pydantic_hook(self.pydantic_config, self._interface_inputs)
 
     def _load_interfaces(self) -> None:
         enabled_interfaces = set(self.config.interfaces + ["numpy"])
@@ -258,7 +274,7 @@ def plugin(version: str) -> type[NumpydanticMypyPlugin]:  # noqa: ARG001
 # ---------------------------------------------------------------------------
 
 
-def _analyze_ndarray_type(ctx: AnalyzeTypeContext, interface_inputs: list[str]) -> Type:
+def _analyze_ndarray_type(ctx: AnalyzeTypeContext) -> Type:
     """
     Render ``NDArray[shape, dtype]`` as a static numpy.ndarray type.
 
@@ -287,16 +303,7 @@ def _analyze_ndarray_type(ctx: AnalyzeTypeContext, interface_inputs: list[str]) 
     shape = _parse_shape_arg(shape_arg, ctx)
     dtype = _parse_dtype_arg(dtype_arg, ctx)
     ndarray_type = _build_ndarray_type(ctx, shape=shape, dtype=dtype)
-    if _inside_pydantic_model(ctx):
-        # mypy crashes if try to refer to an untyped package like zarr
-        # being defensive, it treats them like an Any type anyway.
-        in_types = []
-        for name in interface_inputs:
-            with contextlib.suppress(AssertionError):
-                in_types.append(ctx.api.named_type(name, []))
-        return UnionType([ndarray_type, *in_types])
-    else:
-        return ndarray_type
+    return ndarray_type
 
 
 def _build_ndarray_type(
@@ -318,6 +325,7 @@ def _build_ndarray_type(
     else:
         dtype_instance = api.named_generic_type("numpy.dtype", [dtype])
         numpy_variant = api.named_generic_type("numpy.ndarray", [shape, dtype_instance])
+    numpy_variant.type.metadata = {"numpydantic": True}
 
     return numpy_variant
 
@@ -481,16 +489,6 @@ def _dtype_as_numpy(
 def _is_numpy_generic(info: TypeInfo) -> bool:
     """Whether a TypeInfo derives from numpy.generic."""
     return any(base.fullname == "numpy.generic" for base in info.mro)
-
-
-def _inside_pydantic_model(ctx: AnalyzeTypeContext) -> bool:
-    """
-    Detect if an NDArray is being declared inside a pydantic model
-    """
-
-    semantic = ctx.api.api
-    outer_cls: TypeInfo | None = getattr(semantic, "type", None)
-    return outer_cls is not None and outer_cls.has_base("pydantic.main.BaseModel")
 
 
 def _load_interface_input_fullnames() -> list[str]:
