@@ -49,7 +49,7 @@ def test_make_array(interface, tmp_output_dir_func):
     """
     An interface case can generate an array from params or a given array
 
-    Not testing correctness here, that's what hte rest of the testing does.
+    Not testing correctness here, that's what the rest of the testing does.
     """
     arr = np.zeros((10, 10, 2, 3), dtype=np.uint8)
     arr = interface.make_array(array=arr, dtype=np.uint8, path=tmp_output_dir_func)
