@@ -367,10 +367,15 @@ Pull requests welcome!
 Pyright can only use the standard types and the type stubs by design.
 
 You will have to provide all the type annotations yourself,
-and constructs that can't be expressed in the python type system liks ranges can't be used.
+and constructs that can't be expressed in the python type system like ranges can't be used.
 
 In general, you have to specify types using tuples and literals, like:
 
 ```python
 def some_function(array: NDArray[tuple[Literal[3], Literal[3]], np.uint8]) -> None: ...
 ```
+
+Additionally, you must always specify dtypes as numpy types rather than builtins like `float`.
+This is strictly correct according to numpy's type annotations,
+which only accept subtypes of `np.dtype`,
+even if by convention builtins like `float` and `int` are accepted in constructors.
