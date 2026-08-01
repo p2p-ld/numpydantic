@@ -91,7 +91,7 @@ class Shape(NPTypingType, ABC, Generic[Unpack[_TV]], metaclass=ShapeMeta):
 
     >>> Shape['2, 2'] == Shape('2, 2')
 
-    And its arguments can be pased as ``args``, with ints and strings as appropriate
+    And its arguments can be passed as ``args``, with ints and strings as appropriate
 
     >>> Shape(2, 2, "...") == Shape("2, 2, ...")
 

@@ -167,4 +167,4 @@ def test_mypy_generated(
     if case.passes:
         assert returncode == 0, "Should have passed mypy!\n" + msg
     else:
-        assert returncode != 0, "Should not have pased mypy!\n" + msg
+        assert returncode != 0, "Should not have passed mypy!\n" + msg

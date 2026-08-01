@@ -2,7 +2,7 @@
 
 The compound dtype names (``Integer``, ``Float``, ``Complex``, ``Number``,
 ``Int``, ``SignedInteger``, ``UnsignedInteger``, ``Floating``) are tuples of
-numpy generic types at runtime. We re-declare them here as union ``TypeAlias``
+numpy generic types at runtime. We redeclare them here as union ``TypeAlias``
 values so they can be used as the dtype argument of
 :class:`numpydantic.NDArray`.
 """
