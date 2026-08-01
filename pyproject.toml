@@ -246,3 +246,11 @@ init_typed = true
 omit = [
     "src/numpydantic/vendor/*"
 ]
+[tool.codespell]
+# Ref: https://github.com/codespell-project/codespell#using-a-config-file
+# *.bib: BibTeX citation data — author names and verbatim quoted
+# abstracts must remain unmodified
+skip = '.git*,vendor,*.lock,*.css,*.bib'
+check-hidden = true
+# ignore-regex = ''
+ignore-words-list = 'afile'

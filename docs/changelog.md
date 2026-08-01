@@ -29,7 +29,7 @@
 - [`#58`](https://github.com/p2p-ld/numpydantic/pull/58) -
   The `NDArray` class is now a Protocol at runtime, 
   and now statically typechecks as a numpy array for non-mypy static type checkers,
-  greatly improving compabitility.
+  greatly improving compatibility.
 
 **Removed**
 
@@ -398,7 +398,7 @@ See the docstrings for descriptions of each class
 
 **Bugfix**
 - [`#17`](https://github.com/p2p-ld/numpydantic/issues/17) - Arrays are re-validated as lists, rather than arrays
-- Some proxy classes would fail to be serialized becauase they lacked an `__array__` method.
+- Some proxy classes would fail to be serialized because they lacked an `__array__` method.
   `__array__` methods have been added, and tests for coercing to an array to prevent regression.
 - Some proxy classes lacked a `__name__` attribute, which caused failures to serialize
   when the `__getattr__` methods attempted to pass it through. These have been added where needed.
