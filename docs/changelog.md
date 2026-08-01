@@ -29,7 +29,7 @@
 - [`#58`](https://github.com/p2p-ld/numpydantic/pull/58) -
   The `NDArray` class is now a Protocol at runtime, 
   and now statically typechecks as a numpy array for non-mypy static type checkers,
-  greatly improving compabitility.
+  greatly improving compatibility.
 
 **Removed**
 
