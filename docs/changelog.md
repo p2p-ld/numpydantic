@@ -1,5 +1,9 @@
 # Changelog
 
+## Upcoming
+
+- [`#80`](https://github.com/p2p-ld/numpydantic/issues/80), [`#95`](https://github.com/p2p-ld/numpydantic/pull/95) - Use `dependency-groups`
+
 ## 1.*
 
 ### 1.10.*
