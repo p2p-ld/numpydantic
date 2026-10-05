@@ -74,6 +74,37 @@ class MyAnnotatedModel(BaseModel):
     array: A[np.ndarray, NDArraySchema((3, 4, 5, "..."), int)]
 ```
 
+```{version-added} 1.9.0
+Use NDArray annotations and get static shape and dtype checking with our mypy plugin.
+Never forget how you oriented your arrays or how you've dtyped them again!
+See: [typecheckers](./typecheckers)
+```
+
+```python
+GRAYSCALE = NDArray[Shape["* x, * y"], np.uint8]
+
+def grayscale_mask(frame: GRAYSCALE) -> GRAYSCALE:
+    # Probably something fancier than this...
+    mask = np.zeros((frame.shape[0], frame.shape[1]), np.uint8)
+    mask[frame > 5] = 1
+    return mask
+
+# not today satan!
+rgb_image = np.zeros((1920, 1080, 3), dtype=np.uint8)
+typing.reveal_type(rgb_image)
+grayscale_mask(rgb_image)
+```
+
+```python
+note: Revealed type is "numpy.ndarray[
+    tuple[Literal[1920], Literal[1080], Literal[3], fallback=int], 
+    numpy.dtype[numpy.unsignedinteger[numpy._typing._nbit_base._8Bit]]
+]"
+error: Argument 1 to "grayscale_mask" has incompatible type 
+    "ndarray[int, dtype[unsignedinteger[_8Bit]]]"; 
+    expected "ndarray[tuple[int, int], dtype[unsignedinteger[_8Bit]]]"  [arg-type]
+```
+
 `numpydantic` supports pydantic but none of its behavior is dependent on it!
 Use the `NDArray` type annotation like a regular type outside
 of pydantic -- eg. to validate an array anywhere, use `isinstance`:
@@ -105,7 +136,7 @@ array([[0, 0, 0],
 ```
 
 ```{note}
-`NDArray` can't do validation with static type checkers yet, see 
+`NDArray` 
 {ref}`design_challenges` and {ref}`type_checkers` .
 
 Converting the `NDArray` type away from the inherited `nptyping`
