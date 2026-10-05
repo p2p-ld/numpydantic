@@ -220,7 +220,7 @@ Works exactly the same as numpy arrays
 import dask.array as da
 
 # validate a humongous image without having to load it into memory
-video_array = da.zeros(shape=(1e10,1e20,3), dtype=np.uint8)
+video_array = da.zeros(shape=(1e10,1e10,3), dtype=np.uint8)
 dask_video = Image(array=video_array)
 ```
 
