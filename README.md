@@ -468,51 +468,54 @@ model schema are deduplicated without conflicts.
 ### Dumping
 
 One of the main reasons to use chunked array libraries like zarr is to avoid
-needing to load the entire array into memory. When dumping data to JSON, numpydantic 
-tries to mirror this behavior, by default only dumping the metadata that is
-necessary to identify the array.
+needing to load the entire array into memory. When dumping data to JSON numpydantic 
+dumps into a standard JSON array-of-arrays, 
+but with `round_trip` just dumps metadata and path references, when possible.
 
 For example, with zarr:
 
 ```python
-array = zarr.array([[1,2,3],[4,5,6],[7,8,9]], dtype=float)
-instance = Image(array=array)
-dumped = instance.model_dump_json()
+dumped = zarr_video.model_dump_json(round_trip=True)
 ```
 
 ```json
 {
-  "array":
-  {
-    "Chunk shape": "(3, 3)",
-    "Chunks initialized": "1/1",
-    "Compressor": "Blosc(cname='lz4', clevel=5, shuffle=SHUFFLE, blocksize=0)",
-    "Data type": "float64",
-    "No. bytes": "72",
-    "No. bytes stored": "421",
-    "Order": "C",
-    "Read-only": "False",
-    "Shape": "(3, 3)",
-    "Storage ratio": "0.2",
-    "Store type": "zarr.storage.KVStore",
-    "Type": "zarr.core.Array",
-    "hexdigest": "c51604eace325fe42bbebf39146c0956bd2ed13c"
+  "array": {
+    "type": "zarr",
+    "info": {
+      "Name": "/data/sets/here",
+      "Type": "zarr.core.Array",
+      "Data type": "uint8",
+      "Shape": "(1000, 1080, 1920, 3)",
+      "Chunk shape": "(125, 135, 240, 1)",
+      "Order": "C",
+      "Read-only": "False",
+      "Compressor": "Blosc(cname='lz4', clevel=5, shuffle=SHUFFLE, blocksize=0)",
+      "Store type": "zarr.storage.DirectoryStore",
+      "No. bytes": "6220800000 (5.8G)",
+      "No. bytes stored": "390",
+      "Storage ratio": "15950769.2",
+      "Chunks initialized": "0/1536",
+      "hexdigest": "e8bffe128d7146cb5acd7df5bdc4f657e9851203"
+    },
+    "file": "data/array.zarr",
+    "path": "/data/sets/here",
+    "dtype": "uint8"
   }
 }
 ```
 
-To print the whole array, we use pydantic's serialization contexts:
+To print the whole array, we use pydantic's serialization context:
 
 ```python
-dumped = instance.model_dump_json(context={'zarr_dump_array': True})
+dumped = instance.model_dump_json(round_trip=True, context={'dump_array': True})
 ```
 ```json
 {
   "array":
   {
     "same thing,": "except also...",
-    "array": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
-    "hexdigest": "c51604eace325fe42bbebf39146c0956bd2ed13c"
+    "value": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
   }
 }
 ```
