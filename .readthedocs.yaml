@@ -10,14 +10,11 @@ sphinx:
    configuration: docs/conf.py
 
 build:
- os: ubuntu-22.04
- tools:
-   python: "3.11"
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
-        - arrays
+  os: ubuntu-22.04
+  tools:
+    python: "3.13"
+  jobs:
+    pre_install:
+      - python -m pip install pdm
+    install:
+      - VIRTUAL_ENV=$(dirname $(dirname $(which python))) pdm install --with docs --with arrays
