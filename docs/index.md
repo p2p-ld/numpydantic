@@ -135,14 +135,6 @@ array([[0, 0, 0],
        [0, 0, 0]], dtype=uint8)
 ```
 
-```{note}
-`NDArray` 
-{ref}`design_challenges` and {ref}`type_checkers` .
-
-Converting the `NDArray` type away from the inherited `nptyping`
-class towards a proper generic is the top development priority for `v2.0.0`
-```
-
 ## Features:
 - **Types** - Annotations (based on [npytyping](https://github.com/ramonhagenaars/nptyping))
   for specifying arrays in pydantic models
