@@ -68,6 +68,8 @@ mypy = [
     "mypy>=1.17.1",
     "tomli>=2.4.1;python_version<'3.11'"
 ]
+
+[dependency-groups]
 tests = [
     "numpydantic[arrays,mypy]",
     "pytest>=7.4.0",

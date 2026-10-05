@@ -41,12 +41,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Cache Dependencies
+        id: cache-dependencies
+        uses: actions/cache@v6
+        with:
+          path: .venv
+          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pdm.lock', 'pyproject.toml') }}
+
       - name: Install dependencies
-        run: pip install -e ".[tests]"
+        run: |
+          python -m pip install pdm
+          pdm install --with tests
 
       - name: Run Tests
         id: tests
-        run: pytest
+        run: pdm run test
 
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@v2

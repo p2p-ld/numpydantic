@@ -1,5 +1,11 @@
 # Changelog
 
+## Upcoming
+
+- [`#80`](https://github.com/p2p-ld/numpydantic/issues/80), [`#95`](https://github.com/p2p-ld/numpydantic/pull/95) - Use `dependency-groups`
+- [`#99`](https://github.com/p2p-ld/numpydantic/pull/99) - Add new mypy type stub locations for `ones` and `full`
+
+
 ## 1.*
 
 ### 1.10.*
