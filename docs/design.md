@@ -26,8 +26,8 @@ lurking under the documented surface.
 This package does the work of plugging them in
 together to make some kind of type validation frankenstein.
 
-The first problem is that type annotations are evaluated statically by python, mypy, etc. 
-The type can't have any dynamic behavior because type checkers do not evaluate the code, 
+The first problem is that type annotations are evaluated statically by typecheckers like, mypy, etc. 
+The type can't have any dynamic behavior because type checkers do not execute the code at all, 
 that's what static type annotations are!
 So unlike the rest of python, "real" and "correct" type annotations must follow the typing spec exactly,
 and don't really have a path for customizing their behavior except by 
