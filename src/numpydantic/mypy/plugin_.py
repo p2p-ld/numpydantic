@@ -137,8 +137,6 @@ class MypyPluginOptions:
     def from_options(cls, options: Options) -> Self:
         """Load from mypy's options object, which refers to the active toml file"""
         # borrowing from https://github.com/pydantic/pydantic/blob/a20c0ee267150c3bb0f82bf05e0806fa65b1e70c/pydantic/mypy.py#L231
-        if options.config_file is None:
-            return cls()
 
         kwargs: dict[str, Any] = {}
         if options.config_file.endswith(".toml"):
@@ -146,7 +144,7 @@ class MypyPluginOptions:
                 toml_config = load_toml(f)
 
             kwargs = toml_config.get("tool", {}).get("numpydantic", {}).get("mypy", {})
-        else:
+        elif options.config_file:
             # an .ini file
             parser = ConfigParser()
             parser.read(options.config_file)
