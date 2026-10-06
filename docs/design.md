@@ -20,16 +20,24 @@ makes it challenging to adapt to pydantic's schema generation system.
 (design_challenges)=
 ## Challenges
 
-The Python type annotation system is weird and not like the rest of Python! 
-(at least until [PEP 0649](https://peps.python.org/pep-0649/) gets mainlined).
+The Python type annotation system is weird and not like the rest of Python!
 Similarly, Pydantic 2's core_schema system is wonderful but still has a few mysteries
 lurking under the documented surface.
 This package does the work of plugging them in
 together to make some kind of type validation frankenstein.
 
-The first problem is that type annotations are evaluated statically by python, mypy,
-etc. This means you can't use typical python syntax for declaring types - it has to
-be present at the time `__new__` is called, rather than `__init__`. So  
+The first problem is that type annotations are evaluated statically by python, mypy, etc. 
+The type can't have any dynamic behavior because type checkers do not evaluate the code, 
+that's what static type annotations are!
+So unlike the rest of python, "real" and "correct" type annotations must follow the typing spec exactly,
+and don't really have a path for customizing their behavior except by 
+[writing a plugin for a typechecker](./typecheckers.md).
+Since there are some typecheckers like pyright that refuse to allow customization out of principle,
+we are *sort of* SoL if we want to do things like support type transformations 
+across function calls and class instantiations,
+or have a more humane annotation than 
+`NDArray[tuple[Annotated[Literal[1920], Name("width")], Annotated[Literal[1080], Name("height")]], np.uint8]`
+to annotate, e.g. a frame from an HD video.
 
 Different implementations of arrays behave differently! HDF5 files need to be carefully
 opened and closed to avoid corruption, video files don't typically allow normal array
