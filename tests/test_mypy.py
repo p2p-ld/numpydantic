@@ -9,9 +9,11 @@ from pathlib import Path
 
 import mypy.api
 import pytest
+from mypy.options import Options
 
 # from numpydantic import ndarray, update_ndarray_stub
 from numpydantic.interface import Interface
+from numpydantic.mypy.plugin_ import CONFIGFILE_KEY, MypyPluginOptions
 from numpydantic.testing import ValidationCase
 from numpydantic.testing.cases import MYPY_CASES
 
@@ -168,3 +170,21 @@ def test_mypy_generated(
         assert returncode == 0, "Should have passed mypy!\n" + msg
     else:
         assert returncode != 0, "Should not have passed mypy!\n" + msg
+
+
+@pytest.mark.parametrize(
+    "interfaces_string", ["numpy,dask,zarr", " numpy, dask ,zarr,"]
+)
+def test_parse_ini(interfaces_string, tmp_path):
+    """
+    The mypy plugin is configurable from INI files as well as pyproject.toml
+    """
+    cfg_str = f"[{CONFIGFILE_KEY}]\ninterfaces={interfaces_string}\n"
+    cfg = tmp_path / "mypy.ini"
+    cfg.write_text(cfg_str)
+
+    options = Options()
+    options.config_file = str(cfg)
+
+    plugin_options = MypyPluginOptions.from_options(options)
+    assert plugin_options.interfaces == ["numpy", "dask", "zarr"]
