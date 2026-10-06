@@ -2,8 +2,19 @@
 
 ## Upcoming
 
-- [`#80`](https://github.com/p2p-ld/numpydantic/issues/80), [`#95`](https://github.com/p2p-ld/numpydantic/pull/95) - Use `dependency-groups`
+**Fixed**
+
 - [`#99`](https://github.com/p2p-ld/numpydantic/pull/99) - Add new mypy type stub locations for `ones` and `full`
+
+**Added**
+
+- [`#85`](https://github.com/p2p-ld/numpydantic/issues/85), [`#102`](https://github.com/p2p-ld/numpydantic/pull/102) - 
+  support mypy configuration via a `mypy.ini` file 
+
+
+**Packaging**
+
+- [`#80`](https://github.com/p2p-ld/numpydantic/issues/80), [`#95`](https://github.com/p2p-ld/numpydantic/pull/95) - Use `dependency-groups`
 
 
 ## 1.*

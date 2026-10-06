@@ -35,7 +35,8 @@ from __future__ import annotations
 import re
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from configparser import ConfigParser
+from dataclasses import dataclass, field, fields
 from typing import Any, Final
 
 if sys.version_info < (3, 11):
@@ -92,6 +93,8 @@ from numpydantic.vendor.nptyping.shape_expression import (
     remove_labels,
 )
 
+CONFIGFILE_KEY = "numpydantic-mypy"
+"""the table in an INI file where npd-specific settings are"""
 NDARRAY_FULLNAME: Final = "numpydantic.ndarray.NDArray"
 SHAPE_FULLNAME: Final = "numpydantic.validation.shape.Shape"
 _NUMERIC_RE = re.compile(r"^[0-9]+$")
@@ -135,18 +138,35 @@ class MypyPluginOptions:
         """Load from mypy's options object, which refers to the active toml file"""
         # borrowing from https://github.com/pydantic/pydantic/blob/a20c0ee267150c3bb0f82bf05e0806fa65b1e70c/pydantic/mypy.py#L231
         if options.config_file is None:
-            return MypyPluginOptions()
+            return cls()
 
-        with open(options.config_file, "rb") as f:
-            toml_config = load_toml(f)
+        kwargs: dict[str, Any] = {}
+        if options.config_file.endswith(".toml"):
+            with open(options.config_file, "rb") as f:
+                toml_config = load_toml(f)
 
-        if toml_config is None:
-            return MypyPluginOptions()
+            kwargs = toml_config.get("tool", {}).get("numpydantic", {}).get("mypy", {})
+        else:
+            # an .ini file
+            parser = ConfigParser()
+            parser.read(options.config_file)
+            if CONFIGFILE_KEY in parser:
+                kwargs = dict(parser[CONFIGFILE_KEY])
+                for f in fields(cls):
+                    if f.name not in kwargs:
+                        continue
+                    # janky, but our config isn't complex enough to
+                    # write a whole ass parser.
+                    # or a whole arse parser, if you're english.
+                    # arseparser. is this anything.
+                    if f.type.startswith("list"):
+                        kwargs[f.name] = [
+                            item.strip()
+                            for item in kwargs[f.name].split(",")
+                            if item.strip()
+                        ]
 
-        toml_options = (
-            toml_config.get("tool", {}).get("numpydantic", {}).get("mypy", {})
-        )
-        return MypyPluginOptions(**toml_options)
+        return cls(**kwargs)
 
 
 class NumpydanticMypyPlugin(Plugin):

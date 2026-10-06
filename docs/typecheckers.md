@@ -52,17 +52,29 @@ Find bugs before they're deployed with your type checker!
 
 ### Configuration
 
-Enable the mypy plugin in your pyproject.toml configuration
+Enable the mypy plugin in your `pyproject.toml` or `mypy.ini` configuration
 
+`````{tab-set}
+````{tab-item} pyproject.toml
 ```toml
 [tool.mypy]
 plugins = [
   "numpydantic.mypy",
 ]
 ```
+````
+````{tab-item} mypy.ini
+```ini
+[mypy]
+plugins=numpydantic.mypy
+```
+````
+`````
 
-And configure it with with the `tool.numpydantic.mypy` table
+And configure it with with the `tool.numpydantic.mypy` table in `pyproject.toml`, or `numpydantic-mypy` in `mypy.ini`
 
+`````{tab-set}
+````{tab-item} pyproject.toml
 ```toml
 [tool.numpydantic.mypy]
 interfaces = [
@@ -71,6 +83,15 @@ interfaces = [
   "zarr",
 ]
 ```
+````
+````{tab-item} mypy.ini
+```ini
+[numpydantic-mypy]
+interfaces=numpy,dask,zarr
+```
+We follow mypy's convention of using comma-separated values rather than newlines
+````
+`````
 
 If you are using numpydantic with pydantic, you should also enable [pydantic's mypy plugin](https://pydantic.dev/docs/validation/latest/integrations/dev-tools/mypy/).
 By default pydantic uses `Any` types for all the fields in its synthesized `__init__` method,
@@ -82,6 +103,8 @@ you will need to enable mypy's [`follow-untyped-imports`](https://mypy.readthedo
 
 A full configuration might then look like this:
 
+`````{tab-set}
+````{tab-item} pyproject.toml
 ```toml
 [tool.mypy]
 plugins = [
@@ -103,6 +126,23 @@ interfaces = [
 [tool.pydantic-mypy]
 init_typed = true
 ```
+````
+````{tab-item} mypy.ini
+```ini
+[mypy]
+plugins=numpydantic.mypy,pydantic.mypy
+
+[mypy-zarr.*]
+follow_untyped_imports=true
+
+[numpydantic-mypy]
+interfaces=numpy,dask,zarr
+
+[pydantic-mypy]
+init_typed=true
+```
+````
+`````
 
 ```{important}
 The `numpydantic.mypy` plugin **must** come before the `pydantic.mypy` plugin in the list - 
