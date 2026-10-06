@@ -266,7 +266,7 @@ array_path = "/nested/array"
 
 # make an HDF5 array
 h5f = h5py.File(h5f_file, "w")
-array = np.random.randint(0, 255, (1920,1080,3), np.uint8)
+array = np.zeros(0, 255, (1920,1080,3), np.uint8)
 h5f.create_dataset(array_path, data=array)
 h5f.close()
 ```
