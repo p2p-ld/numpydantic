@@ -83,8 +83,14 @@ Pydantic [@colvinPydanticValidation2026] is the most widely used library in Pyth
 but it lacks builtin support for arrays.
 
 The closest sibling to numpydantic is likely [pandera](https://pandera.readthedocs.io) [@bantilanPanderaStatisticalData2020],
-which provides schemas for dataframes across multiple backends (and, recently, complex multi-arrays from [xarray](https://docs.xarray.dev)). 
-We are not aware of other projects that provide array specifications and validation across multiple array backends[^contactus].
+which provides schemas for dataframes across multiple backends (and, recently, complex multi-arrays from [xarray](https://docs.xarray.dev)).
+Second would be [jaxtyping](https://github.com/patrick-kidger/jaxtyping) [@kidgerJaxtyping2022],
+which provides custom string-based constraints on shapes (including cross-array constraints) enforceable with [`typeguard`](https://github.com/agronholm/typeguard) [@gronholmTypeguard2015] and at runtime
+for JAX, PyTorch, Numpy, MLX, and TensorFlow arrays and tensors.
+Third is [pydantic-numpy](https://github.com/caniko/pydantic-numpy) [@tartanogluPydanticNumpy2022]
+which more narrowly supports numpy arrays for pydantic.
+We are not aware of other projects that provide array specifications and validation across multiple array backends
+with a single annotation consistent with the emerging consensus on array typing[^contactus].
 
 [^numtype]: See also the predecessor `numpy-stubs` [@numpyNumpystubs2017] and the experimental [numtype](https://github.com/numpy/numtype) [@numpyNumtype2025].
 [^unmaintained]: As of writing, `nptyping` is unmaintained, without update since February 2023.
