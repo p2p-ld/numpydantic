@@ -17,6 +17,8 @@ relatively low. Its `Dtype[ArrayClass, "{shape_expression}"]` syntax is not well
 suited for modeling arrays intended to be general across implementations, and 
 makes it challenging to adapt to pydantic's schema generation system.
 
+For the numpy+pydantic case specifically, see also [pydantic-numpy](https://github.com/caniko/pydantic-numpy)
+
 (design_challenges)=
 ## Challenges
 
