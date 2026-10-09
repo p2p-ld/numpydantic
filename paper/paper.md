@@ -94,7 +94,7 @@ We are not aware of other projects that provide array specifications and validat
 
 Numpydantic is designed to be a dependency you don't have to think about -
 it has two required dependencies, numpy and pydantic, which are already likely present in any package that wants to use it.
-It can be used with or without pydantic:
+It can be used with or without pydantic[^withoutpydantic]:
 its annotations can be used in the typing layer without modifying existing runtime code.
 
 Support for multiple array frameworks is implemented as a set of [interface classes](https://numpydantic.readthedocs.io/en/latest/interfaces.html),
@@ -102,6 +102,8 @@ where each interface overrides the methods needed to match input to an interface
 extract shape and dtype,
 serialize and deserialize json,
 among other features.
+
+[^withoutpydantic]: Pydantic is a required dependency, but the annotations can be used outside of pydantic models
 
 \pagebreak
 
