@@ -24,7 +24,7 @@ Its constraints can be validated both dynamically at runtime and statically usin
 Rather than being bound to a single array framework,
 numpydantic is a generic array specification with an extensible interface system
 that currently supports NumPy, HDF5, zarr, and video files.
-Designed to expose arrays to `pydantic`'s validation framework, 
+Designed to expose arrays to `Pydantic`'s validation framework, 
 its `NDArray` type allows researchers to compose multiple arrays into validating data models,
 including generation of JSON schema,
 roundtrip serialization,
@@ -99,8 +99,8 @@ with a single annotation consistent with the emerging consensus on array typing[
 # Software design
 
 Numpydantic is designed to be a dependency you don't have to think about -
-it has two required dependencies, NumPy and pydantic, which are already likely present in any package that wants to use it.
-It can be used with or without pydantic[^withoutpydantic]:
+it has two required dependencies, NumPy and Pydantic, which are already likely present in any package that wants to use it.
+It can be used with or without Pydantic[^withoutpydantic]:
 its annotations can be used in the typing layer without modifying existing runtime code.
 
 Support for multiple array frameworks is implemented as a set of [interface classes](https://numpydantic.readthedocs.io/en/latest/interfaces.html),
@@ -109,7 +109,7 @@ extract shape and dtype,
 serialize and deserialize JSON,
 among other features.
 
-[^withoutpydantic]: Pydantic is a required dependency, but the annotations can be used outside of pydantic models
+[^withoutpydantic]: Pydantic is a required dependency, but the annotations can be used outside of Pydantic models
 
 \pagebreak
 
@@ -138,7 +138,7 @@ MyModel(array=('data.zarr', '/nested/dataset'))
 MyModel(array="data.mp4")
 ```
 
-When used in pydantic models, numpydantic provides runtime validation for array specifications,
+When used in Pydantic models, numpydantic provides runtime validation for array specifications,
 as well as access to on-disk arrays by reference.
 
 By default, an array from any supported array backend can be used (as long as it matches the specification),
@@ -223,14 +223,14 @@ A lightweight metadata descriptor can be dumped to JSON and reloaded later:
 
 ## Standalone Use
 
-Numpydantic can be used without pydantic to annotate normal functions and classes!
+Numpydantic can be used without Pydantic to annotate normal functions and classes!
 
 ```python
 def some_analysis(array: NDArray[Shape[1, 2, 3]]) -> NDArray[Shape[2, 4, 6]]:
     ...
 ```
 
-These annotations can also be validated at runtime without pydantic using a tool like [beartype](https://beartype.readthedocs.io/) [@curryBeartype2020].
+These annotations can also be validated at runtime without Pydantic using a tool like [beartype](https://beartype.readthedocs.io/) [@curryBeartype2020].
 
 `NDArray` can also be used as a runtime type for instance checking and ad-hoc validation
 
