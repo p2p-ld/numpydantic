@@ -23,7 +23,7 @@ Numpydantic is a minimalistic Python package that provides abstract types and a 
 Its constraints can be validated both dynamically at runtime and statically using mypy.
 Rather than being bound to a single array framework,
 numpydantic is a generic array specification with an extensible interface system
-that currently supports numpy, hdf5, zarr, and video files.
+that currently supports NumPy, HDF5, zarr, and video files.
 Designed to expose arrays to `pydantic`'s validation framework, 
 its `NDArray` type allows researchers to compose multiple arrays into validating data models,
 including generation of JSON schema,
@@ -66,9 +66,9 @@ In the middle is a gap in tooling that responds to both categories of needs:
 Python's type annotation system has evolved dramatically since its introduction in 2014 [@vanrossumPEP484Type2014; @pythonsoftwarefoundationTypingPEPs].
 Typing arrays is an ongoing challenge, 
 motivating type system features like variadic generics for shape specification [@mendozaPEP646Variadic2020].
-Numpy [@harrisArrayProgrammingNumPy2020] introduced type annotations for its arrays in 2021 [@NumPy1200Release2021], 
+NumPy [@harrisArrayProgrammingNumPy2020] introduced type annotations for its arrays in 2021 [@NumPy1200Release2021], 
 with steady improvements over time[^numtype]. 
-Numpy's types allow specifying shape and dtype,
+NumPy's types allow specifying shape and dtype,
 but not extended expressions like explicit dimension sizes, size ranges, etc. 
 Numpydantic extends previous work on runtime-checkable types,
 vendoring `nptyping` [@hagenaarsNptyping2019][^unmaintained] and extending and updating its syntax. 
@@ -86,9 +86,9 @@ The closest sibling to numpydantic is likely [pandera](https://pandera.readthedo
 which provides schemas for dataframes across multiple backends (and, recently, complex multi-arrays from [xarray](https://docs.xarray.dev)).
 Second would be [jaxtyping](https://github.com/patrick-kidger/jaxtyping) [@kidgerJaxtyping2022],
 which provides custom string-based constraints on shapes (including cross-array constraints) enforceable with [`typeguard`](https://github.com/agronholm/typeguard) [@gronholmTypeguard2015] and at runtime
-for JAX, PyTorch, Numpy, MLX, and TensorFlow arrays and tensors.
+for JAX, PyTorch, NumPy, MLX, and TensorFlow arrays and tensors.
 Third is [pydantic-numpy](https://github.com/caniko/pydantic-numpy) [@tartanogluPydanticNumpy2022]
-which more narrowly supports numpy arrays for pydantic.
+which more narrowly supports NumPy arrays for Pydantic.
 We are not aware of other projects that provide array specifications and validation across multiple array backends
 with a single annotation consistent with the emerging consensus on array typing[^contactus].
 
@@ -99,14 +99,14 @@ with a single annotation consistent with the emerging consensus on array typing[
 # Software design
 
 Numpydantic is designed to be a dependency you don't have to think about -
-it has two required dependencies, numpy and pydantic, which are already likely present in any package that wants to use it.
+it has two required dependencies, NumPy and pydantic, which are already likely present in any package that wants to use it.
 It can be used with or without pydantic[^withoutpydantic]:
 its annotations can be used in the typing layer without modifying existing runtime code.
 
 Support for multiple array frameworks is implemented as a set of [interface classes](https://numpydantic.readthedocs.io/en/latest/interfaces.html),
 where each interface overrides the methods needed to match input to an interface,
 extract shape and dtype,
-serialize and deserialize json,
+serialize and deserialize JSON,
 among other features.
 
 [^withoutpydantic]: Pydantic is a required dependency, but the annotations can be used outside of pydantic models
@@ -151,7 +151,7 @@ class MyModel(BaseModel):
 
 Numpydantic constructs a valid JSON schema for its annotations,
 making them portable across languages,
-and usable to accept array data via web APIs via, e.g. [fastAPI](https://fastapi.tiangolo.com/).
+and usable to accept array data via web APIs via, e.g. [FastAPI](https://fastapi.tiangolo.com/).
 
 This simple example:
 
@@ -169,7 +169,7 @@ produces JSON Schema[^abbreviated]:
   "items": {
     "items": {
       "minimum": -65504.0, "maximum": 65504.0,
-      "type": "integer"
+      "type": "number"
     },
     "minItems": 2, "maxItems": 5,
     "type": "array"
@@ -186,7 +186,7 @@ including any metadata needed to reconstruct an array,
 with on-disk arrays optionally dumped as a reference rather than loading and serializing the whole array.
 
 e.g. for a dataset with scalar metadata alongside array data split between in-memory and on-disk arrays,
-as would be common in both data standards and unstructed lab code:
+as would be common in both data standards and unstructured lab code:
 
 ```python
 MyDataset(
@@ -325,7 +325,7 @@ where data standards only need to define the schema layer and get the rest for f
   with modern Python typing features.
 - Until then,
   non-mypy static type checkers have trouble checking some forms of `NDArray` types.
-  There are [several intermediate solutions](https://numpydantic.readthedocs.io/en/latest/syntax.html#type-checker-compatibility),
+  There are [several intermediate solutions](https://numpydantic.readthedocs.io/en/v1.10.0/syntax.html#shape-forms),
   like specifying shape arguments as literals,
   and the `NDArraySchema` class.
 - We will be extending the specification syntax to include more advanced array features,
@@ -335,7 +335,7 @@ where data standards only need to define the schema layer and get the rest for f
   for many scientific applications 
   (e.g. a timestamps array must be the same length as a video).
   We are [actively working on this](https://github.com/p2p-ld/numpydantic/issues/70)
-  in our mypy plugin and [upstream in mypy itself](https://github.com/python/mypy/issues/3345#issuecomment-4664544812)
+  in our mypy plugin and [upstream in mypy itself](https://github.com/python/mypy/issues/3345#issuecomment-4664544812).
 
 # AI usage disclosure
 
