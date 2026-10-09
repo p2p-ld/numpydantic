@@ -75,7 +75,7 @@ vendoring `nptyping` [@hagenaarsNptyping2019][^unmaintained] and extending and u
 
 Other array frameworks like Dask [@daskdevelopmentteamDaskLibraryDynamic2016]
 and Zarr [@milesZarrdevelopersZarrpythonV2402020]
-are either untyped or allow typing only for dtype.
+currently allow typing only for dtype or a custom metadata object.
 
 Dataclasses [@smithPEP557Data2017] use type annotations to create intelligible data structures,
 but the annotations are unvalidated and used solely in static analysis.
