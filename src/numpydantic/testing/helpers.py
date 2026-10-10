@@ -8,15 +8,22 @@ from operator import ior
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Literal,
     Union,
 )
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, computed_field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    computed_field,
+)
 
-from numpydantic import NDArray, Shape
+from numpydantic import NDArray, NDArraySchema, Shape
 from numpydantic.dtype import Float
 from numpydantic.interface import Interface, InterfaceTyping
 from numpydantic.types import DtypeType, NDArrayType
@@ -198,6 +205,22 @@ class ValidationCase(BaseModel):
             else:
                 shape_str = ", ".join([str(i) for i in self.annotation_shape])
                 return NDArray[Shape[shape_str], self.annotation_dtype]
+
+    def ndarray_schema(self, array_type: type) -> type:
+        """
+        The `Annotated` form of the NDArray annotation using NDArraySchema
+        """
+        if type(self.annotation) is typing.Union:
+            anns = tuple(
+                Annotated[array_type, NDArraySchema(a.__args__[0], a.__args__[1])]
+                for a in self.annotation.__args__
+            )
+            return Union[anns]  # noqa: UP007
+        else:
+            return Annotated[
+                array_type,
+                NDArraySchema(self.annotation.__args__[0], self.annotation.__args__[1]),
+            ]
 
     @computed_field()
     def model(self) -> type[BaseModel]:

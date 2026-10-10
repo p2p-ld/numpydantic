@@ -55,7 +55,11 @@ def NDArraySchema(
     Returns:
 
     """
-    if shape is not Shape and not issubclass(shape, Shape):
+    if shape is not Shape and shape is not Any and not issubclass(shape, Shape):
         shape = Shape[shape]
 
-    return GetPydanticSchema(NDArray[shape, dtype].__get_pydantic_core_schema__)
+    ndarray = NDArray[shape, dtype]
+
+    return GetPydanticSchema(
+        ndarray.__get_pydantic_core_schema__, ndarray.__get_pydantic_json_schema__
+    )

@@ -5,11 +5,14 @@
 **Fixed**
 
 - [`#99`](https://github.com/p2p-ld/numpydantic/pull/99) - Add new mypy type stub locations for `ones` and `full`
+- [`#92`](https://github.com/p2p-ld/numpydantic/issues/92), [`#108`](https://github.com/p2p-ld/numpydantic/pull/108) - 
+  `NDArraySchema` annotations now correctly create JSON schemas equivalent to `NDArray`
 
 **Added**
 
 - [`#85`](https://github.com/p2p-ld/numpydantic/issues/85), [`#102`](https://github.com/p2p-ld/numpydantic/pull/102) - 
   support mypy configuration via a `mypy.ini` file 
+
 
 
 **Packaging**
