@@ -27,6 +27,7 @@ from numpydantic import NDArray, NDArraySchema, Shape
 from numpydantic.dtype import Float
 from numpydantic.interface import Interface, InterfaceTyping
 from numpydantic.types import DtypeType, NDArrayType
+from numpydantic.validation.dtype import is_union
 
 if TYPE_CHECKING:
     from _pytest.mark.structures import MarkDecorator
@@ -210,7 +211,7 @@ class ValidationCase(BaseModel):
         """
         The `Annotated` form of the NDArray annotation using NDArraySchema
         """
-        if type(self.annotation) is typing.Union:
+        if is_union(self.annotation):
             anns = tuple(
                 Annotated[array_type, NDArraySchema(a.__args__[0], a.__args__[1])]
                 for a in self.annotation.__args__
