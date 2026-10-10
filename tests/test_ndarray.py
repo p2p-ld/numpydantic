@@ -440,3 +440,43 @@ def test_annotation_allows_not_using_shape(shape):
         array: Annotated[np.ndarray, NDArraySchema(shape, np.uint8)]
 
     MyModel(array=np.ones(shape=(1, 2, 3), dtype=np.uint8))
+
+
+@pytest.mark.json_schema
+def test_annotation_json_schema_dtype(dtype_cases):
+    """The annotation should create identical json schema to the type"""
+    type_annotation = dtype_cases.annotation
+    schema_annotation = dtype_cases.ndarray_schema(np.ndarray)
+
+    class TypeModel(BaseModel):
+        array: type_annotation
+
+    class AnnotationModel(BaseModel):
+        array: schema_annotation
+
+    type_schema = TypeModel.model_json_schema()
+    annotation_schema = AnnotationModel.model_json_schema()
+    del type_schema["title"]
+    del annotation_schema["title"]
+
+    assert type_schema == annotation_schema
+
+
+@pytest.mark.json_schema
+def test_annotation_json_schema_shape(shape_cases):
+    """The annotation should create identical json schema to the type"""
+    type_annotation = shape_cases.annotation
+    schema_annotation = shape_cases.ndarray_schema(np.ndarray)
+
+    class TypeModel(BaseModel):
+        array: type_annotation
+
+    class AnnotationModel(BaseModel):
+        array: schema_annotation
+
+    type_schema = TypeModel.model_json_schema()
+    annotation_schema = AnnotationModel.model_json_schema()
+    del type_schema["title"]
+    del annotation_schema["title"]
+
+    assert type_schema == annotation_schema
