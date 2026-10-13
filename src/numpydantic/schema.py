@@ -6,6 +6,7 @@ Helper functions for use with :class:`~numpydantic.NDArray` - see the note in
 import hashlib
 import json
 from collections.abc import Callable
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, get_args
 
 import numpy as np
@@ -14,6 +15,7 @@ from pydantic_core import CoreSchema, core_schema
 from pydantic_core.core_schema import ListSchema, ValidationInfo
 
 from numpydantic import dtype as dt
+from numpydantic.exceptions import DtypeError, ShapeError
 from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
@@ -273,7 +275,21 @@ def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
     ) -> NDArrayType:
         interface_cls = Interface.match(value)
         interface = interface_cls(shape, dtype)
-        value = interface.validate(value)
+        try:
+            value = interface.validate(value)
+        except (ShapeError, DtypeError) as e:
+            _warn_about_possible_missing_deps(e, value)
         return value
 
     return validate_interface
+
+
+def _warn_about_possible_missing_deps(e: Exception, value: Any) -> None:
+    if isinstance(value, (str, Path)):
+        new_ex = type(e)(
+            str(e) + "\nThe passed input looks like a path, "
+            "make sure you have the required dependencies installed to load the array!"
+        )
+        raise new_ex
+    else:
+        raise e
