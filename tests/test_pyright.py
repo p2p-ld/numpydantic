@@ -6,7 +6,7 @@ import pytest
 
 DATA_DIR = Path(__file__).parent / "data"
 
-pytestmark = pytest.mark.typechecking
+pytestmark = [pytest.mark.typechecking, pytest.mark.pyright]
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 import numpy as np
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ class MyModel(BaseModel):
 
 
 class MyModel2(BaseModel):
-    array: Annotated[np.ndarray, NDArraySchema(Shape[3, 3], np.uint8)]
+    array: Annotated[np.ndarray, NDArraySchema(Shape[Literal[3], Literal[3]], np.uint8)]
 
 
 instance = MyModel(array=np.ones((3, 3), np.uint8))
