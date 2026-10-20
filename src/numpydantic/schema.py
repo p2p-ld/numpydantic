@@ -7,9 +7,18 @@ import hashlib
 import json
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, get_args
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Literal,
+    Optional,
+    get_args,
+    get_origin,
+)
 
 import numpy as np
+from annotated_types import Interval
 from pydantic import BaseModel
 from pydantic_core import CoreSchema, core_schema
 from pydantic_core.core_schema import ListSchema, ValidationInfo
@@ -18,9 +27,9 @@ from numpydantic import dtype as dt
 from numpydantic.exceptions import DtypeError, ShapeError
 from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
+from numpydantic.shape._variadic import _split_variadic
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.validation.dtype import is_union
-from numpydantic.vendor.nptyping.structure import StructureMeta
 
 if TYPE_CHECKING:  # pragma: no cover
     from pydantic._internal._schema_generation_shared import (
@@ -53,8 +62,6 @@ def _lol_dtype(
     dtype: DtypeType, _handler: "CallbackGetCoreSchemaHandler"
 ) -> CoreSchema:
     """Get the innermost dtype schema to use in the generated pydantic schema"""
-    if isinstance(dtype, StructureMeta):  # pragma: no cover
-        raise NotImplementedError("Structured dtypes are currently unsupported")
     if isinstance(dtype, tuple):
         # if it's a meta-type that refers to a generic float/int, just make that
         if dtype in (dt.Float, dt.Number):
@@ -128,61 +135,76 @@ def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
         array_type ( :class:`pydantic_core.CoreSchema` ): The pre-rendered pydantic
             core schema to use in the innermost list entry
     """
-    from numpydantic.validation.shape import _is_range
-
-    shape_parts = [part.strip() for part in shape.__args__[0].split(",")]
-    # labels, if present
-    split_parts = [
-        p.split(" ")[1] if len(p.split(" ")) == 2 else None for p in shape_parts
-    ]
 
     # Construct a list of list schema
     # go in reverse order - construct list schemas such that
     # the final schema is the one that checks the first dimension
-    shape_labels = reversed(split_parts)
-    shape_args = reversed(shape.prepared_args)
-    list_schema = None
-    for arg, label in zip(shape_args, shape_labels):
+    shape_args = get_args(shape)
+    fixed, tail = _split_variadic(shape_args)
+
+    # if we have a tail, that's the inner schema
+    if tail:
+        inner_schema = _recursive_shape(array_type, _list_schema_kwargs(tail))
+    else:
+        inner_schema = array_type
+
+    for arg in reversed(fixed):
         # which handler to use? for the first we use the actual type
         # handler, everywhere else we use the prior list handler
-        inner_schema = array_type if list_schema is None else list_schema
+        inner_schema = core_schema.list_schema(inner_schema, **_list_schema_kwargs(arg))
 
-        # make a label annotation, if we have one
-        metadata = {"name": label} if label is not None else None
+    return inner_schema
 
-        # make the current level list schema, accounting for shape
-        if arg == "*":
-            list_schema = core_schema.list_schema(inner_schema, metadata=metadata)
-        elif arg == "...":
-            list_schema = _unbounded_shape(inner_schema, metadata=metadata)
-        else:
-            if _is_range(arg):
-                arg_min, arg_max = arg.split("-")
-                arg_min = None if arg_min == "*" else int(arg_min)
-                arg_max = None if arg_max == "*" else int(arg_max)
 
-            else:
-                try:
-                    arg = int(arg)
-                    arg_min = arg
-                    arg_max = arg
-                except ValueError as e:  # pragma: no cover
+def _list_schema_kwargs(arg: Any) -> dict:
+    # make a label annotation, if we have one
+    # metadata = {"name": label} if label is not None else None
+    kwargs = {}
+    annotations = get_args(arg)[1:] if get_origin(arg) is Annotated else tuple()
+    labels = [item for item in annotations if isinstance(item, str)]
+    if labels:
+        kwargs["metadata"] = {"name": labels[0]}
 
-                    raise ValueError(
-                        "Array shapes must be integers, wildcards, ellipses, or "
-                        "ranges. Shape variables (for declaring that one dimension "
-                        "must be the same size as another) are not supported because "
-                        "it is impossible to express dynamic minItems/maxItems in "
-                        "JSON Schema. "
-                        "See: https://github.com/orgs/json-schema-org/discussions/730"
-                    ) from e
-            list_schema = core_schema.list_schema(
-                inner_schema, min_length=arg_min, max_length=arg_max, metadata=metadata
+    # make the current level list schema, accounting for shape
+    try:
+        if arg is int:
+            return kwargs
+        elif get_origin(arg) is Literal:
+            # TODO: support multiple exact lengths
+            val = int(get_args(arg)[0])
+            kwargs["max_length"] = val
+            kwargs["max_length"] = val
+
+        elif any(isinstance(annotation, Interval) for annotation in annotations):
+            interval = next(
+                annotation
+                for annotation in annotations
+                if isinstance(annotation, Interval)
             )
-    return list_schema
+            if interval.ge:
+                kwargs["min_length"] = interval.ge
+            elif interval.gt:
+                kwargs["min_length"] = interval.gt - 1
+
+            if interval.le:
+                kwargs["max_length"] = interval.le
+            elif interval.lt:
+                kwargs["max_length"] = interval.lt + 1
+
+        return kwargs
+    except ValueError as e:  # pragma: no cover
+        raise ValueError(
+            "Array shapes must be integers, wildcards, ellipses, or "
+            "ranges. Shape variables (for declaring that one dimension "
+            "must be the same size as another) are not supported because "
+            "it is impossible to express dynamic minItems/maxItems in "
+            "JSON Schema. "
+            "See: https://github.com/orgs/json-schema-org/discussions/730 "
+            f"Instead, got {arg}"
+        ) from e
 
 
-def _hash_schema(schema: CoreSchema) -> str:
+def _hash_schema(schema: CoreSchema, list_kwargs: dict | None = None) -> str:
     """
     Make a hex-encoded 8-byte blake2b hash from a pydantic core schema.
     Collisions are really not important or likely here, but we do want the same schema
@@ -195,31 +217,42 @@ def _hash_schema(schema: CoreSchema) -> str:
         separators=(",", ":"),
         default=lambda x: None,
     ).encode("utf-8")
+    if list_kwargs:
+        schema_str += json.dumps(
+            list_kwargs,
+            sort_keys=True,
+            indent=None,
+            separators=(",", ":"),
+            default=lambda x: None,
+        ).encode("utf-8")
     hasher = hashlib.blake2b(digest_size=8)
     hasher.update(schema_str)
     return hasher.hexdigest()
 
 
-def _unbounded_shape(
-    inner_type: CoreSchema, metadata: dict | None = None
+def _recursive_shape(
+    inner_type: CoreSchema, list_kwargs: dict | None = None
 ) -> core_schema.DefinitionsSchema:
     """
     Make a recursive schema that refers to itself using a hashed version of the inner
     type
     """
+    schema_hash = _hash_schema(inner_type, list_kwargs)
+    if list_kwargs is None:
+        list_kwargs = {}
 
-    schema_hash = _hash_schema(inner_type)
     array_ref = f"any-shape-array-{schema_hash}"
 
     schema = core_schema.definitions_schema(
         core_schema.list_schema(
-            core_schema.definition_reference_schema(array_ref), metadata=metadata
+            core_schema.definition_reference_schema(array_ref), **list_kwargs
         ),
         [
             core_schema.union_schema(
                 [
                     core_schema.list_schema(
-                        core_schema.definition_reference_schema(array_ref)
+                        core_schema.definition_reference_schema(array_ref),
+                        **list_kwargs,
                     ),
                     inner_type,
                 ],
@@ -256,7 +289,7 @@ def make_json_schema(
 
     # get the names of the shape constraints, if any
     if shape is Any:
-        list_schema = _unbounded_shape(dtype_schema)
+        list_schema = _recursive_shape(dtype_schema)
         # list_schema = core_schema.list_schema(core_schema.any_schema())
     else:
         list_schema = list_of_lists_schema(shape, dtype_schema)
