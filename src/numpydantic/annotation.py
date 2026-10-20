@@ -8,8 +8,8 @@ from typing import Any
 from pydantic import GetPydanticSchema
 
 from numpydantic import NDArray
+from numpydantic.shape import Shape
 from numpydantic.types import DtypeType
-from numpydantic.validation.shape import Shape
 
 
 def NDArraySchema(
@@ -55,9 +55,6 @@ def NDArraySchema(
     Returns:
 
     """
-    if shape is not Shape and shape is not Any and not issubclass(shape, Shape):
-        shape = Shape[shape]
-
     ndarray = NDArray[shape, dtype]
 
     return GetPydanticSchema(

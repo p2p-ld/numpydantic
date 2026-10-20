@@ -43,11 +43,6 @@ from numpydantic.serialization import jsonize_array
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.validation.dtype import is_union
 from numpydantic.vendor.nptyping.error import InvalidArgumentsError
-from numpydantic.vendor.nptyping.structure import Structure
-from numpydantic.vendor.nptyping.structure_expression import check_type_names
-from numpydantic.vendor.nptyping.typing_ import (
-    dtype_per_name,
-)
 
 if TYPE_CHECKING:  # pragma: no cover
     from pydantic._internal._schema_generation_shared import (
@@ -69,17 +64,17 @@ def _get_shape(dtype_candidate: Any) -> Shape:
     """
     Override of base method to use our local definition of shape
     """
-    from numpydantic.validation.shape import Shape
+    from numpydantic.shape import Shape
 
-    if dtype_candidate is Any or dtype_candidate is Shape:
+    if dtype_candidate is Any:
         shape = Any
-    elif issubclass(dtype_candidate, Shape):
-        shape = dtype_candidate
-    elif _is_literal_like(dtype_candidate):
+    elif get_origin(dtype_candidate) is Literal:
         shape_expression = dtype_candidate.__args__[0]
         shape = Shape[shape_expression]
     elif get_origin(dtype_candidate) is tuple:
-        shape = Shape(*get_args(dtype_candidate))
+        shape = Shape[get_args(dtype_candidate)]
+    elif issubclass(dtype_candidate, Shape):
+        shape = dtype_candidate
     else:
         raise InvalidArgumentsError(
             f"Unexpected argument '{dtype_candidate}', expecting"
@@ -87,6 +82,9 @@ def _get_shape(dtype_candidate: Any) -> Shape:
             " or Literal[<ShapeExpression>]"
             " or typing.Any."
         )
+    # any-shape expressions like "*, ..." resolve to the bare Shape class
+    if shape is Shape:
+        shape = Any
     return shape
 
 
@@ -104,13 +102,6 @@ def _get_dtype(dtype_candidate: Any) -> DType:
         dtype = Any
     elif is_dtype or is_union(dtype_candidate):
         dtype = dtype_candidate
-    elif issubclass(dtype_candidate, Structure):  # pragma: no cover
-        dtype = dtype_candidate
-        check_type_names(dtype, dtype_per_name)
-    elif _is_literal_like(dtype_candidate):  # pragma: no cover
-        structure_expression = dtype_candidate.__args__[0]
-        dtype = Structure[structure_expression]
-        check_type_names(dtype, dtype_per_name)
     elif isinstance(dtype_candidate, tuple):  # pragma: no cover
         dtype = tuple([_get_dtype(dt) for dt in dtype_candidate])
     else:
@@ -165,8 +156,6 @@ class NDArrayMeta(_ProtocolMeta):
     def _dtype_to_str(cls, dtype: Any) -> str:
         if dtype is Any:
             result = "Any"
-        elif issubclass(dtype, Structure):
-            result = str(dtype)
         elif isinstance(dtype, tuple):
             result = ", ".join([str(dt) for dt in dtype])
         else:

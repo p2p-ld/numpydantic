@@ -12,7 +12,7 @@ from datetime import datetime
 from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, version
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, Union, get_args
 
 if TYPE_CHECKING:
     from numpydantic.interface.typing import InterfaceTyping
@@ -409,7 +409,7 @@ class Interface(ABC, Generic[T]):
         """
         if not valid:
             raise ShapeError(
-                f"Invalid shape! expected shape {self.shape.prepared_args}, "
+                f"Invalid shape! expected shape {get_args(self.shape)}, "
                 f"got shape {shape}"
             )
 
