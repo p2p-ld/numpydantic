@@ -164,7 +164,8 @@ markers = [
     "pipe_union: union dtypes specified with a pipe",
     "scalar: scalar values",
     "model: dtype annotatiosn are a pydantic model",
-    "typechecking: type checker integration - mypy, pyright"
+    "typechecking: type checker integration - mypy, pyright",
+    "pyright: Pyright type checker"
 ]
 
 [tool.black]
