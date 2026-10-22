@@ -33,11 +33,14 @@ using the ``name`` attribute of the interface to enable.
 from __future__ import annotations
 
 import re
+import warnings
 from collections.abc import Callable
 from configparser import ConfigParser
 from dataclasses import dataclass, field, fields
 from tomllib import load as load_toml
-from typing import Any, Final, Self
+from typing import Annotated, Any, Final, Literal, Self, get_args, get_origin
+
+from annotated_types import Interval
 
 from numpydantic.interface import ConstructorSpec, Interface
 
@@ -57,6 +60,7 @@ try:
     from mypy.types import (
         AnyType,
         CallableType,
+        EllipsisType,
         Instance,
         LiteralType,
         ProperType,
@@ -74,22 +78,20 @@ except ImportError as exc:  # pragma: no cover
 
 from pydantic.mypy import PydanticPluginConfig
 
+from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.mypy.pydantic_ import _make_pydantic_hook
-from numpydantic.validation.shape import (
-    _is_range,
-    validate_shape_expression,
-)
-from numpydantic.vendor.nptyping.error import InvalidShapeError
-from numpydantic.vendor.nptyping.shape_expression import (
-    get_dimensions,
-    remove_labels,
-)
+from numpydantic.ndarray import NDArray
+from numpydantic.shape import Range, Shape
+from numpydantic.shape._string import _is_range
+from numpydantic.shape._variadic import _split_variadic
+from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 
 CONFIGFILE_KEY = "numpydantic-mypy"
 """the table in an INI file where npd-specific settings are"""
 NDARRAY_FULLNAME: Final = "numpydantic.ndarray.NDArray"
-SHAPE_FULLNAME: Final = "numpydantic.validation.shape.Shape"
-_NUMERIC_RE = re.compile(r"^[0-9]+$")
+RANGE_FULLNAME: Final = "numpydantic.shape._range.Range"
+LITERAL_FULLNAMES: Final = ("typing.Literal", "typing_extensions.Literal")
+UNPACK_FULLNAMES: Final = ("typing.Unpack", "typing_extensions.Unpack")
 
 BUILTIN_TO_NUMPY = {
     "builtins.float": "numpy.double",
@@ -177,8 +179,6 @@ class NumpydanticMypyPlugin(Plugin):
         """Convert an NDArray annotation to an enriched np.ndarray annotation"""
         if fullname == NDARRAY_FULLNAME:
             return _analyze_ndarray_type
-        elif fullname == SHAPE_FULLNAME:
-            return _analyze_shape
         return None
 
     def get_function_hook(
@@ -290,14 +290,6 @@ def plugin(version: str) -> type[NumpydanticMypyPlugin]:  # noqa: ARG001
 def _analyze_ndarray_type(ctx: AnalyzeTypeContext) -> Type:
     """
     Render ``NDArray[shape, dtype]`` as a static numpy.ndarray type.
-
-    TODO: This is a *bit* circular,
-    we build up args into a string since there are several forms,
-    then break it back down again into a tuple declaration.
-    ideally we just go everything -> tuple rather than roundtripping through string,
-    but hey just getting the thing working for now, it's been a hack.
-    There are some things that the python type system still can't do,
-    but e.g. we aren't using TypeVarTuple even.
     """
     args = ctx.type.args
 
@@ -317,13 +309,6 @@ def _analyze_ndarray_type(ctx: AnalyzeTypeContext) -> Type:
     dtype = _parse_dtype_arg(dtype_arg, ctx)
     ndarray_type = _build_ndarray_type(ctx, shape=shape, dtype=dtype)
     return ndarray_type
-
-
-def _analyze_shape(ctx: AnalyzeTypeContext) -> Type:
-    parsed = _parse_shape_arg(ctx.type, ctx)
-    if parsed is None:
-        return ctx.type
-    return parsed
 
 
 def _build_ndarray_type(
@@ -354,93 +339,123 @@ def _build_ndarray_type(
 # ---------------------------------------------------------------------------
 
 
-def _parse_shape_arg(arg: Type, ctx: AnalyzeTypeContext) -> TupleType | None:
+def _parse_shape_arg(arg: Type | None, ctx: AnalyzeTypeContext) -> TupleType | None:
     """
-    Parse the shape constraint into its numpy representation
+    Parse the shape constraint into its numpy representation,
+    or ``None`` if the shape is unconstrained or invalid.
+
+    The annotation is converted into the runtime object it stands for,
+    normalized by ``NDArray`` the same way it is at runtime,
+    and then the canonical tuple form is converted into mypy types.
     """
-    expr = _shape_expression_from_arg(arg, ctx)
-    if expr is None:
+    if arg is None:
         return None
     try:
-        validate_shape_expression(expr)
-    except InvalidShapeError as exc:
+        with warnings.catch_warnings():
+            # deprecated forms warn at runtime, not while type checking
+            warnings.simplefilter("ignore")
+            shape = _to_runtime(arg, ctx)
+            canonical = NDArray[shape, Any].__args__[0]
+        if canonical is Any:
+            return None
+        return _canonical_to_type(canonical, ctx)
+    except (InvalidShapeExpressionError, InvalidArgumentsError) as exc:
         ctx.api.fail(str(exc), ctx.context)
         return None
 
-    dims = remove_labels(get_dimensions(expr))
-    dims = [d.strip() for d in dims if d.strip()]
-    return _dims_to_tuple(dims, ctx)
+
+def _to_runtime(typ: Type, ctx: AnalyzeTypeContext) -> Any:
+    """The runtime object that an unanalyzed shape annotation stands for"""
+    typ = get_proper_type(typ)
+    if isinstance(typ, RawExpressionType):
+        return typ.literal_value
+    elif isinstance(typ, EllipsisType):
+        return ...
+    elif isinstance(typ, UnpackType):
+        return next(iter(_to_runtime(typ.type, ctx)))
+    elif isinstance(typ, UnboundType):
+        fullname = _resolve_fullname(typ, ctx)
+        if fullname in LITERAL_FULLNAMES:
+            return Literal[tuple(_to_runtime(arg, ctx) for arg in typ.args)]
+        elif fullname in UNPACK_FULLNAMES and len(typ.args) == 1:
+            return next(iter(_to_runtime(typ.args[0], ctx)))
+        elif fullname == RANGE_FULLNAME:
+            return Range[tuple(_to_runtime(arg, ctx) for arg in typ.args)]
+        elif fullname == "builtins.tuple" and typ.args:
+            # Shape is tuple to type checkers, and Shape[...] normalizes tuple args
+            return Shape[tuple(_to_runtime(arg, ctx) for arg in typ.args)]
+
+    return _analyzed_to_runtime(get_proper_type(ctx.api.analyze_type(typ)), typ)
 
 
-def _shape_expression_from_arg(arg: Type, ctx: AnalyzeTypeContext) -> str | None:
-    """Walk an ``UnboundType`` to recover the original shape-expression string."""
-    arg = get_proper_type(arg)
-
-    if isinstance(arg, AnyType):
+def _resolve_fullname(typ: UnboundType, ctx: AnalyzeTypeContext) -> str | None:
+    """
+    The fully qualified name of what an unanalyzed type refers to,
+    following aliases like ``L = Literal``
+    """
+    sym = ctx.api.lookup_qualified(typ.name, typ, suppress_errors=True)
+    if sym is None or sym.node is None:
         return None
-
-    elif isinstance(arg, RawExpressionType):
-        # strings, or strings inside Literal[]
-        return str(arg.literal_value)
-
-    # elif isinstance((analyzed := ctx.api.analyze_type(arg)), LiteralType):
-    #     return str(analyzed.value)
-
-    elif isinstance(arg, UnboundType):
-        if not arg.args:
-            return None
-
-        if len(arg.args) == 1:
-            return _shape_expression_from_arg(arg.args[0], ctx)
-
-        args = [_shape_expression_from_arg(a, ctx) for a in arg.args]
-        # Shape[3, 3, ...] varargs
-        return ", ".join(str(arg) for arg in args)
-
-    return None
+    node = sym.node
+    if isinstance(node, TypeAlias) and node.no_args:
+        target = get_proper_type(node.target)
+        if isinstance(target, Instance):
+            return target.type.fullname
+    return node.fullname
 
 
-def _dims_to_tuple(
-    dims: list[str | int], ctx: AnalyzeTypeContext
-) -> TupleType | Instance:
-    """Combine dimensions into their tuple form"""
-    api = ctx.api
-    int_instance = api.named_type("builtins.int", [])
-    variadic_tuple = api.named_type("builtins.tuple", [int_instance])
-    shape_type: TupleType
-    if dims is None:
-        return variadic_tuple
-    else:
-        items: list[Type] = []
-        trailing_variadic = False
-        for dim in dims:
-            if dim == "...":
-                trailing_variadic = True
-                continue
-            items.append(_dim_to_type(dim, int_instance))
-
-        if trailing_variadic:
-            unpack = UnpackType(api.named_type("builtins.tuple", [int_instance]))
-            shape_type = TupleType(items + [unpack], fallback=variadic_tuple)
-        else:
-            shape_type = TupleType(items, fallback=variadic_tuple)
-    return shape_type
+def _analyzed_to_runtime(typ: ProperType, original: Type) -> Any:
+    """The runtime object for a type that mypy has analyzed, like ``int``"""
+    if isinstance(typ, AnyType):
+        return Any
+    elif isinstance(typ, LiteralType):
+        return Literal[typ.value]
+    elif isinstance(typ, Instance):
+        if typ.type.fullname == "builtins.int":
+            return int
+        elif typ.type.fullname == "builtins.tuple" and len(typ.args) == 1:
+            # a variadic tuple, like AnyDims
+            item = _analyzed_to_runtime(get_proper_type(typ.args[0]), original)
+            return tuple[item, ...]
+    elif isinstance(typ, TupleType):
+        items = (_analyzed_to_runtime(get_proper_type(t), original) for t in typ.items)
+        return tuple[tuple(items)]
+    raise InvalidShapeExpressionError(f"Invalid shape dimension: {original}")
 
 
-def _dim_to_type(dim: str, int_instance: Instance) -> Type:
-    """Convert a single dim string to its mypy Type representation."""
-    if _NUMERIC_RE.match(dim):
-        return LiteralType(int(dim), fallback=int_instance)
-    elif _is_range(dim):
-        parts = dim.split("-")
-        low = int(parts[0]) if parts[0] != "*" else parts[0]
-        high = int(parts[1]) if parts[1] != "*" else parts[1]
-        typ = LiteralType(RangeValue(low, high), int_instance)
-        return typ
-    elif dim == "*":
+def _canonical_to_type(canonical: Any, ctx: AnalyzeTypeContext) -> TupleType:
+    """Convert a canonical runtime shape like ``tuple[L[3], *AnyDims]`` to mypy"""
+    int_instance = ctx.api.named_type("builtins.int", [])
+    fixed, tail = _split_variadic(get_args(canonical))
+    items = [_canonical_dim_to_type(dim, int_instance) for dim in fixed]
+    if tail is not None:
+        repeated = _canonical_dim_to_type(tail, int_instance)
+        items.append(UnpackType(ctx.api.named_type("builtins.tuple", [repeated])))
+    return TupleType(
+        items, fallback=ctx.api.named_type("builtins.tuple", [int_instance])
+    )
+
+
+def _canonical_dim_to_type(dim: Any, int_instance: Instance) -> Type:
+    """Convert one dimension of a canonical runtime shape to mypy"""
+    if dim is int:
         return int_instance
-    else:
-        raise NotImplementedError("Unhandled dim, howd you get here!")
+    elif dim is Any:
+        return AnyType(TypeOfAny.special_form)
+
+    origin = get_origin(dim)
+    if origin is Literal and len(get_args(dim)) == 1:
+        return LiteralType(get_args(dim)[0], fallback=int_instance)
+    elif origin is Annotated:
+        base, *metadata = get_args(dim)
+        for meta in metadata:
+            if isinstance(meta, Interval):
+                low = "*" if meta.ge is None else meta.ge
+                high = "*" if meta.le is None else meta.le
+                return LiteralType(RangeValue(low, high), fallback=int_instance)
+        # other metadata, like labels, doesn't change the type
+        return _canonical_dim_to_type(base, int_instance)
+    raise InvalidShapeExpressionError(f"Invalid shape dimension: {dim!r}")
 
 
 # ---------------------------------------------------------------------------
