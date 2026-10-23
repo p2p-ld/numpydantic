@@ -11,7 +11,7 @@ dependencies = [
 ]
 requires-python = "<4.0,>=3.11"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 keywords = [
     "arrays",
     "validation",
@@ -25,7 +25,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
