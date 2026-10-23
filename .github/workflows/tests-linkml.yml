@@ -41,14 +41,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Add checked out numpydantic to uv deps
-        working-directory: linkml/packages/linkml
-        run: uv add --editable --frozen '../../../numpydantic'
-
-      - name: Install dependencies
-        working-directory: linkml
-        run: uv sync --all-groups
-
       - name: Force uninstall and reinstall
         working-directory: linkml
         run: |
@@ -57,8 +49,8 @@ jobs:
 
       - name: print numpydantic version and path
         working-directory: linkml
-        run: uv run python -c 'import numpydantic; from importlib.metadata import version; print(numpydantic.__file__); print(version("numpydantic"))'
+        run: uv run  --no-sync python -c 'import numpydantic; from importlib.metadata import version; print(numpydantic.__file__); print(version("numpydantic"))'
 
       - name: Run LinkML Numpydantic Tests
-        run: uv run pytest -m pydanticgen_npd
+        run: uv run  --no-sync pytest -m pydanticgen_npd
         working-directory: linkml
