@@ -34,11 +34,12 @@ or implement `__get_pydantic_core_schema__` on your type to fully support it.
 Numpydantic allows you to do this:
 
 ```python
+from typing import Literal as L
 from pydantic import BaseModel
 from numpydantic import NDArray, Shape
 
 class MyModel(BaseModel):
-    array: NDArray[Shape["3 x, 4 y, * z"], int]
+    array: NDArray[Shape[L[3], L[4], int], int]
 ```
 
 And use it with your favorite array library:
@@ -67,7 +68,7 @@ Use NDArray annotations and get static shape and dtype checking with our mypy pl
 Never forget how you oriented your arrays or how you've dtyped them again!
 
 ```python
-GRAYSCALE = NDArray[Shape["* x, * y"], np.uint8]
+GRAYSCALE = NDArray[Shape[int, int], np.uint8]
 
 def grayscale_mask(frame: GRAYSCALE) -> GRAYSCALE:
     # Probably something fancier than this...
@@ -96,7 +97,7 @@ Use the `NDArray` type annotation like a regular type outside
 of pydantic -- eg. to validate an array anywhere, use `isinstance`:
 
 ```python
-array_type = NDArray[Shape["1, 2, 3"], int]
+array_type = NDArray[Shape[L[1], L[2], L[3]], int]
 isinstance(np.zeros((1,2,3), dtype=int), array_type)
 # True
 isinstance(zarr.zeros((1,2,3), dtype=int), array_type)
@@ -111,7 +112,7 @@ Or use it as a convenient callable shorthand for validating and working with
 array types that usually don't have an array-like API.
 
 ```python
->>> rgb_video_type = NDArray[Shape["* t, 1920 x, 1080 y, 3 rgb"], np.uint8]
+>>> rgb_video_type = NDArray[Shape[int, L[1920], L[1080], L[3]], np.uint8]
 >>> video = rgb_video_type('data.mp4')
 >>> video.shape
 (10, 1920, 1080, 3)
@@ -188,7 +189,7 @@ For example, to specify a very special type of image that can either be
 - a 1080p video 
 
 ```python
-from typing import Union
+from typing import Literal as L, Union
 from pydantic import BaseModel
 import numpy as np
 
@@ -196,9 +197,9 @@ from numpydantic import NDArray, Shape
 
 class Image(BaseModel):
     array: Union[
-        NDArray[Shape["* x, * y"], float],
-        NDArray[Shape["* x, * y, 3 rgb"], np.uint8],
-        NDArray[Shape["* t, 1080 y, 1920 x, 3 rgb"], np.uint8]
+        NDArray[Shape[int, int], float],
+        NDArray[Shape[int, int, L[3]], np.uint8],
+        NDArray[Shape[int, L[1080], L[1920], L[3]], np.uint8]
     ]
 ```
 
@@ -423,11 +424,11 @@ Image.model_json_schema()
 numpydantic can even handle shapes with unbounded numbers of dimensions by using
 recursive JSON schema!!!
 
-So the any-shaped array (using nptyping's ellipsis notation):
+So the any-shaped array:
 
 ```python
 class AnyShape(BaseModel):
-    array: NDArray[Shape["*, ..."], np.uint8]
+    array: NDArray[Any, np.uint8]
 ```
 
 is rendered to JSON-Schema like this:

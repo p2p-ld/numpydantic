@@ -69,6 +69,9 @@ a shape along with an annotation shape (or implicitly against the defaults for e
 along with a value for `passes` that indicates if that combination is valid.
 
 ```{code-cell}
+from typing import Literal as L
+
+from numpydantic import Range
 from numpydantic.testing import ValidationCase
 
 dtype_case = ValidationCase(
@@ -80,7 +83,7 @@ dtype_case = ValidationCase(
 shape_case = ValidationCase(
     id="cool_shape", 
     shape=(1,2,3), 
-    annotation_shape=(1,"*","2-4"), 
+    annotation_shape=(L[1], int, Range[L[2], L[4]]), 
     passes=True
 )
 
@@ -103,7 +106,7 @@ dtype_case = ValidationCase(
 shape_case = ValidationCase(
     id="uncool_shape", 
     shape=(1,2,3), 
-    annotation_shape=(9,8,7), 
+    annotation_shape=(L[9], L[8], L[7]), 
     passes=False
 )
 
@@ -125,8 +128,8 @@ dtype_cases = [
     ValidationCase(dtype=int, annotation_dtype=float, passes=False)
 ]
 shape_cases = [
-    ValidationCase(shape=(1,2,3), annotation_shape=(1,2,3), passes=True),
-    ValidationCase(shape=(4,5,6), annotation_shape=(1,2,3), passes=False)
+    ValidationCase(shape=(1,2,3), annotation_shape=(L[1], L[2], L[3]), passes=True),
+    ValidationCase(shape=(4,5,6), annotation_shape=(L[1], L[2], L[3]), passes=False)
 ]
 
 iterator = merged_product(dtype_cases, shape_cases)
