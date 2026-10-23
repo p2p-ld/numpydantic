@@ -284,7 +284,6 @@ def _form_params(features: list[ShapeFeature]) -> list:
     ]
 
 
-@pytest.mark.filterwarnings(f"ignore:{STRING_DEPRECATION}:DeprecationWarning")
 @pytest.mark.parametrize("build,shape,valid", _shape_params(SHAPE_FEATURES))
 def test_shape_forms(build: Callable[[], Any], shape: ShapeTuple, valid: bool) -> None:
     """
@@ -362,7 +361,6 @@ def test_shape_canonical_form(form: Form, canonical: type) -> None:
     assert ndarray.__args__[0] == canonical
 
 
-@pytest.mark.filterwarnings(f"ignore:{STRING_DEPRECATION}:DeprecationWarning")
 def test_range_shape_schema():
     """
     Range shapes should correctly generate JSON Schema

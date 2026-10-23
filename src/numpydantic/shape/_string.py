@@ -66,7 +66,7 @@ def _warn_string_expression(item: str | tuple) -> None:
     if any("..." in s for s in strings):
         message = (
             "Treating '...' in a string as meaning any number of dimensions "
-            "of any size is now written as as *AnyDims. "
+            "of any size is now written as *AnyDims. "
             "The old behavior is deprecated in 2.0 and will be removed in 3.0."
         )
         warnings.warn(message, DeprecationWarning, stacklevel=_user_stacklevel())

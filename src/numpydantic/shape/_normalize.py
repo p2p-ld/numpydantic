@@ -19,14 +19,18 @@ def normalize_shape_expression(expression: StrShapeExpression | tuple) -> tuple:
     - Bare args (like `Shape[1, 2]`)
     - Valid tuple form (`Shape[Literal[1], Literal[2]]`)
     """
-    if isinstance(expression, str):
-        return normalize_string_shape_expression(expression)
-    elif (
-        isinstance(expression, tuple)
-        and len(expression) == 1
-        and isinstance(expression[0], str)
+    # unpack singletons to handle string format - a single string or a `Literal["1, 2"]`
+    if isinstance(expression, tuple) and len(expression) == 1:
+        expression = expression[0]
+    if (
+        get_origin(expression) is Literal
+        and len(args := get_args(expression)) == 1
+        and isinstance(args[0], str)
     ):
-        return normalize_string_shape_expression(expression[0])
+        expression = args[0]
+
+    if isinstance(expression, str):
+        return _normalize_tuple(normalize_string_shape_expression(expression))
     else:
         if not isinstance(expression, tuple):
             expression = (expression,)

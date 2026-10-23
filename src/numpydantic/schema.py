@@ -160,19 +160,27 @@ def _list_schema_kwargs(arg: Any) -> dict:
     # make a label annotation, if we have one
     # metadata = {"name": label} if label is not None else None
     kwargs = {}
-    annotations = get_args(arg)[1:] if get_origin(arg) is Annotated else tuple()
+    # unwrap annotations from inner value
+    if get_origin(arg) is Annotated:
+        args = get_args(arg)
+        typ = args[0]
+        annotations = args[1:]
+    else:
+        typ = arg
+        annotations = tuple()
+
     labels = [item for item in annotations if isinstance(item, str)]
     if labels:
         kwargs["metadata"] = {"name": labels[0]}
 
     # make the current level list schema, accounting for shape
     try:
-        if arg is int:
+        if typ is int:
             return kwargs
-        elif get_origin(arg) is Literal:
+        elif get_origin(typ) is Literal:
             # TODO: support multiple exact lengths
-            val = int(get_args(arg)[0])
-            kwargs["max_length"] = val
+            val = int(get_args(typ)[0])
+            kwargs["min_length"] = val
             kwargs["max_length"] = val
 
         elif any(isinstance(annotation, Interval) for annotation in annotations):

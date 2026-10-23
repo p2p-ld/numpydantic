@@ -66,15 +66,15 @@ def _get_shape(dtype_candidate: Any) -> Shape:
     """
     from numpydantic.shape import Shape
 
-    if dtype_candidate is Any:
+    if dtype_candidate is Any or dtype_candidate is Shape:
         shape = Any
     elif get_origin(dtype_candidate) is Literal:
         shape_expression = dtype_candidate.__args__[0]
         shape = Shape[shape_expression]
     elif get_origin(dtype_candidate) is tuple:
         shape = Shape[get_args(dtype_candidate)]
-    elif issubclass(dtype_candidate, Shape):
-        shape = dtype_candidate
+    elif isinstance(dtype_candidate, (str, tuple)):
+        shape = Shape[dtype_candidate]
     else:
         raise InvalidArgumentsError(
             f"Unexpected argument '{dtype_candidate}', expecting"
@@ -82,9 +82,6 @@ def _get_shape(dtype_candidate: Any) -> Shape:
             " or Literal[<ShapeExpression>]"
             " or typing.Any."
         )
-    # any-shape expressions like "*, ..." resolve to the bare Shape class
-    if shape is Shape:
-        shape = Any
     return shape
 
 

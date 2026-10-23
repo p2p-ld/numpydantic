@@ -147,6 +147,9 @@ filterwarnings = [
     'ignore:.*deprecated alias.*Deprecated NumPy 1\.24.*',
     # zarr chunk size estimation for scalar arrays
     'ignore:.*divide by zero encountered in log10.*',
+    # our own deprecation of string shape expressions, which the tests still use
+    'ignore:String shape expressions:DeprecationWarning',
+    "ignore:Treating '...' in a string:DeprecationWarning",
 ]
 markers = [
     "dtype: mark test related to dtype validation",
