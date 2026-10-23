@@ -7,7 +7,7 @@ from numpydantic import NDArraySchema, Shape
 
 
 class MyModel(BaseModel):
-    array: Annotated[np.ndarray, NDArraySchema(Shape(3, 3), np.uint8)]
+    array: Annotated[np.ndarray, NDArraySchema((3, 3), np.uint8)]
 
 
 class MyModel2(BaseModel):
