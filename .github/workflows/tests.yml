@@ -29,7 +29,7 @@ jobs:
           - platform: "windows-latest"
             python-version: "3.13"
           - platform: "windows-latest"
-            python-version: "3.14"
+            python-version: "3.15"   # no h5py wheels yet; should be 3.14
 
     runs-on: ${{ matrix.platform }}
 
@@ -40,6 +40,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install HDF5 (h5py has no 3.15 wheels yet)
+        if: matrix.python-version == '3.15' && runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libhdf5-dev pkg-config
 
       - name: Cache Dependencies
         id: cache-dependencies
