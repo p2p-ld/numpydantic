@@ -36,6 +36,7 @@ class SubClass(BasicModel):
 # --------------------------------------------------
 
 RGB_UNION = (("*", "*"), ("*", "*", 3), ("*", "*", 3, 4))
+RANGE_SHAPE = ("2-4", "3-*", "*-3")
 UNION_TYPE: TypeAlias = np.uint32 | np.float32
 
 SHAPE_CASES = (
@@ -46,6 +47,36 @@ SHAPE_CASES = (
     ValidationCase(shape=(9, 10, 2, 2), passes=False, id="dimension too small"),
     ValidationCase(shape=(10, 10, 1, 1), passes=True, id="wildcard smaller"),
     ValidationCase(shape=(10, 10, 3, 3), passes=True, id="wildcard larger"),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE, shape=(2, 3, 1), passes=True, id="range minimums"
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE, shape=(4, 10, 3), passes=True, id="range maximums"
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE,
+        shape=(1, 3, 1),
+        passes=False,
+        id="range too small",
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE,
+        shape=(5, 3, 1),
+        passes=False,
+        id="range too large",
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE,
+        shape=(2, 2, 1),
+        passes=False,
+        id="open range too small",
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE,
+        shape=(2, 3, 4),
+        passes=False,
+        id="open range too large",
+    ),
     ValidationCase(
         annotation_shape=RGB_UNION, shape=(5, 5), passes=True, id="Union 2D"
     ),

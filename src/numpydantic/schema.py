@@ -175,9 +175,7 @@ def _list_schema_kwargs(arg: Any) -> dict:
 
     # make the current level list schema, accounting for shape
     try:
-        if typ is int:
-            return kwargs
-        elif get_origin(typ) is Literal:
+        if get_origin(typ) is Literal:
             # TODO: support multiple exact lengths
             val = int(get_args(typ)[0])
             kwargs["min_length"] = val
