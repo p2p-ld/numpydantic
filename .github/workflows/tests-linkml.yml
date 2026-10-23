@@ -43,7 +43,7 @@ jobs:
 
       - name: Add checked out numpydantic to uv deps
         working-directory: linkml/packages/linkml
-        run: uv add --editable '../../../numpydantic'
+        run: uv add --editable --frozen '../../../numpydantic'
 
       - name: Install dependencies
         working-directory: linkml
