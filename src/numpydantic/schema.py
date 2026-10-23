@@ -172,7 +172,8 @@ def _list_schema_kwargs(arg: Any) -> dict:
         kwargs["min_length"] = kwargs["max_length"] = get_args(typ)[0]
 
     elif interval := next(
-        annotation for annotation in annotations if isinstance(annotation, Interval)
+        (annotation for annotation in annotations if isinstance(annotation, Interval)),
+        None,
     ):
         if interval.ge:
             kwargs["min_length"] = interval.ge
