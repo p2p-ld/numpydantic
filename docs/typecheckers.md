@@ -386,19 +386,24 @@ as it would be an absolutely absurd thing to do to open on-disk array stores or 
 
 ### Known Limitations
 
-#### Range-range checking
+#### Range checking
 
-Our implementation of ranges is [somewhat cursed](https://github.com/python/mypy/issues/16497#issuecomment-4570099557),
-and it is currently impossible to check if a right-hand side range is contained within a left-hand range.
-This is because we check ranges against literals using `__eq__` which is commutative.
+Our implementation of ranges is [somewhat cursed](https://github.com/python/mypy/issues/16497#issuecomment-4570099557):
+mypy compares literals using `__eq__`, so that is where ranges are checked.
 
-E.g. the following should fail, but it does not:
+A range must fit within the range it is assigned to:
 
-```{literalinclude} examples/correct/shape_range_range.py
+```{literalinclude} examples/incorrect/shape_range_range.py
 ```
 
-```{program-output} mypy --pretty --color-output examples/correct/shape_range_range.py
-```  
+```{program-output} mypy --pretty --color-output examples/incorrect/shape_range_range.py
+:returncode: 1
+```
+
+But when comparing a range with an exact size, we can't tell which side of the
+assignment the range is on. An exact size can be assigned to a range that contains it,
+but a range can also be assigned to an exact size it contains,
+e.g. `Range[L[2], L[4]]` can be assigned to `L[3]`, even though it shouldn't be.
 
 Pull requests welcome!
 
