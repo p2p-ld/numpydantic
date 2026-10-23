@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         platform: ["ubuntu-latest", "macos-latest", "windows-latest"]
-        python-version: ["3.10", "3.13"]
+        python-version: ["3.11", "3.14"]
 
     runs-on: ${{ matrix.platform }}
 
@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: numpydantic
+          fetch-depth: 0
 
       - name: Install uv and setup uv caching
         uses: astral-sh/setup-uv@v5
@@ -41,24 +42,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Add checked out numpydantic to uv deps
-        working-directory: linkml/packages/linkml
-        run: uv add --editable '../../../numpydantic'
-
-      - name: Install dependencies
-        working-directory: linkml
-        run: uv sync --all-groups
-
       - name: Force uninstall and reinstall
         working-directory: linkml
         run: |
-          uv run pip uninstall -y numpydantic
-          uv run pip install -e ../numpydantic
+          uv sync
+          uv pip install -e ../numpydantic
 
       - name: print numpydantic version and path
         working-directory: linkml
-        run: uv run python -c 'import numpydantic; from importlib.metadata import version; print(numpydantic.__file__); print(version("numpydantic"))'
+        run: uv run  --no-sync python -c 'import numpydantic; from importlib.metadata import version; print(numpydantic.__file__); print(version("numpydantic"))'
 
       - name: Run LinkML Numpydantic Tests
-        run: uv run pytest -m pydanticgen_npd
+        run: uv run  --no-sync pytest -m pydanticgen_npd
         working-directory: linkml
