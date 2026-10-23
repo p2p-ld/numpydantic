@@ -1,9 +1,11 @@
+from typing import Literal as L
+
 import numpy as np
 
 from numpydantic import NDArray, Shape
 
-GRAYSCALE = NDArray[Shape["* x, * y"], np.uint8]
-RGB = NDArray[Shape["* x, * y, 3 rgb"], np.uint8]
+GRAYSCALE = NDArray[Shape[int, int], np.uint8]
+RGB = NDArray[Shape[int, int, L[3]], np.uint8]
 
 
 def read_rgb() -> RGB:

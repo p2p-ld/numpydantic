@@ -1,3 +1,5 @@
+from typing import Literal as L
+
 from pydantic import BaseModel
 
 from numpydantic import NDArray, Shape
@@ -5,7 +7,7 @@ from numpydantic.interface.hdf5 import H5ArrayPath
 
 
 class MyModel(BaseModel):
-    array: NDArray[Shape[1, 2, 3]]
+    array: NDArray[Shape[L[1], L[2], L[3]]]
 
 
 # you can't just use any old thing
@@ -15,7 +17,9 @@ y = MyModel(array=5)
 
 # and the annotation refuses to accept non-array inputs
 # when used in non-pydantic contexts
-def passthrough(array: NDArray[Shape[1, 2, 3]]) -> NDArray[Shape[1, 2, 3]]:
+def passthrough(
+    array: NDArray[Shape[L[1], L[2], L[3]]],
+) -> NDArray[Shape[L[1], L[2], L[3]]]:
     return array
 
 
