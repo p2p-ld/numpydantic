@@ -15,9 +15,9 @@ from numpydantic import AnyDims, NDArray, Range, Shape
 from numpydantic.exceptions import InvalidShapeExpressionError, ShapeError
 
 if sys.version_info < (3, 11):
-    from typing_extensions import Unpack
+    from typing_extensions import TypeVarTuple, Unpack
 else:
-    from typing import Unpack
+    from typing import TypeVarTuple, Unpack
 
 pytestmark = pytest.mark.shape
 
@@ -79,6 +79,12 @@ SHAPE_FEATURES = [
             Form("tuple-args", lambda: tuple[3, 4]),
             Form("literal", lambda: Shape[L[3], L[4]]),
             Form("tuple", lambda: tuple[L[3], L[4]]),
+            Form("unpack-fixed", lambda: Shape[L[3], Unpack[tuple[L[4]]]]),
+            Form(
+                "unpack-fixed-nested",
+                lambda: Shape[Unpack[tuple[L[3], Unpack[tuple[L[4]]]]]],
+            ),
+            Form("tuple-unpack-fixed", lambda: tuple[L[3], Unpack[tuple[L[4]]]]),
         ],
         canonical=tuple[L[3], L[4]],
     ),
@@ -156,6 +162,10 @@ SHAPE_FEATURES = [
                 min_version=(3, 11),
             ),
             Form("tuple-anydims", lambda: tuple[L[1], L[2], Unpack[AnyDims]]),
+            Form(
+                "anydims-nested",
+                lambda: Shape[L[1], Unpack[tuple[L[2], Unpack[AnyDims]]]],
+            ),
         ],
         canonical=tuple[L[1], L[2], *tuple[int, ...]],
     ),
@@ -184,6 +194,8 @@ SHAPE_FEATURES = [
             Form("args", lambda: Shape[1, 2, ...]),
             Form("literal", lambda: Shape[L[1], L[2], ...]),
             Form("tuple", lambda: tuple[L[1], L[2], ...]),
+            Form("unpack", lambda: Shape[L[1], L[2], Unpack[tuple[L[2], ...]]]),
+            Form("tuple-unpack", lambda: tuple[L[1], L[2], Unpack[tuple[L[2], ...]]]),
         ],
         canonical=tuple[L[1], L[2], *tuple[L[2], ...]],
     ),
@@ -343,6 +355,11 @@ def test_string_ellipsis_deprecation() -> None:
         pytest.param(lambda: Shape[Unpack[AnyDims], L[3]], id="anydims-not-last"),
         pytest.param(lambda: Shape[...], id="ellipsis-alone"),
         pytest.param(lambda: Shape[L[2], ..., L[3]], id="ellipsis-not-last"),
+        pytest.param(
+            lambda: Shape[Unpack[tuple[Unpack[AnyDims], L[3]]]],
+            id="anydims-not-last-after-flattening",
+        ),
+        pytest.param(lambda: Shape["...", 3], id="string-ellipsis-not-last"),
     ],
 )
 def test_shape_invalid_forms(build: Callable[[], Any]) -> None:
@@ -356,6 +373,13 @@ def test_shape_canonical_form(form: Form, canonical: type) -> None:
     """Every shape should be equivalent to the expected canonical form"""
     ndarray = NDArray[form.build(), Any]
     assert ndarray.__args__[0] == canonical
+
+
+def test_typevartuple_passthrough() -> None:
+    """Shape TypeVarTuples aren't supported yet, so they're kept as they are"""
+    Ts = TypeVarTuple("Ts")
+    assert Shape[L[3], Unpack[Ts]] == tuple[L[3], Unpack[Ts]]
+    assert Shape[Unpack[Ts], L[3]] == tuple[Unpack[Ts], L[3]]
 
 
 def test_range_shape_schema():
