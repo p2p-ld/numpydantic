@@ -35,7 +35,7 @@ jobs:
       - name: install python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.15"
           cache: "pip"
       - name: install pdm
         run: python -m pip install "pdm>=2.26.9"

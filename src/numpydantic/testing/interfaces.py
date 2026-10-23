@@ -1,6 +1,5 @@
 import contextlib
-import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cv2
@@ -22,13 +21,6 @@ from numpydantic.interface import (
 )
 from numpydantic.testing.helpers import InterfaceCase
 from numpydantic.types import DtypeType, NDArrayType
-
-if sys.version_info < (3, 11):
-    from datetime import timezone
-
-    UTC = timezone.utc
-else:
-    from datetime import UTC
 
 
 class NumpyCase(InterfaceCase):
@@ -94,7 +86,7 @@ class HDF5Case(_HDF5MetaCase):
             data = generator.random(shape).astype("S32")
         elif dtype is datetime:
             data = np.empty(shape, dtype="S32")
-            data.fill(datetime.now(timezone.utc).isoformat().encode("utf-8"))
+            data.fill(datetime.now(UTC).isoformat().encode("utf-8"))
         elif dtype is np.datetime64:
             dtype = np.dtype("M8[ms]")
             data = np.full(shape, dtype=dtype, fill_value=np.datetime64("now", "ms"))
@@ -133,7 +125,7 @@ class HDF5CompoundCase(_HDF5MetaCase):
         elif dtype is datetime:
             dt = np.dtype([("data", np.dtype("S32")), ("extra", "i8")])
             data = np.array(
-                [(datetime.now(timezone.utc).isoformat().encode("utf-8"), 0)]
+                [(datetime.now(UTC).isoformat().encode("utf-8"), 0)]
                 * int(np.prod(shape)),
                 dtype=dt,
             ).reshape(shape)

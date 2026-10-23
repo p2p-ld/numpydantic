@@ -33,19 +33,11 @@ using the ``name`` attribute of the interface to enable.
 from __future__ import annotations
 
 import re
-import sys
 from collections.abc import Callable
 from configparser import ConfigParser
 from dataclasses import dataclass, field, fields
-from typing import Any, Final
-
-if sys.version_info < (3, 11):
-    from tomli import load as load_toml
-    from typing_extensions import Self
-else:
-    from typing import Self
-
-    from tomllib import load as load_toml
+from tomllib import load as load_toml
+from typing import Any, Final, Self
 
 from numpydantic.interface import ConstructorSpec, Interface
 

@@ -25,10 +25,9 @@ Modifications from nptyping:
 
 import re
 import string
-import sys
 from abc import ABC
 from functools import lru_cache
-from typing import Any, Generic, Literal, get_args, get_origin
+from typing import Any, Generic, Literal, TypeVarTuple, get_args, get_origin
 
 from numpydantic.vendor.nptyping.base_meta_classes import ContainerMeta
 from numpydantic.vendor.nptyping.error import InvalidShapeError
@@ -39,11 +38,6 @@ from numpydantic.vendor.nptyping.shape_expression import (
     remove_labels,
 )
 from numpydantic.vendor.nptyping.typing_ import ShapeExpression, ShapeTuple
-
-if sys.version_info < (3, 11):
-    from typing_extensions import TypeVarTuple, Unpack
-else:
-    from typing import TypeVarTuple, Unpack
 
 _TV = TypeVarTuple("_TV")
 
@@ -69,7 +63,7 @@ class ShapeMeta(ContainerMeta["Shape"], implementation="Shape"):
         return {"prepared_args": dim_string_without_labels}
 
 
-class Shape(NPTypingType, ABC, Generic[Unpack[_TV]], metaclass=ShapeMeta):
+class Shape(NPTypingType, ABC, Generic[*_TV], metaclass=ShapeMeta):
     """
     A container for shape expressions that describe the shape of an multi
     dimensional array.
