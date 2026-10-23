@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: numpydantic
+          fetch-depth: 0
 
       - name: Install uv and setup uv caching
         uses: astral-sh/setup-uv@v5
@@ -45,8 +46,7 @@ jobs:
         working-directory: linkml
         run: |
           uv sync
-          uv run pip uninstall -y numpydantic
-          uv run pip install -e ../numpydantic
+          uv pip install -e ../numpydantic
 
       - name: print numpydantic version and path
         working-directory: linkml
