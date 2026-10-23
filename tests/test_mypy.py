@@ -18,7 +18,8 @@ from mypy.types import LiteralType
 
 # from numpydantic import ndarray, update_ndarray_stub
 from numpydantic.interface import Interface
-from numpydantic.mypy.plugin_ import CONFIGFILE_KEY, MypyPluginOptions, RangeValue
+from numpydantic.mypy.plugin_ import CONFIGFILE_KEY, MypyPluginOptions
+from numpydantic.mypy.ranges import RangeValue
 from numpydantic.testing import ValidationCase
 from numpydantic.testing.cases import MYPY_CASES
 
@@ -270,3 +271,31 @@ def test_range_exclusive_bounds() -> None:
     value = RangeValue(Interval(gt=1, lt=5))
     assert (value.low, value.high) == (2, 4)
     assert str(value) == "2-4"
+
+
+def test_range_cache(tmp_path: Path) -> None:
+    """
+    Ranges still work when mypy reuses its cache for the module that defines them,
+    where they would otherwise be loaded as plain strings
+    """
+    (tmp_path / "mypy.ini").write_text(
+        "[mypy]\n"
+        "plugins = numpydantic.mypy\n"
+        f"mypy_path = {MYPY_DIR / 'correct'}\n"
+    )
+    # compare a wide range and a narrow range from the cached module
+    user = tmp_path / "user.py"
+    user.write_text("from shape_range_subset import narrow, x\n\ny = x\ny = narrow()\n")
+    args = [
+        str(user),
+        "--config-file",
+        str(tmp_path / "mypy.ini"),
+        "--cache-dir",
+        str(tmp_path / ".mypy_cache"),
+    ]
+
+    for _ in range(2):
+        stdout, stderr, returncode = mypy.api.run(args)
+        assert returncode == 0, stdout + stderr
+        # only change the user module, so the ranges module can come from the cache
+        user.write_text(user.read_text() + "# edited\n")

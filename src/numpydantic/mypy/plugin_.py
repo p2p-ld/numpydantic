@@ -56,6 +56,7 @@ try:
         FunctionContext,
         MethodContext,
         Plugin,
+        ReportConfigContext,
     )
     from mypy.types import (
         AnyType,
@@ -80,6 +81,7 @@ from pydantic.mypy import PydanticPluginConfig
 
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.mypy.pydantic_ import _make_pydantic_hook
+from numpydantic.mypy.ranges import RangeValue, module_has_ranges
 from numpydantic.ndarray import NDArray
 from numpydantic.shape import Range, Shape
 from numpydantic.shape._variadic import _split_variadic
@@ -220,6 +222,26 @@ class NumpydanticMypyPlugin(Plugin):
         ):
             return _make_pydantic_hook(self.pydantic_config, self._interface_inputs)
 
+    def report_config_data(self, ctx: ReportConfigContext) -> Any:
+        """
+        Make mypy recheck modules with shape ranges on every run,
+        rather than loading them from its cache.
+
+        mypy stores literal values in its cache as plain data,
+        so a cached :class:`.RangeValue` comes back as a plain ``str``
+        that no longer does range checking.
+
+        mypy rechecks a module when the value returned here differs from the one
+        stored in its cache, so we store ``True`` for modules with ranges when
+        writing the cache, and always return ``None`` when checking it.
+        """
+        if ctx.is_check or self._modules is None:
+            return None
+        module = self._modules.get(ctx.id)
+        if module is not None and module_has_ranges(module):
+            return True
+        return None
+
     def _load_interfaces(self) -> None:
         enabled_interfaces = set(self.config.interfaces + ["numpy"])
 
@@ -236,60 +258,6 @@ class NumpydanticMypyPlugin(Plugin):
                     self._functions[spec.fullname] = spec
 
         self._interface_inputs = _load_interface_input_fullnames()
-
-
-class RangeValue(str):
-    """
-    An unholy python type used to overcome the inability to declare custom mypy types
-    for checking ranges, otherwise we would have to do something like
-    Union[Literal[1], Literal[2], Literal[3], ...]
-
-    It is used as the value of a ``LiteralType``.
-    mypy checks whether one literal is a subtype of another with
-    ``subtype.value == supertype.value``, so ``__eq__`` does the range check instead.
-    It's a ``str`` so mypy can store it in its cache.
-
-    See: https://github.com/python/mypy/issues/16497#issuecomment-4570099557
-    """
-
-    low: int | None
-    high: int | None
-
-    def __new__(cls, interval: Interval):  # noqa: D102
-        low = interval.ge if interval.gt is None else interval.gt + 1
-        high = interval.le if interval.lt is None else interval.lt - 1
-        inst = super().__new__(
-            cls, f"{'*' if low is None else low}-{'*' if high is None else high}"
-        )
-        inst.low = low
-        inst.high = high
-        return inst
-
-    def __hash__(self):
-        # Equal to the ints within the range, but can't hash the same as all of them
-        return hash((self.low, self.high))
-
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, RangeValue):
-            # both sides are ranges, so self is on the left, the candidate subtype,
-            # and has to fit within other
-            return other._contains(self.low, self.high)
-        elif isinstance(other, int) and not isinstance(other, bool):
-            # can't tell which side of the comparison self is on,
-            # so any size within the range is equal to it
-            return self._contains(other, other)
-        return NotImplemented
-
-    def __ne__(self, other: Any) -> bool:
-        # str has its own __ne__, which would otherwise compare as strings
-        equal = self.__eq__(other)
-        return equal if equal is NotImplemented else not equal
-
-    def _contains(self, low: int | None, high: int | None) -> bool:
-        """Whether the range from low to high (None for no bound) is within this one"""
-        low_fits = self.low is None or (low is not None and low >= self.low)
-        high_fits = self.high is None or (high is not None and high <= self.high)
-        return low_fits and high_fits
 
 
 def plugin(version: str) -> type[NumpydanticMypyPlugin]:  # noqa: ARG001
