@@ -175,14 +175,14 @@ def _list_schema_kwargs(arg: Any) -> dict:
         (annotation for annotation in annotations if isinstance(annotation, Interval)),
         None,
     ):
-        if interval.ge:
+        if interval.ge is not None:
             kwargs["min_length"] = interval.ge
-        elif interval.gt:
+        elif interval.gt is not None:
             kwargs["min_length"] = interval.gt + 1
 
-        if interval.le:
+        if interval.le is not None:
             kwargs["max_length"] = interval.le
-        elif interval.lt:
+        elif interval.lt is not None:
             kwargs["max_length"] = interval.lt - 1
 
     return kwargs
