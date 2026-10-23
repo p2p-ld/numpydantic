@@ -10,12 +10,11 @@ Range: TypeAlias = int | _Low | _High
 
 @dataclass(frozen=True)
 class _RangeDim:
-    """A parameterized Range, which becomes a "low-high" range in a shape expression"""
+    """A parameterized Range, which is Annotated[int, Interval(...)] in a shape"""
 
     low: int | None = None
     high: int | None = None
 
-    def __str__(self) -> str: ...
     def __repr__(self) -> str: ...
     @property
     def annotation(self) -> type: ...

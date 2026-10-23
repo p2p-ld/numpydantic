@@ -10,7 +10,7 @@ class Range:
     """
     An inclusive range of sizes for one dimension.
 
-    Bounds are ``Literal`` ints, and ``int`` leaves that side open:
+    Bounds are ``Literal`` ints, and ``int`` leaves that side open::
 
         Shape[Range[L[2], L[4]], Range[L[2], int], Range[int, L[4]]]
 
@@ -32,13 +32,10 @@ class Range:
 
 @dataclass(frozen=True)
 class _RangeDim:
-    """A parameterized Range, which becomes a "low-high" range in a shape expression"""
+    """A parameterized Range, which is Annotated[int, Interval(...)] in a shape"""
 
     low: int | None = None
     high: int | None = None
-
-    def __str__(self) -> str:
-        return f"{self.low}-{self.high}"
 
     def __repr__(self) -> str:
         low = "int" if self.low is None else f"L[{self.low}]"
@@ -51,7 +48,7 @@ class _RangeDim:
 
 
 def _range_bound(bound: Any) -> int | None:
-    if bound is int or bound is Any:
+    if bound is int:
         return None
     if get_origin(bound) is Literal and len(get_args(bound)) == 1:
         value = get_args(bound)[0]

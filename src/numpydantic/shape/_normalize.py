@@ -4,10 +4,8 @@ from typing import Any, Literal, get_args, get_origin
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import _RangeDim
 from numpydantic.shape._string import (
-    StrShapeExpression,
     _str_dim_to_tuple,
     normalize_string_shape_expression,
-    validate_string_shape_expression,
 )
 from numpydantic.shape._variadic import _is_any_shape, _variadic_item
 
@@ -17,14 +15,16 @@ else:
     from typing import Unpack
 
 
-def normalize_shape_expression(expression: StrShapeExpression | tuple) -> tuple:
+def normalize_shape_expression(expression: Any) -> tuple | Any:
     """
-    Normalize a shape expression to its canonical tuple form.
+    Normalize the arguments of ``Shape[...]`` to the arguments of the equivalent
+    ``tuple[...]``, or ``Any`` if any shape is allowed.
 
     Accepts:
-    - Old nptyping style string expressions
-    - Bare args (like `Shape[1, 2]`)
-    - Valid tuple form (`Shape[Literal[1], Literal[2]]`)
+
+    - Type expressions, like ``Shape[L[1], int, Range[L[2], L[4]], *AnyDims]``
+    - Bare ints, like ``Shape[1, 2]``
+    - Deprecated string expressions, like ``Shape["1, *, 2-4, ..."]``
     """
     # unpack singletons to handle string format - a single string or a `Literal["1, 2"]`
     if isinstance(expression, tuple) and len(expression) == 1:
@@ -37,29 +37,17 @@ def normalize_shape_expression(expression: StrShapeExpression | tuple) -> tuple:
         expression = args[0]
 
     if isinstance(expression, str):
-        return _normalize_tuple(normalize_string_shape_expression(expression))
-    else:
-        if not isinstance(expression, tuple):
-            expression = (expression,)
-        return _normalize_tuple(expression)
+        expression = normalize_string_shape_expression(expression)
+    elif not isinstance(expression, tuple):
+        expression = (expression,)
+    return _normalize_tuple(expression)
 
 
-def validate_shape_expression(expression: StrShapeExpression | tuple) -> tuple:
-    if isinstance(expression, str):
-        return validate_string_shape_expression(expression)
-    else:
-        raise NotImplementedError()
-
-
-def _normalize_tuple(expression: tuple) -> tuple:
-    """
-    Normalize tuple args to a nptyping string.
-
-    A trailing ``...`` repeats the dimension before it,
-    which becomes a ``"{dim}..."`` term meaning "zero or more of {dim}".
-    The string ``"..."`` means any number of dimensions of any size.
-    """
+def _normalize_tuple(expression: tuple) -> tuple | Any:
     expression = _flatten(expression)
+    if not expression:
+        # a 0-d array, as with tuple[()]
+        return ()
     normalized = tuple(_normalize_tuple_item(item) for item in expression)
     _check_positions(normalized)
     if normalized[-1] is Ellipsis and len(normalized) > 2:
@@ -93,25 +81,25 @@ def _check_positions(expression: tuple) -> None:
         raise InvalidShapeExpressionError("... must follow a dimension")
 
 
-def _normalize_tuple_item(item: str | int | type | Any) -> type:
+def _normalize_tuple_item(item: Any) -> Any:
     if get_origin(item) is Literal:
-        item = get_args(item)
+        args = get_args(item)
+        if len(args) > 1:
+            raise InvalidShapeExpressionError(
+                f"A dimension can only have one exact size, got {item!r}"
+            )
+        if isinstance(args[0], int):
+            return item
+        # TODO: just support multivalued literals as unions
+        item = args[0]
 
     if isinstance(item, str):
-        if "," in item:
-            return tuple(_str_dim_to_tuple(i) for i in item.split(","))
-        else:
-            return _str_dim_to_tuple(item)
+        return _str_dim_to_tuple(item)
     elif isinstance(item, int):
         return Literal[item]
     elif isinstance(item, _RangeDim):
         return item.annotation
     elif get_origin(item) is Unpack:
+        # Unpack[X] is *X
         return next(iter(get_args(item)[0]))
-    elif isinstance(item, tuple):
-        if len(item) == 1:
-            return _normalize_tuple_item(item[0])
-        else:
-            return tuple(_normalize_tuple_item(item) for item in item)
-    else:
-        return item
+    return item

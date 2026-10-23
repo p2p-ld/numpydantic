@@ -1,14 +1,4 @@
-import sys
-from typing import Any, get_origin
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Unpack
-else:
-    from typing import Unpack
-
-
-def _is_unpacked(item: Any) -> bool:
-    return getattr(item, "__unpacked__", False) or get_origin(item) is Unpack
+from typing import Any
 
 
 def _variadic_item(item: Any) -> Any | None:
