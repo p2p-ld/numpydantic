@@ -1,5 +1,7 @@
+import sys
 from typing import Any, Literal, get_args, get_origin
 
+from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import _RangeDim
 from numpydantic.shape._string import (
     StrShapeExpression,
@@ -7,7 +9,12 @@ from numpydantic.shape._string import (
     normalize_string_shape_expression,
     validate_string_shape_expression,
 )
-from numpydantic.shape._variadic import Unpack, _is_any_shape
+from numpydantic.shape._variadic import _is_any_shape, _variadic_item
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Unpack
+else:
+    from typing import Unpack
 
 
 def normalize_shape_expression(expression: StrShapeExpression | tuple) -> tuple:
@@ -51,22 +58,39 @@ def _normalize_tuple(expression: tuple) -> tuple:
     A trailing ``...`` repeats the dimension before it,
     which becomes a ``"{dim}..."`` term meaning "zero or more of {dim}".
     The string ``"..."`` means any number of dimensions of any size.
-
-    FIXME: This whole 'convert everything down to a string' thing has gotta go
     """
-
-    splat_last = False
-    if expression[-1] is ... and len(expression) > 2:
-        splat_last = True
-        expression = expression[:-1]
+    expression = _flatten(expression)
     normalized = tuple(_normalize_tuple_item(item) for item in expression)
-
-    if splat_last:
-        normalized = (*normalized, *tuple[normalized[-1], ...])
-
-    if _is_any_shape(expression):
+    _check_positions(normalized)
+    if normalized[-1] is Ellipsis and len(normalized) > 2:
+        normalized = (*normalized[:-1], *tuple[normalized[-2], ...])
+    if _is_any_shape(normalized):
         return Any
     return normalized
+
+
+def _flatten(expression: tuple) -> tuple:
+    """Unpacked fixed-length tuples are just their items: tuple[A, *tuple[B, C]]"""
+    flat = []
+    for item in expression:
+        # typing's own attribute for the items of an unpacked tuple, as * or Unpack
+        args = getattr(item, "__typing_unpacked_tuple_args__", None)
+        if args is not None and not (args and args[-1] is Ellipsis):
+            flat.extend(_flatten(args))
+        else:
+            flat.append(item)
+    return tuple(flat)
+
+
+def _check_positions(expression: tuple) -> None:
+    """``...`` and *tuple[X, ...] can only be the last item in a shape"""
+    *init, last = expression
+    if any(item is Ellipsis or _variadic_item(item) is not None for item in init):
+        raise InvalidShapeExpressionError(
+            "... and unpacked dimensions like *AnyDims must be the last item in a shape"
+        )
+    if last is Ellipsis and not init:
+        raise InvalidShapeExpressionError("... must follow a dimension")
 
 
 def _normalize_tuple_item(item: str | int | type | Any) -> type:

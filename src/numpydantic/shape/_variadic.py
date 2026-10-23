@@ -1,5 +1,5 @@
 import sys
-from typing import Any, get_args, get_origin
+from typing import Any, get_origin
 
 if sys.version_info < (3, 11):
     from typing_extensions import Unpack
@@ -12,13 +12,11 @@ def _is_unpacked(item: Any) -> bool:
 
 
 def _variadic_item(item: Any) -> Any | None:
-    """The repeated item of an unpacked tuple[X, ...] (as * or Unpack), or None"""
-    if get_origin(item) is Unpack:
-        item = next(iter(get_args(item)[0]))
-    if getattr(item, "__unpacked__", False):
-        args = get_args(item)
-        if len(args) == 2 and args[1] is Ellipsis:
-            return args[0]
+    """The repeated item of an unpacked tuple[X, ...], or None"""
+    # typing's own attribute for the items of an unpacked tuple, as * or Unpack
+    args = getattr(item, "__typing_unpacked_tuple_args__", None)
+    if args is not None and len(args) == 2 and args[1] is Ellipsis:
+        return args[0]
     return None
 
 

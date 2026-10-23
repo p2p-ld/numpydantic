@@ -341,9 +341,6 @@ def test_string_ellipsis_deprecation() -> None:
         pytest.param(lambda: Range[L[-1], L[4]], id="range-negative-bound"),
         pytest.param(lambda: Range[L[2, 3], L[4]], id="range-multi-literal"),
         pytest.param(lambda: Shape[Unpack[AnyDims], L[3]], id="anydims-not-last"),
-        pytest.param(
-            lambda: Shape[L[3], Unpack[tuple[L[2], ...]]], id="unpack-not-anydims"
-        ),
         pytest.param(lambda: Shape[...], id="ellipsis-alone"),
         pytest.param(lambda: Shape[L[2], ..., L[3]], id="ellipsis-not-last"),
     ],
