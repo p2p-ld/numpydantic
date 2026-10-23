@@ -412,7 +412,9 @@ def merge_cases(*args: ValidationCase) -> ValidationCase:
     # only the fields each case set, without dumping them,
     # which would turn objects like Range[...] into dicts
     exclude = {"model", "annotation", "pytest_marks"}
-    dumped = [{name: getattr(m, name) for name in m.model_fields_set - exclude} for m in args]
+    dumped = [
+        {name: getattr(m, name) for name in m.model_fields_set - exclude} for m in args
+    ]
 
     # dumps might not have set `passes`, use only the ones that have
     passes = [v.get("passes") for v in dumped if "passes" in v]

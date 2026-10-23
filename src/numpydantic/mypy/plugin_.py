@@ -3,7 +3,9 @@
 The plugin enriches ``NDArray[Shape[...], dtype]`` annotations so that mypy
 can statically reject:
 
-- Invalid shape expressions (e.g. ``Shape["this is not valid"]``).
+- Invalid shape expressions (e.g. ``Shape[*AnyDims, L[3]]``).
+- Shapes that don't match, including ranges, which type checkers can't check
+  on their own (e.g. ``Shape[Range[L[2], L[4]]]``).
 - Invalid dtype arguments
 - Assignments between two ``NDArray`` annotations whose shapes or dtypes
   disagree.

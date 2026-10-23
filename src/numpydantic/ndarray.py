@@ -1,5 +1,6 @@
 """
-Extension of nptyping NDArray for pydantic that allows for JSON-Schema serialization
+An array type for pydantic, with shape and dtype validation and JSON-Schema
+serialization
 
 .. note::
 
@@ -8,8 +9,7 @@ Extension of nptyping NDArray for pydantic that allows for JSON-Schema serializa
     type checkers will complain about using any helper functions elsewhere -
     those all belong in :mod:`numpydantic.schema` .
 
-    Keeping with nptyping's style, NDArrayMeta is in this module even if it's
-    excluded from the type stub.
+    NDArrayMeta is in this module even though it's excluded from the type stub.
 
 """
 
@@ -52,17 +52,9 @@ if TYPE_CHECKING:  # pragma: no cover
     from numpydantic import Shape
 
 
-def _is_literal_like(item: Any) -> bool:
-    """
-    Changes from nptyping:
-    - doesn't just ducktype for literal but actually, yno, checks for being literal
-    """
-    return get_origin(item) is Literal
-
-
 def _get_shape(dtype_candidate: Any) -> Shape:
     """
-    Override of base method to use our local definition of shape
+    Normalize the shape argument of ``NDArray[shape, dtype]`` with :class:`.Shape`
     """
     from numpydantic.shape import Shape
 
@@ -78,9 +70,7 @@ def _get_shape(dtype_candidate: Any) -> Shape:
     else:
         raise InvalidArgumentsError(
             f"Unexpected argument '{dtype_candidate}', expecting"
-            " Shape[<ShapeExpression>]"
-            " or Literal[<ShapeExpression>]"
-            " or typing.Any."
+            " Shape[...], tuple[...], or typing.Any."
         )
     return shape
 
@@ -247,7 +237,7 @@ class NDArrayMeta(_ProtocolMeta):
 @runtime_checkable
 class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
     """
-    Constrained array type allowing npytyping syntax for dtype and shape validation
+    Constrained array type with :class:`.Shape` and dtype validation
     and serialization.
 
     This class is not intended to be instantiable, and support for static type

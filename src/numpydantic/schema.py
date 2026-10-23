@@ -143,7 +143,7 @@ def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
     fixed, tail = _split_variadic(shape_args)
 
     # if we have a tail, that's the inner schema
-    if tail:
+    if tail is not None:
         inner_schema = _recursive_shape(array_type, _list_schema_kwargs(tail))
     else:
         inner_schema = array_type
@@ -157,57 +157,34 @@ def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
 
 
 def _list_schema_kwargs(arg: Any) -> dict:
-    # make a label annotation, if we have one
-    # metadata = {"name": label} if label is not None else None
     kwargs = {}
-    # unwrap annotations from inner value
     if get_origin(arg) is Annotated:
-        args = get_args(arg)
-        typ = args[0]
-        annotations = args[1:]
+        typ, *annotations = get_args(arg)
     else:
-        typ = arg
-        annotations = tuple()
+        typ, annotations = arg, []
 
     labels = [item for item in annotations if isinstance(item, str)]
     if labels:
         kwargs["metadata"] = {"name": labels[0]}
 
-    # make the current level list schema, accounting for shape
-    try:
-        if get_origin(typ) is Literal:
-            # TODO: support multiple exact lengths
-            val = int(get_args(typ)[0])
-            kwargs["min_length"] = val
-            kwargs["max_length"] = val
+    if get_origin(typ) is Literal:
+        # TODO: support multiple exact lengths as unions
+        kwargs["min_length"] = kwargs["max_length"] = get_args(typ)[0]
 
-        elif any(isinstance(annotation, Interval) for annotation in annotations):
-            interval = next(
-                annotation
-                for annotation in annotations
-                if isinstance(annotation, Interval)
-            )
-            if interval.ge:
-                kwargs["min_length"] = interval.ge
-            elif interval.gt:
-                kwargs["min_length"] = interval.gt - 1
+    elif interval := next(
+        annotation for annotation in annotations if isinstance(annotation, Interval)
+    ):
+        if interval.ge:
+            kwargs["min_length"] = interval.ge
+        elif interval.gt:
+            kwargs["min_length"] = interval.gt + 1
 
-            if interval.le:
-                kwargs["max_length"] = interval.le
-            elif interval.lt:
-                kwargs["max_length"] = interval.lt + 1
+        if interval.le:
+            kwargs["max_length"] = interval.le
+        elif interval.lt:
+            kwargs["max_length"] = interval.lt - 1
 
-        return kwargs
-    except ValueError as e:  # pragma: no cover
-        raise ValueError(
-            "Array shapes must be integers, wildcards, ellipses, or "
-            "ranges. Shape variables (for declaring that one dimension "
-            "must be the same size as another) are not supported because "
-            "it is impossible to express dynamic minItems/maxItems in "
-            "JSON Schema. "
-            "See: https://github.com/orgs/json-schema-org/discussions/730 "
-            f"Instead, got {arg}"
-        ) from e
+    return kwargs
 
 
 def _hash_schema(schema: CoreSchema, list_kwargs: dict | None = None) -> str:
@@ -281,8 +258,8 @@ def make_json_schema(
     and then uses that with :func:`.list_of_lists_schema` .
 
     Args:
-        shape ( ShapeType ): Specification of a shape, as a tuple or
-            an nptyping ``Shape``
+        shape ( ShapeType ): A normalized shape, as returned by ``Shape[...]``:
+            a ``tuple[...]``, or ``Any``
         dtype ( DtypeType ): A builtin type or numpy dtype
         _handler: The pydantic schema generation handler (see pydantic docs).
             Needed to generate the schema for the dtype

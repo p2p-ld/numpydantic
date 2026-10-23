@@ -55,6 +55,6 @@ class Shape:
             return Any
         return tuple[normalized]
 
-    def __new__(cls, *args: Any) ->  type[tuple] | Any:
+    def __new__(cls, *args: Any) -> type[tuple] | Any:
         """``Shape(3, 4)`` is ``Shape[3, 4]``, kept for backwards compatibility"""
         return cls[args]
