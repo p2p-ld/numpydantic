@@ -44,6 +44,7 @@ jobs:
       - name: Force uninstall and reinstall
         working-directory: linkml
         run: |
+          uv sync
           uv run pip uninstall -y numpydantic
           uv run pip install -e ../numpydantic
 
