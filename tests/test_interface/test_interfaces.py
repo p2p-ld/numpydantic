@@ -6,6 +6,7 @@ import json
 import sys
 from datetime import datetime
 from importlib.metadata import version
+from typing import Literal as L
 
 import dask.array as da
 import numpy as np
@@ -48,7 +49,7 @@ def test_dunder_len(interface_cases, tmp_output_dir_func):
         case.shape = (10, 10, 2, 3)
         case.dtype = np.uint8
         case.annotation_dtype = np.uint8
-        case.annotation_shape = (10, 10, "*", 3)
+        case.annotation_shape = (L[10], L[10], int, L[3])
     array = case.array(path=tmp_output_dir_func)
     instance = case.model(array=array)
     assert len(instance.array) == case.shape[0]

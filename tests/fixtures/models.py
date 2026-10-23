@@ -1,12 +1,19 @@
+import sys
 from collections.abc import Callable
 from typing import Any
+from typing import Literal as L
 
 import numpy as np
 import pytest
 from pydantic import BaseModel, Field
 
-from numpydantic import NDArray, Shape
+from numpydantic import AnyDims, NDArray, Shape
 from numpydantic.dtype import Number
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Unpack
+else:
+    from typing import Unpack
 
 
 @pytest.fixture(scope="function")
@@ -14,10 +21,8 @@ def array_model() -> Callable[[tuple[int, ...], type | np.dtype], type[BaseModel
     def _model(
         shape: tuple[int, ...] = (10, 10), dtype: type | np.dtype = float
     ) -> type[BaseModel]:
-        shape_str = ", ".join([str(s) for s in shape])
-
         class MyModel(BaseModel):
-            array: NDArray[Shape[shape_str], dtype]
+            array: NDArray[Shape[tuple(L[s] for s in shape)], dtype]
 
         return MyModel
 
@@ -28,9 +33,9 @@ def array_model() -> Callable[[tuple[int, ...], type | np.dtype], type[BaseModel
 def model_rgb() -> type[BaseModel]:
     class RGB(BaseModel):
         array: (
-            NDArray[Shape["* x, * y"], Number]
-            | NDArray[Shape["* x, * y, 3 r_g_b"], Number]
-            | NDArray[Shape["* x, * y, 3 r_g_b, 4 r_g_b_a"], Number]
+            NDArray[Shape[int, int], Number]
+            | NDArray[Shape[int, int, L[3]], Number]
+            | NDArray[Shape[int, int, L[3], L[4]], Number]
             | None
         ) = Field(None)
 
@@ -42,6 +47,6 @@ def model_blank() -> type[BaseModel]:
     """A model with any shape and dtype"""
 
     class BlankModel(BaseModel):
-        array: NDArray[Shape["*, ..."], Any]
+        array: NDArray[Shape[Unpack[AnyDims]], Any]
 
     return BlankModel

@@ -38,7 +38,7 @@ def test_numpy_datetime64():
     """
     arr = np.array([np.datetime64(datetime.now())], dtype=np.datetime64)
 
-    annotation = NDArray[Shape["*"], np.datetime64]
+    annotation = NDArray[Shape[int], np.datetime64]
     _ = annotation(arr)
 
     class MyModel(BaseModel):
@@ -53,7 +53,7 @@ def test_numpy_python_datetime():
     object array of python ``datetime`` objects, since ``datetime`` maps to
     ``np.datetime64 | datetime``. See #46.
     """
-    annotation = NDArray[Shape["*"], datetime]
+    annotation = NDArray[Shape[int], datetime]
 
     class MyModel(BaseModel):
         array: annotation
