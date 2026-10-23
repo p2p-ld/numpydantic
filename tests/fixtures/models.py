@@ -1,4 +1,3 @@
-import sys
 from collections.abc import Callable
 from typing import Any
 from typing import Literal as L
@@ -9,11 +8,6 @@ from pydantic import BaseModel, Field
 
 from numpydantic import AnyDims, NDArray, Shape
 from numpydantic.dtype import Number
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Unpack
-else:
-    from typing import Unpack
 
 
 @pytest.fixture(scope="function")
@@ -47,6 +41,6 @@ def model_blank() -> type[BaseModel]:
     """A model with any shape and dtype"""
 
     class BlankModel(BaseModel):
-        array: NDArray[Shape[Unpack[AnyDims]], Any]
+        array: NDArray[Shape[*AnyDims], Any]
 
     return BlankModel

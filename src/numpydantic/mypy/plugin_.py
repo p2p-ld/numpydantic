@@ -34,7 +34,6 @@ using the ``name`` attribute of the interface to enable.
 
 from __future__ import annotations
 
-import re
 import warnings
 from collections.abc import Callable
 from configparser import ConfigParser

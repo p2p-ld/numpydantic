@@ -1,5 +1,4 @@
-import sys
-from typing import Any, Literal, get_args, get_origin
+from typing import Any, Literal, Unpack, get_args, get_origin
 
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import _RangeDim
@@ -8,11 +7,6 @@ from numpydantic.shape._string import (
     normalize_string_shape_expression,
 )
 from numpydantic.shape._variadic import _is_any_shape, _variadic_item
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Unpack
-else:
-    from typing import Unpack
 
 
 def normalize_shape_expression(expression: Any) -> tuple | Any:

@@ -1,6 +1,5 @@
-import sys
 from datetime import datetime
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, Unpack
 
 import numpy as np
 from pydantic import BaseModel
@@ -19,11 +18,6 @@ from numpydantic.testing.interfaces import (
     ZarrNestedCase,
     ZarrZipCase,
 )
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Unpack
-else:
-    from typing import Unpack
 
 
 class BasicModel(BaseModel):

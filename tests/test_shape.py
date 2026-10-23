@@ -3,7 +3,7 @@ import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Annotated as A
-from typing import Any, Literal
+from typing import Any, Literal, TypeVarTuple
 from typing import Literal as L
 
 import numpy as np
@@ -13,11 +13,6 @@ from pydantic import BaseModel, ValidationError
 
 from numpydantic import AnyDims, NDArray, Range, Shape
 from numpydantic.exceptions import InvalidShapeExpressionError, ShapeError
-
-if sys.version_info < (3, 11):
-    from typing_extensions import TypeVarTuple, Unpack
-else:
-    from typing import TypeVarTuple, Unpack
 
 pytestmark = pytest.mark.shape
 
@@ -79,12 +74,12 @@ SHAPE_FEATURES = [
             Form("tuple-args", lambda: tuple[3, 4]),
             Form("literal", lambda: Shape[L[3], L[4]]),
             Form("tuple", lambda: tuple[L[3], L[4]]),
-            Form("unpack-fixed", lambda: Shape[L[3], Unpack[tuple[L[4]]]]),
+            Form("unpack-fixed", lambda: Shape[L[3], *tuple[L[4]]]),
             Form(
                 "unpack-fixed-nested",
-                lambda: Shape[Unpack[tuple[L[3], Unpack[tuple[L[4]]]]]],
+                lambda: Shape[*tuple[L[3], *tuple[L[4]]]],
             ),
-            Form("tuple-unpack-fixed", lambda: tuple[L[3], Unpack[tuple[L[4]]]]),
+            Form("tuple-unpack-fixed", lambda: tuple[L[3], *tuple[L[4]]]),
         ],
         canonical=tuple[L[3], L[4]],
     ),
@@ -128,16 +123,16 @@ SHAPE_FEATURES = [
         valid=[(1, 2), (1, 2, 3), (1, 2, 3, 4)],
         invalid=[(4, 5), (1,), (2, 1, 3), ()],
         forms=[
-            Form("anydims", lambda: Shape[L[1], L[2], Unpack[AnyDims]]),
+            Form("anydims", lambda: Shape[L[1], L[2], *AnyDims]),
             Form(
                 "anydims-star",
                 lambda: Shape[(L[1], L[2], *AnyDims)],
                 min_version=(3, 11),
             ),
-            Form("tuple-anydims", lambda: tuple[L[1], L[2], Unpack[AnyDims]]),
+            Form("tuple-anydims", lambda: tuple[L[1], L[2], *AnyDims]),
             Form(
                 "anydims-nested",
-                lambda: Shape[L[1], Unpack[tuple[L[2], Unpack[AnyDims]]]],
+                lambda: Shape[L[1], *tuple[L[2], *AnyDims]],
             ),
         ],
         canonical=tuple[L[1], L[2], *tuple[int, ...]],
@@ -147,13 +142,13 @@ SHAPE_FEATURES = [
         valid=[(2,), (2, 3), (2, 3, 4)],
         invalid=[(), (3,), (3, 2)],
         forms=[
-            Form("anydims", lambda: Shape[L[2], Unpack[AnyDims]]),
+            Form("anydims", lambda: Shape[L[2], *AnyDims]),
             Form(
                 "anydims-star",
                 lambda: Shape[(L[2], *AnyDims)],
                 min_version=(3, 11),
             ),
-            Form("tuple-anydims", lambda: tuple[L[2], Unpack[AnyDims]]),
+            Form("tuple-anydims", lambda: tuple[L[2], *AnyDims]),
         ],
         canonical=tuple[L[2], *AnyDims],
     ),
@@ -165,8 +160,8 @@ SHAPE_FEATURES = [
             Form("args", lambda: Shape[1, 2, ...]),
             Form("literal", lambda: Shape[L[1], L[2], ...]),
             Form("tuple", lambda: tuple[L[1], L[2], ...]),
-            Form("unpack", lambda: Shape[L[1], L[2], Unpack[tuple[L[2], ...]]]),
-            Form("tuple-unpack", lambda: tuple[L[1], L[2], Unpack[tuple[L[2], ...]]]),
+            Form("unpack", lambda: Shape[L[1], L[2], *tuple[L[2], ...]]),
+            Form("tuple-unpack", lambda: tuple[L[1], L[2], *tuple[L[2], ...]]),
         ],
         canonical=tuple[L[1], L[2], *tuple[L[2], ...]],
     ),
@@ -199,7 +194,7 @@ SHAPE_FEATURES = [
             Form("bare", lambda: Shape),
             Form("int", lambda: Shape[int, ...]),
             Form("tuple", lambda: tuple[int, ...]),
-            Form("anydims", lambda: Shape[Unpack[AnyDims]]),
+            Form("anydims", lambda: Shape[*AnyDims]),
             Form("anydims-bare", lambda: AnyDims),
         ],
         canonical=Any,
@@ -401,11 +396,11 @@ def test_string_ellipsis_deprecation() -> None:
         pytest.param(lambda: Range[L[-1], L[4]], id="range-negative-bound"),
         pytest.param(lambda: Range[L[2, 3], L[4]], id="range-multi-literal"),
         pytest.param(lambda: Shape[L[3, 4]], id="multi-literal"),
-        pytest.param(lambda: Shape[Unpack[AnyDims], L[3]], id="anydims-not-last"),
+        pytest.param(lambda: Shape[*AnyDims, L[3]], id="anydims-not-last"),
         pytest.param(lambda: Shape[...], id="ellipsis-alone"),
         pytest.param(lambda: Shape[L[2], ..., L[3]], id="ellipsis-not-last"),
         pytest.param(
-            lambda: Shape[Unpack[tuple[Unpack[AnyDims], L[3]]]],
+            lambda: Shape[*tuple[*AnyDims, L[3]]],
             id="anydims-not-last-after-flattening",
         ),
         pytest.param(lambda: Shape["...", 3], id="string-ellipsis-not-last"),
@@ -423,8 +418,8 @@ def test_shape_invalid_forms(build: Callable[[], Any]) -> None:
 def test_typevartuple_passthrough() -> None:
     """Shape TypeVarTuples aren't supported yet, so they're kept as they are"""
     Ts = TypeVarTuple("Ts")
-    assert Shape[L[3], Unpack[Ts]] == tuple[L[3], Unpack[Ts]]
-    assert Shape[Unpack[Ts], L[3]] == tuple[Unpack[Ts], L[3]]
+    assert Shape[L[3], *Ts] == tuple[L[3], *Ts]
+    assert Shape[*Ts, L[3]] == tuple[*Ts, L[3]]
 
 
 def test_range_shape_schema():

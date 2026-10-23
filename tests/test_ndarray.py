@@ -1,6 +1,5 @@
 import json
-import sys
-from typing import Annotated, Any
+from typing import Annotated, Any, Unpack
 from typing import Literal as L
 
 import dask.array
@@ -13,11 +12,6 @@ from pydantic import (
 )
 
 from numpydantic import AnyDims, NDArray, NDArraySchema, Shape, dtype
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Unpack
-else:
-    from typing import Unpack
 from numpydantic.dtype import Number
 from numpydantic.exceptions import DtypeError
 
@@ -189,7 +183,7 @@ def test_shape_anydims():
     """
 
     class MyModel(BaseModel):
-        array: NDArray[Shape[L[1], L[2], Unpack[AnyDims]], Number]
+        array: NDArray[Shape[L[1], L[2], *AnyDims], Number]
 
     _ = MyModel(array=np.zeros((1, 2, 3, 4, 5)))
 
@@ -360,13 +354,13 @@ def test_json_schema_anydims():
     """
 
     class AnyShape(BaseModel):
-        array: NDArray[Shape[Unpack[AnyDims]], np.uint8]
+        array: NDArray[Shape[*AnyDims], np.uint8]
 
     schema = AnyShape.model_json_schema()
     _recursive_array(schema)
 
     class ConstrainedAnyShape(BaseModel):
-        array: NDArray[Shape[L[3], L[4], Unpack[AnyDims]], np.uint8]
+        array: NDArray[Shape[L[3], L[4], *AnyDims], np.uint8]
 
     schema = ConstrainedAnyShape.model_json_schema()
     _recursive_array(schema)
