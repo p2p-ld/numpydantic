@@ -1,10 +1,20 @@
-from typing import Any
+import sys
+from typing import Any, Unpack, get_args, get_origin
+
+
+def _unpacked_tuple_args(item: Any) -> tuple | None:
+    """The items of an unpacked tuple, written as *tuple[...] or Unpack[tuple[...]]"""
+    if sys.version_info < (3, 12):
+        # TODO: remove when dropping python 3.11, where Unpack[tuple[...]]
+        # lacks this attribute, but *tuple[...] has it
+        if get_origin(item) is Unpack:
+            item = next(iter(get_args(item)[0]))
+    return getattr(item, "__typing_unpacked_tuple_args__", None)
 
 
 def _variadic_item(item: Any) -> Any | None:
     """The repeated item of an unpacked tuple[X, ...], or None"""
-    # typing's own attribute for the items of an unpacked tuple, as * or Unpack
-    args = getattr(item, "__typing_unpacked_tuple_args__", None)
+    args = _unpacked_tuple_args(item)
     if args is not None and len(args) == 2 and args[1] is Ellipsis:
         return args[0]
     return None

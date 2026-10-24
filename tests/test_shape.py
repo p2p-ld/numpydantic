@@ -3,7 +3,7 @@ import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Annotated as A
-from typing import Any, Literal, TypeVarTuple
+from typing import Any, Literal, TypeVarTuple, Unpack
 from typing import Literal as L
 
 import numpy as np
@@ -80,6 +80,10 @@ SHAPE_FEATURES = [
                 lambda: Shape[*tuple[L[3], *tuple[L[4]]]],
             ),
             Form("tuple-unpack-fixed", lambda: tuple[L[3], *tuple[L[4]]]),
+            Form(
+                "typing-unpack-fixed",
+                lambda: Shape[L[3], Unpack[tuple[L[4]]]],  # noqa: UP044
+            ),
         ],
         canonical=tuple[L[3], L[4]],
     ),
@@ -133,6 +137,10 @@ SHAPE_FEATURES = [
             Form(
                 "anydims-nested",
                 lambda: Shape[L[1], *tuple[L[2], *AnyDims]],
+            ),
+            Form(
+                "typing-unpack-anydims",
+                lambda: Shape[L[1], L[2], Unpack[AnyDims]],  # noqa: UP044
             ),
         ],
         canonical=tuple[L[1], L[2], *tuple[int, ...]],

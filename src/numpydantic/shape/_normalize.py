@@ -6,7 +6,11 @@ from numpydantic.shape._string import (
     _str_dim_to_tuple,
     normalize_string_shape_expression,
 )
-from numpydantic.shape._variadic import _is_any_shape, _variadic_item
+from numpydantic.shape._variadic import (
+    _is_any_shape,
+    _unpacked_tuple_args,
+    _variadic_item,
+)
 
 
 def normalize_shape_expression(expression: Any) -> tuple | Any:
@@ -55,8 +59,7 @@ def _flatten(expression: tuple) -> tuple:
     """Unpacked fixed-length tuples are just their items: tuple[A, *tuple[B, C]]"""
     flat = []
     for item in expression:
-        # typing's own attribute for the items of an unpacked tuple, as * or Unpack
-        args = getattr(item, "__typing_unpacked_tuple_args__", None)
+        args = _unpacked_tuple_args(item)
         if args is not None and not (args and args[-1] is Ellipsis):
             flat.extend(_flatten(args))
         else:
