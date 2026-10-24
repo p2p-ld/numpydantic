@@ -5,7 +5,7 @@ from numpydantic import NDArray, Shape
 
 
 class GroundTruth(BaseModel):
-    A: NDArray[Shape["* unit, * height, * width"], np.float64]
+    A: NDArray[Shape[int, int, int], np.float64]
 
 
 def use(gt: GroundTruth) -> tuple[int, ...]:

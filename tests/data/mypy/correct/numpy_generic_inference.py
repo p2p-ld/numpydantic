@@ -7,9 +7,11 @@ the second one has to be valid for compatibility reasons,
 otherwise NDArray would be unusable in practice,
 because this would be impossible
 
-def some_array(data: list[list[int]]) -> NDArray[Shape[10, 10]]:
+def some_array(data: list[list[int]]) -> NDArray[Shape[L[10], L[10]]]:
     return np.array(data)
 """
+
+from typing import Literal as L
 
 import numpy as np
 
@@ -20,4 +22,4 @@ def a_func() -> np.ndarray:
     return np.zeros((3, 3))
 
 
-x: NDArray[Shape["10, 10"], float] = a_func()
+x: NDArray[Shape[L[10], L[10]], float] = a_func()

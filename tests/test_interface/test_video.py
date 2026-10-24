@@ -4,6 +4,7 @@ Needs to be refactored to DRY, but works for now
 
 from pathlib import Path
 from typing import Annotated as A
+from typing import Literal as L
 
 import cv2
 import pytest
@@ -22,10 +23,9 @@ def test_video_validation(avi_video, input_type):
 
     shape = (100, 50)
     vid = avi_video(shape=shape, is_color=True)
-    shape_str = f"*, {shape[0]}, {shape[1]}, 3"
 
     class MyModel(BaseModel):
-        array: NDArray[Shape[shape_str], dt.UInt8]
+        array: NDArray[Shape[int, L[shape[0]], L[shape[1]], L[3]], dt.UInt8]
 
     # should correctly validate :)
     instance = MyModel(array=input_type(vid))
@@ -36,10 +36,9 @@ def test_video_from_videocapture(avi_video):
     """Should be able to pass an opened videocapture object"""
     shape = (100, 50)
     vid = avi_video(shape=shape, is_color=True)
-    shape_str = f"*, {shape[0]}, {shape[1]}, 3"
 
     class MyModel(BaseModel):
-        array: NDArray[Shape[shape_str], dt.UInt8]
+        array: NDArray[Shape[int, L[shape[0]], L[shape[1]], L[3]], dt.UInt8]
 
     # should still correctly validate!
     opened_vid = cv2.VideoCapture(str(vid))
@@ -57,10 +56,8 @@ def test_video_wrong_shape(avi_video):
     # generate video with purposely wrong shape
     vid = avi_video(shape=(shape[0] + 10, shape[1] + 10), is_color=True)
 
-    shape_str = f"*, {shape[0]}, {shape[1]}, 3"
-
     class MyModel(BaseModel):
-        array: NDArray[Shape[shape_str], dt.UInt8]
+        array: NDArray[Shape[int, L[shape[0]], L[shape[1]], L[3]], dt.UInt8]
 
     # should correctly validate :)
     with pytest.raises(ValidationError):
@@ -74,10 +71,9 @@ def test_video_getitem(avi_video):
     """
     shape = (100, 50)
     vid = avi_video(shape=shape, frames=10, is_color=True)
-    shape_str = f"*, {shape[0]}, {shape[1]}, 3"
 
     class MyModel(BaseModel):
-        array: NDArray[Shape[shape_str], dt.UInt8]
+        array: NDArray[Shape[int, L[shape[0]], L[shape[1]], L[3]], dt.UInt8]
 
     instance = MyModel(array=vid)
     fifth_frame = instance.array[5]
@@ -130,10 +126,9 @@ def test_video_attrs(avi_video):
     """Should be able to access opencv properties"""
     shape = (100, 50)
     vid = avi_video(shape=shape, is_color=True)
-    shape_str = f"*, {shape[0]}, {shape[1]}, 3"
 
     class MyModel(BaseModel):
-        array: NDArray[Shape[shape_str], dt.UInt8]
+        array: NDArray[Shape[int, L[shape[0]], L[shape[1]], L[3]], dt.UInt8]
 
     instance = MyModel(array=vid)
 
@@ -146,10 +141,9 @@ def test_video_close(avi_video):
     """Should close and reopen video file if needed"""
     shape = (100, 50)
     vid = avi_video(shape=shape, is_color=True)
-    shape_str = f"*, {shape[0]}, {shape[1]}, 3"
 
     class MyModel(BaseModel):
-        array: NDArray[Shape[shape_str], dt.UInt8]
+        array: NDArray[Shape[int, L[shape[0]], L[shape[1]], L[3]], dt.UInt8]
 
     instance = MyModel(array=vid)
     assert isinstance(instance.array.video, cv2.VideoCapture)
@@ -207,7 +201,7 @@ def test_path_input_with_proxy_schema(avi_video):
     vid = avi_video(shape=shape, is_color=True)
 
     class MyModel(BaseModel):
-        array: A[VideoProxy, NDArraySchema(Shape["*", 100, 50, 3], dt.UInt8)]
+        array: A[VideoProxy, NDArraySchema(Shape[int, L[100], L[50], L[3]], dt.UInt8)]
 
     instance = MyModel(array=vid)
     assert instance.array.path == vid

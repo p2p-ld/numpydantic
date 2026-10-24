@@ -4,16 +4,22 @@ Mypy stub-only and plugin-based tests!
 
 from __future__ import annotations
 
+import operator
 import re
 from pathlib import Path
 
 import mypy.api
 import pytest
+from annotated_types import Interval
 from mypy.options import Options
+from mypy.subtypes import is_subtype
+from mypy.test.typefixture import TypeFixture
+from mypy.types import LiteralType
 
 # from numpydantic import ndarray, update_ndarray_stub
 from numpydantic.interface import Interface
 from numpydantic.mypy.plugin_ import CONFIGFILE_KEY, MypyPluginOptions
+from numpydantic.mypy.ranges import RangeValue
 from numpydantic.testing import ValidationCase
 from numpydantic.testing.cases import MYPY_CASES
 
@@ -188,3 +194,108 @@ def test_parse_ini(interfaces_string, tmp_path):
 
     plugin_options = MypyPluginOptions.from_options(options)
     assert plugin_options.interfaces == ["numpy", "dask", "zarr"]
+
+
+# ---------------------------------------------------------------------------
+# Range directionality
+# ---------------------------------------------------------------------------
+
+
+def _range(low: int | None, high: int | None) -> RangeValue:
+    return RangeValue(Interval(ge=low, le=high))
+
+
+@pytest.mark.parametrize(
+    "subtype,supertype,expected",
+    [
+        pytest.param(_range(2, 3), _range(1, 5), True, id="narrow-in-wide"),
+        pytest.param(_range(1, 5), _range(2, 3), False, id="wide-in-narrow"),
+        pytest.param(_range(2, 3), _range(2, 3), True, id="same"),
+        pytest.param(_range(1, 3), _range(2, 5), False, id="overlapping"),
+        pytest.param(_range(2, None), _range(1, None), True, id="open-high-in-wide"),
+        pytest.param(_range(1, None), _range(2, None), False, id="open-high-in-narrow"),
+        pytest.param(_range(None, 3), _range(None, 5), True, id="open-low-in-wide"),
+        pytest.param(_range(None, 5), _range(None, 3), False, id="open-low-in-narrow"),
+        pytest.param(_range(2, None), _range(2, 3), False, id="open-in-closed"),
+        pytest.param(_range(2, 3), _range(None, None), True, id="closed-in-unbounded"),
+        pytest.param(3, _range(2, 4), True, id="exact-in-range"),
+        pytest.param(5, _range(2, 4), False, id="exact-outside-range"),
+        pytest.param(_range(2, 4), 3, True, id="range-in-exact-permissive"),
+        pytest.param(_range(2, 4), 5, False, id="range-in-exact-outside"),
+    ],
+)
+def test_range_subtype(
+    subtype: int | RangeValue, supertype: int | RangeValue, expected: bool
+) -> None:
+    """
+    A range is a subtype of another range only if it fits within it.
+
+    Checked with mypy's own subtype check, since the direction depends on mypy
+    comparing ``subtype.value == supertype.value`` in that order.
+    Comparing a range and an exact size can't tell the direction,
+    so a range is a subtype of an exact size within it (range-in-exact-permissive).
+    """
+    fallback = TypeFixture().a
+    left = LiteralType(subtype, fallback=fallback)
+    right = LiteralType(supertype, fallback=fallback)
+    assert is_subtype(left, right) is expected
+
+
+@pytest.mark.parametrize(
+    "left,right,equal",
+    [
+        pytest.param(_range(2, 3), _range(1, 5), True, id="narrow-wide"),
+        pytest.param(_range(1, 5), _range(2, 3), False, id="wide-narrow"),
+        pytest.param(3, _range(1, 5), True, id="int-left"),
+        pytest.param(_range(1, 5), 3, True, id="int-right"),
+        pytest.param(9, _range(1, 5), False, id="int-left-outside"),
+        pytest.param(_range(1, 5), 9, False, id="int-right-outside"),
+        pytest.param(_range(0, 5), True, False, id="bool"),
+    ],
+)
+def test_range_comparisons(
+    left: int | RangeValue, right: int | RangeValue, equal: bool
+) -> None:
+    """
+    RangeValue's own comparisons, without mypy.
+    The order of the operands matters, so they are compared with ``operator``
+    rather than ``==``, which linters like to reorder.
+    """
+    assert operator.eq(left, right) is equal
+    # __ne__ agrees with __eq__ rather than comparing as strings
+    assert operator.ne(left, right) is not equal
+
+
+def test_range_exclusive_bounds() -> None:
+    """Exclusive bounds become the equivalent inclusive bounds"""
+    value = RangeValue(Interval(gt=1, lt=5))
+    assert (value.low, value.high) == (2, 4)
+    assert str(value) == "2-4"
+
+
+def test_range_cache(tmp_path: Path) -> None:
+    """
+    Ranges still work when mypy reuses its cache for the module that defines them,
+    where they would otherwise be loaded as plain strings
+    """
+    (tmp_path / "mypy.ini").write_text(
+        "[mypy]\n"
+        "plugins = numpydantic.mypy\n"
+        f"mypy_path = {MYPY_DIR / 'correct'}\n"
+    )
+    # compare a wide range and a narrow range from the cached module
+    user = tmp_path / "user.py"
+    user.write_text("from shape_range_subset import narrow, x\n\ny = x\ny = narrow()\n")
+    args = [
+        str(user),
+        "--config-file",
+        str(tmp_path / "mypy.ini"),
+        "--cache-dir",
+        str(tmp_path / ".mypy_cache"),
+    ]
+
+    for _ in range(2):
+        stdout, stderr, returncode = mypy.api.run(args)
+        assert returncode == 0, stdout + stderr
+        # only change the user module, so the ranges module can come from the cache
+        user.write_text(user.read_text() + "# edited\n")

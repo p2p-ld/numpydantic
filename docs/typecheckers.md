@@ -168,9 +168,9 @@ Scalar shapes are checked as expected, where the shapes must match exactly.
 **Correct**
 
 ```{literalinclude} examples/correct/shape_scalar.py
-:lines: 6-
+:lines: 8-
 :linenos:
-:lineno-start: 6
+:lineno-start: 8
 ```
 
 ```{program-output} mypy --pretty examples/correct/shape_scalar.py
@@ -179,9 +179,9 @@ Scalar shapes are checked as expected, where the shapes must match exactly.
 **Incorrect**
 
 ```{literalinclude} examples/incorrect/shape_scalar.py
-:lines: 6-
+:lines: 8-
 :linenos:
-:lineno-start: 6
+:lineno-start: 8
 ```
 
 ```{program-output} mypy --pretty --color-output examples/incorrect/shape_scalar.py
@@ -190,16 +190,16 @@ Scalar shapes are checked as expected, where the shapes must match exactly.
 
 #### Ranges
 
-Ranges work on the left hand side with a right hand side scalar (see [known limitations](#range-range-checking)).
+An exact size can be assigned to a {class}`.Range` that contains it (see [known limitations](#range-checking)).
 When possible, you should attempt to keep right-hand/return annotations scalar for the strongest typing,
 even if left-hand annotations can accept shape ranges.
 
 **Correct**
 
 ```{literalinclude} examples/correct/shape_range_scalar.py
-:lines: 6-
+:lines: 8-
 :linenos:
-:lineno-start: 6
+:lineno-start: 8
 ```
 
 ```{program-output} mypy --pretty examples/correct/shape_range_scalar.py
@@ -208,26 +208,26 @@ even if left-hand annotations can accept shape ranges.
 **Incorrect**
  
 ```{literalinclude} examples/incorrect/shape_range_scalar.py
-:lines: 6-
+:lines: 8-
 :linenos:
-:lineno-start: 6
+:lineno-start: 8
 ```
 
 ```{program-output} mypy --pretty --color-output examples/incorrect/shape_range_scalar.py
 :returncode: 1
 ```  
 
-#### Wildcards & Ellipses
+#### Any size & any number of dimensions
 
-As during runtime, wildcards specify that an array dimension must exist but can be any size,
-and ellipses specify that any number of additional dimensions may be included.
+As during runtime, `int` specifies that an array dimension must exist but can be any size,
+and `*AnyDims` specifies that any number of additional dimensions may be included.
 
 **Correct**
 
 ```{literalinclude} examples/correct/shape_wildcard.py
-:lines: 7-
+:lines: 8-
 :linenos:
-:lineno-start: 7
+:lineno-start: 8
 ```
 
 ```{program-output} mypy --pretty examples/correct/shape_wildcard.py
@@ -236,9 +236,9 @@ and ellipses specify that any number of additional dimensions may be included.
 **Incorrect**
 
 ```{literalinclude} examples/incorrect/shape_wildcard.py
-:lines: 7-
+:lines: 8-
 :linenos:
-:lineno-start: 7
+:lineno-start: 8
 ```
 
 ```{program-output} mypy --pretty examples/incorrect/shape_wildcard.py
@@ -333,12 +333,12 @@ In the future we will be extending the mypy plugin to understand the {func}`.NDA
 annotated types, PRs welcome!
 
 ```python
-from typing import Annotated as A
+from typing import Annotated as A, Literal as L
 import zarr
 
 from numpydantic import NDArraySchema, Shape
 
-def make_zarr() -> A[zarr.Array, NDArraySchema(Shape(1, 2, 3))]:
+def make_zarr() -> A[zarr.Array, NDArraySchema(Shape[L[1], L[2], L[3]])]:
     return zarr.zeros((1,2,3))
 ```
 ````
@@ -362,9 +362,9 @@ as it would be an absolutely absurd thing to do to open on-disk array stores or 
 **Correct**
 
 ```{literalinclude} examples/correct/pydantic_field.py
-:lines: 7-
+:lines: 9-
 :linenos:
-:lineno-start: 7
+:lineno-start: 9
 ```
 
 ```{program-output} mypy --pretty examples/correct/pydantic_field.py
@@ -373,9 +373,9 @@ as it would be an absolutely absurd thing to do to open on-disk array stores or 
 **Incorrect**
 
 ```{literalinclude} examples/incorrect/pydantic_field.py
-:lines: 7-
+:lines: 9-
 :linenos:
-:lineno-start: 7
+:lineno-start: 9
 ```
 
 ```{program-output} mypy --pretty examples/incorrect/pydantic_field.py
@@ -386,19 +386,24 @@ as it would be an absolutely absurd thing to do to open on-disk array stores or 
 
 ### Known Limitations
 
-#### Range-range checking
+#### Range checking
 
-Our implementation of ranges is [somewhat cursed](https://github.com/python/mypy/issues/16497#issuecomment-4570099557),
-and it is currently impossible to check if a right-hand side range is contained within a left-hand range.
-This is because we check ranges against literals using `__eq__` which is commutative.
+Our implementation of ranges is [somewhat cursed](https://github.com/python/mypy/issues/16497#issuecomment-4570099557):
+mypy compares literals using `__eq__`, so that is where ranges are checked.
 
-E.g. the following should fail, but it does not:
+A range must fit within the range it is assigned to:
 
-```{literalinclude} examples/correct/shape_range_range.py
+```{literalinclude} examples/incorrect/shape_range_range.py
 ```
 
-```{program-output} mypy --pretty --color-output examples/correct/shape_range_range.py
-```  
+```{program-output} mypy --pretty --color-output examples/incorrect/shape_range_range.py
+:returncode: 1
+```
+
+But when comparing a range with an exact size, we can't tell which side of the
+assignment the range is on. An exact size can be assigned to a range that contains it,
+but a range can also be assigned to an exact size it contains,
+e.g. `Range[L[2], L[4]]` can be assigned to `L[3]`, even though it shouldn't be.
 
 Pull requests welcome!
 
@@ -406,13 +411,13 @@ Pull requests welcome!
 
 Pyright can only use the standard types and the type stubs by design.
 
-You will have to provide all the type annotations yourself,
-and constructs that can't be expressed in the python type system like ranges can't be used.
-
-In general, you have to specify types using tuples and literals, like:
+You will have to provide all the type annotations yourself.
+To pyright, {class}`.Shape` is just `tuple` and a {class}`.Range` is just `int`,
+so ranges can be used but aren't checked.
+The deprecated string form and bare integers like `Shape[3, 3]` can't be used.
 
 ```python
-def some_function(array: NDArray[tuple[Literal[3], Literal[3]], np.uint8]) -> None: ...
+def some_function(array: NDArray[Shape[Literal[3], Literal[3]], np.uint8]) -> None: ...
 ```
 
 Additionally, you must always specify dtypes as numpy types rather than builtins like `float`.

@@ -28,6 +28,7 @@ from typing import Any
 
 import numpy as np
 
+from numpydantic.shape import Shape
 from numpydantic.vendor.nptyping.base_meta_classes import (
     FinalMeta,
     MaybeCheckableMeta,
@@ -36,16 +37,9 @@ from numpydantic.vendor.nptyping.base_meta_classes import (
 )
 from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 from numpydantic.vendor.nptyping.nptyping_type import NPTypingType
-from numpydantic.vendor.nptyping.shape import Shape
 from numpydantic.vendor.nptyping.shape_expression import check_shape
-from numpydantic.vendor.nptyping.structure import Structure
-from numpydantic.vendor.nptyping.structure_expression import (
-    check_structure,
-    check_type_names,
-)
 from numpydantic.vendor.nptyping.typing_ import (
     DType,
-    dtype_per_name,
     name_per_dtype,
 )
 
@@ -78,18 +72,10 @@ class NDArrayMeta(
         self, instance: Any
     ) -> bool:
         shape, dtype = self.__args__
-        dtype_is_structure = issubclass(dtype, Structure)
-        structure_is_ok = dtype_is_structure and check_structure(
-            instance.dtype, dtype, dtype_per_name
-        )
         return (
             isinstance(instance, np.ndarray)
             and (shape is Any or check_shape(instance.shape, shape))
-            and (
-                dtype is Any
-                or structure_is_ok
-                or issubclass(instance.dtype.type, dtype)
-            )
+            and (dtype is Any or issubclass(instance.dtype.type, dtype))
         )
 
     def __str__(cls) -> str:
@@ -141,13 +127,6 @@ class NDArrayMeta(
             dtype = Any
         elif is_dtype:
             dtype = dtype_candidate
-        elif issubclass(dtype_candidate, Structure):
-            dtype = dtype_candidate
-            check_type_names(dtype, dtype_per_name)
-        elif cls._is_literal_like(dtype_candidate):
-            structure_expression = dtype_candidate.__args__[0]
-            dtype = Structure[structure_expression]
-            check_type_names(dtype, dtype_per_name)
         else:
             raise InvalidArgumentsError(
                 f"Unexpected argument '{dtype_candidate}', expecting"
@@ -159,12 +138,7 @@ class NDArrayMeta(
         return dtype
 
     def _dtype_to_str(cls, dtype: Any) -> str:
-        if dtype is Any:
-            result = "Any"
-        elif issubclass(dtype, Structure):
-            result = str(dtype)
-        else:
-            result = name_per_dtype[dtype]
+        result = "Any" if dtype is Any else name_per_dtype[dtype]
         return result
 
     def _shape_expression_to_str(cls, shape_expression: Any) -> str:

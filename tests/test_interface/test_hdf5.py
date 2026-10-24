@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from typing import Any
+from typing import Literal as L
 
 import h5py
 import numpy as np
@@ -144,7 +145,7 @@ def test_compound_dtype(tmp_path):
     assert proxy[0, 0] == 0
 
     class MyModel(BaseModel):
-        array: NDArray[Shape["10, 20"], np.int64]
+        array: NDArray[Shape[L[10], L[20]], np.int64]
 
     instance = MyModel(array=(h5f_path, dataset_path, field))
     assert instance.array.dtype == np.dtype("int64")
@@ -169,7 +170,7 @@ def test_strings(hdf5_array, compound):
     array = hdf5_array((10, 10), str, compound=compound)
 
     class MyModel(BaseModel):
-        array: NDArray[Shape["10, 10"], str]
+        array: NDArray[Shape[L[10], L[10]], str]
 
     instance = MyModel(array=array)
     instance.array[0, 0] = "hey"

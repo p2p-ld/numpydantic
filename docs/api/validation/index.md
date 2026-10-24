@@ -2,5 +2,4 @@
 
 ```{toctree}
 dtype
-shape
 ```

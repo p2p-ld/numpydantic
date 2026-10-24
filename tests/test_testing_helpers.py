@@ -2,6 +2,8 @@
 Tests for the testing helpers lmao
 """
 
+from typing import Literal as L
+
 import numpy as np
 import pytest
 from pydantic import BaseModel
@@ -55,6 +57,6 @@ def test_make_array(interface, tmp_output_dir_func):
     arr = interface.make_array(array=arr, dtype=np.uint8, path=tmp_output_dir_func)
 
     class MyModel(BaseModel):
-        array: NDArray[Shape["10, 10, 2, 3"], np.uint8]
+        array: NDArray[Shape[L[10], L[10], L[2], L[3]], np.uint8]
 
     _ = MyModel(array=arr)

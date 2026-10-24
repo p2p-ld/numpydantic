@@ -147,6 +147,9 @@ filterwarnings = [
     'ignore:.*deprecated alias.*Deprecated NumPy 1\.24.*',
     # zarr chunk size estimation for scalar arrays
     'ignore:.*divide by zero encountered in log10.*',
+    # our own deprecation of string shape expressions, which the tests still use
+    'ignore:String shape expressions:DeprecationWarning',
+    "ignore:Treating '...' in a string:DeprecationWarning",
 ]
 markers = [
     "dtype: mark test related to dtype validation",
@@ -164,7 +167,8 @@ markers = [
     "pipe_union: union dtypes specified with a pipe",
     "scalar: scalar values",
     "model: dtype annotatiosn are a pydantic model",
-    "typechecking: type checker integration - mypy, pyright"
+    "typechecking: type checker integration - mypy, pyright",
+    "pyright: Pyright type checker"
 ]
 
 [tool.black]
@@ -252,4 +256,4 @@ omit = [
 skip = '.git*,vendor,*.lock,*.css,*.bib'
 check-hidden = true
 # ignore-regex = ''
-ignore-words-list = 'afile'
+ignore-words-list = 'afile,ND'

@@ -1,13 +1,13 @@
-"""Garbage shape expression."""
+"""Invalid shape expression: AnyDims can only be the last dimension."""
 
 from typing import Literal as L
 
 import numpy as np
 
-from numpydantic import NDArray, Shape
+from numpydantic import AnyDims, NDArray, Shape
 
 
 def f() -> (
-    NDArray[Shape[L["this is not valid"]], np.uint8]
-):  # E: not a valid shape expression
+    NDArray[Shape[*AnyDims, L[3]], np.uint8]
+):  # E: must be the last item in a shape
     return np.zeros((1,), dtype=np.uint8)
