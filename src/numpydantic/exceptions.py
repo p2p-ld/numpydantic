@@ -29,3 +29,15 @@ class TooManyMatchesError(MatchError):
 
 class MarkMismatchError(MatchError):
     """A serialized :class:`.InterfaceMark` doesn't match the receiving interface"""
+
+
+class ExpressionError(ValueError):
+    """Base class for exceptions from array expressions"""
+
+
+class InvalidShapeExpressionError(ExpressionError):
+    """Raised when a shape is considered not valid."""
+
+
+class InvalidDtypeExpressionError(ExpressionError):
+    """Raised when an argument is not a DType."""

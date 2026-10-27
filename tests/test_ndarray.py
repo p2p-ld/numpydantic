@@ -1,5 +1,6 @@
 import json
-from typing import Annotated, Any
+from typing import Annotated, Any, Unpack
+from typing import Literal as L
 
 import dask.array
 import numpy as np
@@ -10,7 +11,7 @@ from pydantic import (
     ValidationError,
 )
 
-from numpydantic import NDArray, NDArraySchema, Shape, dtype
+from numpydantic import AnyDims, NDArray, NDArraySchema, Shape, dtype
 from numpydantic.dtype import Number
 from numpydantic.exceptions import DtypeError
 
@@ -18,7 +19,7 @@ from numpydantic.exceptions import DtypeError
 @pytest.mark.json_schema
 def test_ndarray_type():
     class Model(BaseModel):
-        array: NDArray[Shape["2 x, * y"], Number]
+        array: NDArray[Shape[L[2], int], Number]
         array_any: NDArray[Any, Any] | None = None
 
     schema = Model.model_json_schema()
@@ -49,7 +50,7 @@ def test_schema_unsupported_type():
     """
 
     class Model(BaseModel):
-        array: NDArray[Shape["2 x, * y"], complex]
+        array: NDArray[Shape[L[2], int], complex]
 
     schema = Model.model_json_schema()
     assert schema["properties"]["array"]["items"] == {
@@ -66,7 +67,7 @@ def test_schema_tuple():
     """
 
     class Model(BaseModel):
-        array: NDArray[Shape["2 x, * y"], (np.uint8, np.uint16)]
+        array: NDArray[Shape[L[2], int], (np.uint8, np.uint16)]
 
     schema = Model.model_json_schema()
     assert "anyOf" in schema["properties"]["array"]["items"]["items"]
@@ -85,7 +86,7 @@ def test_schema_number():
     """
 
     class Model(BaseModel):
-        array: NDArray[Shape["2 x, * y"], np.number]
+        array: NDArray[Shape[L[2], int], np.number]
 
     schema = Model.model_json_schema()
     assert schema["properties"]["array"]["items"] == {
@@ -99,9 +100,9 @@ def test_ndarray_union():
 
     class Model(BaseModel):
         array: (
-            NDArray[Shape["* x, * y"], Number]
-            | NDArray[Shape["* x, * y, 3 r_g_b"], Number]
-            | NDArray[Shape["* x, * y, 3 r_g_b, 4 r_g_b_a"], Number]
+            NDArray[Shape[int, int], Number]
+            | NDArray[Shape[int, int, L[3]], Number]
+            | NDArray[Shape[int, int, L[3], L[4]], Number]
             | None
         ) = Field(None)
 
@@ -167,7 +168,7 @@ def test_ndarray_coercion():
     """
 
     class Model(BaseModel):
-        array: NDArray[Shape["* x"], Number]
+        array: NDArray[Shape[int], Number]
 
     amod = Model(array=[1, 2, 3, 4.5])
     assert np.allclose(amod.array, np.array([1, 2, 3, 4.5]))
@@ -176,13 +177,13 @@ def test_ndarray_coercion():
 
 
 @pytest.mark.shape
-def test_shape_ellipsis():
+def test_shape_anydims():
     """
-    Test that ellipsis is a wildcard, rather than "repeat the last index"
+    AnyDims allows any number of dimensions of any size after the others
     """
 
     class MyModel(BaseModel):
-        array: NDArray[Shape["1, 2, ..."], Number]
+        array: NDArray[Shape[L[1], L[2], *AnyDims], Number]
 
     _ = MyModel(array=np.zeros((1, 2, 3, 4, 5)))
 
@@ -308,7 +309,7 @@ def test_json_schema_dtype_model():
         z: int
 
     class MyModel(BaseModel):
-        array: NDArray[Shape["*, *"], TestModel]
+        array: NDArray[Shape[int, int], TestModel]
 
     schema = MyModel.model_json_schema()
     # we should have a "$defs" with TestModel in it,
@@ -347,19 +348,19 @@ def _recursive_array(schema):
 
 @pytest.mark.shape
 @pytest.mark.json_schema
-def test_json_schema_ellipsis():
+def test_json_schema_anydims():
     """
     NDArray types should create a recursive JSON schema for any-shaped arrays
     """
 
     class AnyShape(BaseModel):
-        array: NDArray[Shape["*, ..."], np.uint8]
+        array: NDArray[Shape[*AnyDims], np.uint8]
 
     schema = AnyShape.model_json_schema()
     _recursive_array(schema)
 
     class ConstrainedAnyShape(BaseModel):
-        array: NDArray[Shape["3, 4, ..."], np.uint8]
+        array: NDArray[Shape[L[3], L[4], *AnyDims], np.uint8]
 
     schema = ConstrainedAnyShape.model_json_schema()
     _recursive_array(schema)
@@ -373,13 +374,13 @@ def test_instancecheck():
     We don't make this test exhaustive because correctness of validation
     is tested elsewhere. We are just testing that the type checking works
     """
-    array_type = NDArray[Shape["1, 2, 3"], int]
+    array_type = NDArray[Shape[L[1], L[2], L[3]], int]
 
     assert isinstance(np.zeros((1, 2, 3), dtype=int), array_type)
     assert not isinstance(np.zeros((2, 2, 3), dtype=int), array_type)
     assert not isinstance(np.zeros((1, 2, 3), dtype=float), array_type)
 
-    def my_function(array: NDArray[Shape["1, 2, 3"], int]):
+    def my_function(array: NDArray[Shape[L[1], L[2], L[3]], int]):
         return array
 
     my_function(np.zeros((1, 2, 3), int))
@@ -390,7 +391,7 @@ def test_callable():
     NDArray objects are callable to validate and cast
     Don't test validation here, just that we can be called
     """
-    annotation = NDArray[Shape["3"], int]
+    annotation = NDArray[Shape[L[3]], int]
     array = np.array([1, 2, 3], dtype=int)
     validated = annotation(array)
     assert validated is array
@@ -405,7 +406,7 @@ def test_annotation():
     """
 
     class MyModel(BaseModel):
-        array: Annotated[np.ndarray, NDArraySchema(Shape("3, 3"), np.uint8)]
+        array: Annotated[np.ndarray, NDArraySchema(Shape[L[3], L[3]], np.uint8)]
 
     MyModel(array=np.ones((3, 3), dtype=np.uint8))
     with pytest.raises(ValidationError):
@@ -421,7 +422,7 @@ def test_annotation_rejects_array_type():
     """
 
     class MyModel(BaseModel):
-        array: Annotated[np.ndarray, NDArraySchema(Shape("3, 3"), np.uint8)]
+        array: Annotated[np.ndarray, NDArraySchema(Shape[L[3], L[3]], np.uint8)]
 
     with pytest.raises(ValidationError) as e:
         MyModel(array=dask.array.zeros(shape=(3, 3), dtype=np.uint8))
@@ -430,10 +431,12 @@ def test_annotation_rejects_array_type():
     assert err_json[0]["type"] == "is_instance_of"
 
 
-@pytest.mark.parametrize("shape", ("1, 2, 3, ...", (1, 2, 3, "...")))
+@pytest.mark.parametrize(
+    "shape", ((L[1], L[2], Unpack[AnyDims]), (1, 2, 3)), ids=["tuple-form", "ints"]
+)
 def test_annotation_allows_not_using_shape(shape):
     """
-    Annotation can not use the Shape class
+    Annotation can be given the arguments to Shape as a plain tuple
     """
 
     class MyModel(BaseModel):

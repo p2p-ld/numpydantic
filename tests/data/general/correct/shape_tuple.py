@@ -1,3 +1,8 @@
+# /// typecheck
+# [pyright]
+# requires = { numpy = ">=2.5,<2.6" }
+# ///
+
 from typing import Any
 from typing import Literal as L
 

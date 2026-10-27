@@ -4,18 +4,12 @@ from pathlib import Path
 import pyright
 import pytest
 
-DATA_DIR = Path(__file__).parent / "data"
+from tests.fixtures.typecheck import shared_params
 
-pytestmark = pytest.mark.typechecking
+pytestmark = [pytest.mark.typechecking, pytest.mark.pyright]
 
 
-@pytest.mark.parametrize(
-    "test_file",
-    [
-        pytest.param(p, id=p.stem)
-        for p in sorted((DATA_DIR / "general" / "correct").glob("*.py"))
-    ],
-)
+@pytest.mark.parametrize("test_file", shared_params("correct", "pyright"))
 def test_pyright_correct(test_file: Path) -> None:
     """The mypy examples should pass static type checking with pyright too."""
     res = pyright.run(
@@ -29,13 +23,7 @@ def test_pyright_correct(test_file: Path) -> None:
     assert res.returncode == 0, f"stderr:\n{err}\n\nstdout:\n{out}"
 
 
-@pytest.mark.parametrize(
-    "test_file",
-    [
-        pytest.param(p, id=p.stem)
-        for p in sorted((DATA_DIR / "general" / "incorrect").glob("*.py"))
-    ],
-)
+@pytest.mark.parametrize("test_file", shared_params("incorrect", "pyright"))
 def test_pyright_incorrect(test_file: Path) -> None:
     """Pyright fails when we expect it to"""
     res = pyright.run(

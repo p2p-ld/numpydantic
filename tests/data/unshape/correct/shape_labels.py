@@ -1,0 +1,17 @@
+"""Axis labels are documentation and don't affect type checking."""
+
+from typing import Annotated as A
+from typing import Literal as L
+from typing import assert_type
+
+import numpy as np
+
+from numpydantic import NDArray, Shape, unshape
+
+
+def labelled() -> NDArray[Shape[A[L[3], "x"], A[L[4], "y"], A[int, "z"]], np.uint8]:
+    return unshape(np.zeros((3, 4, 7), dtype=np.uint8))
+
+
+arr = labelled()
+assert_type(arr, NDArray[Shape[A[L[3], "x"], A[L[4], "y"], A[int, "z"]], np.uint8])

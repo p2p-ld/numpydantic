@@ -30,8 +30,9 @@ from typing import (
     Any,
 )
 
-from numpydantic.vendor.nptyping.error import InvalidShapeError
-from numpydantic.vendor.nptyping.typing_ import ShapeExpression, ShapeTuple
+from numpydantic.exceptions import InvalidShapeExpressionError
+from numpydantic.shape._string import StrShapeExpression
+from numpydantic.vendor.nptyping.typing_ import ShapeTuple
 
 if TYPE_CHECKING:
     from nptyping.shape import Shape  # pragma: no cover
@@ -49,7 +50,7 @@ def check_shape(shape: ShapeTuple, target: "Shape") -> bool:
     return _check_dimensions_against_shape(shape, target_shape)
 
 
-def validate_shape_expression(shape_expression: ShapeExpression | Any) -> None:
+def validate_shape_expression(shape_expression: StrShapeExpression | Any) -> None:
     """
     Validate shape_expression and raise an InvalidShapeError if it is not
     considered valid.
@@ -60,30 +61,9 @@ def validate_shape_expression(shape_expression: ShapeExpression | Any) -> None:
     if shape_expression is not Any and not re.match(
         _REGEX_SHAPE_EXPRESSION, shape_expression_no_quotes
     ):
-        raise InvalidShapeError(
+        raise InvalidShapeExpressionError(
             f"'{shape_expression}' is not a valid shape expression."
         )
-
-
-def normalize_shape_expression(shape_expression: ShapeExpression) -> ShapeExpression:
-    """
-    Normalize the given shape expression, e.g. by removing whitespaces, making
-    similar expressions look the same.
-    :param shape_expression: the shape expression that is to be normalized.
-    :return: a normalized shape expression.
-    """
-    shape_expression = shape_expression.replace("'", "").replace('"', "")
-    # Replace whitespaces right before labels with $.
-    shape_expression = re.sub(rf"\s*{_REGEX_LABEL}", r"$\1", shape_expression)
-    # Let all commas be followed by a $.
-    shape_expression = shape_expression.replace(",", ",$")
-    # Remove all whitespaces left.
-    shape_expression = re.sub(r"\s*", "", shape_expression)
-    # Remove $ right after a bracket.
-    shape_expression = re.sub(r"\[\$+", "[", shape_expression)
-    # Replace $ with a single space.
-    shape_expression = re.sub(r"\$+", " ", shape_expression)
-    return shape_expression
 
 
 def get_dimensions(shape_expression: str) -> list[str]:

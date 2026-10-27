@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, Unpack
 
 import numpy as np
 from pydantic import BaseModel
 
+from numpydantic import AnyDims, L, Range
 from numpydantic.dtype import Float, Integer, Number
 from numpydantic.testing.helpers import ValidationCase, merged_product
 from numpydantic.testing.interfaces import (
@@ -35,7 +36,8 @@ class SubClass(BasicModel):
 # Annotations
 # --------------------------------------------------
 
-RGB_UNION = (("*", "*"), ("*", "*", 3), ("*", "*", 3, 4))
+RGB_UNION = ((int, int), (int, int, L[3]), (int, int, L[3], L[4]))
+RANGE_SHAPE = (Range[L[2], L[4]], Range[L[3], int], Range[int, L[3]])
 UNION_TYPE: TypeAlias = np.uint32 | np.float32
 
 SHAPE_CASES = (
@@ -46,6 +48,36 @@ SHAPE_CASES = (
     ValidationCase(shape=(9, 10, 2, 2), passes=False, id="dimension too small"),
     ValidationCase(shape=(10, 10, 1, 1), passes=True, id="wildcard smaller"),
     ValidationCase(shape=(10, 10, 3, 3), passes=True, id="wildcard larger"),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE, shape=(2, 3, 1), passes=True, id="range minimums"
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE, shape=(4, 10, 3), passes=True, id="range maximums"
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE,
+        shape=(1, 3, 1),
+        passes=False,
+        id="range too small",
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE,
+        shape=(5, 3, 1),
+        passes=False,
+        id="range too large",
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE,
+        shape=(2, 2, 1),
+        passes=False,
+        id="open range too small",
+    ),
+    ValidationCase(
+        annotation_shape=RANGE_SHAPE,
+        shape=(2, 3, 4),
+        passes=False,
+        id="open range too large",
+    ),
     ValidationCase(
         annotation_shape=RGB_UNION, shape=(5, 5), passes=True, id="Union 2D"
     ),
@@ -81,14 +113,14 @@ SHAPE_CASES = (
         passes=True,
     ),
     ValidationCase(
-        annotation_shape=("*", "*"),
+        annotation_shape=(int, int),
         shape=tuple(),
         id="scalar-min-dimensions",
         marks={"scalar"},
         passes=False,
     ),
     ValidationCase(
-        annotation_shape=("*", 3), shape=(0, 3), id="zero-length", passes=True
+        annotation_shape=(int, L[3]), shape=(0, 3), id="zero-length", passes=True
     ),
 )
 """
@@ -313,65 +345,68 @@ ZERO_LENGTH_CASES_PASSING = [c for c in ALL_CASES_PASSING if "zero-length" in c.
 
 MYPY_SHAPE_CASES = [
     ValidationCase(
-        id="mypy-literal", annotation_shape=(3, 3), shape=(3, 3), passes=True
+        id="mypy-literal", annotation_shape=(L[3], L[3]), shape=(3, 3), passes=True
     ),
     ValidationCase(
-        id="mypy-literal-badshape", annotation_shape=(3, 3), shape=(2, 4), passes=False
+        id="mypy-literal-badshape",
+        annotation_shape=(L[3], L[3]),
+        shape=(2, 4),
+        passes=False,
     ),
     ValidationCase(
         id="mypy-literal-badcardinality",
-        annotation_shape=(3, 3),
+        annotation_shape=(L[3], L[3]),
         shape=(3, 3, 3),
         passes=False,
     ),
     ValidationCase(
-        id="mypy-wildcard", annotation_shape=(3, "*"), shape=(3, 5), passes=True
+        id="mypy-wildcard", annotation_shape=(L[3], int), shape=(3, 5), passes=True
     ),
     ValidationCase(
         id="mypy-wildcard-badshape",
-        annotation_shape=(3, "*"),
+        annotation_shape=(L[3], int),
         shape=(2, 5),
         passes=False,
     ),
     ValidationCase(
         id="mypy-wildcard-badcardinality",
-        annotation_shape=(3, "*"),
+        annotation_shape=(L[3], int),
         shape=(3, 3, 3),
         passes=False,
     ),
     ValidationCase(
-        id="mypy-ellipsis",
-        annotation_shape=(3, 3, "..."),
+        id="mypy-anydims",
+        annotation_shape=(L[3], L[3], Unpack[AnyDims]),
         shape=(3, 3, 3, 3),
         passes=True,
     ),
     ValidationCase(
-        id="mypy-ellipsis-samecardinality",
-        annotation_shape=(3, 3, "..."),
+        id="mypy-anydims-samecardinality",
+        annotation_shape=(L[3], L[3], Unpack[AnyDims]),
         shape=(3, 3),
         passes=True,
     ),
     ValidationCase(
-        id="mypy-ellipsis-badshape",
-        annotation_shape=(3, 3, "..."),
+        id="mypy-anydims-badshape",
+        annotation_shape=(L[3], L[3], Unpack[AnyDims]),
         shape=(2, 2),
         passes=False,
     ),
     ValidationCase(
         id="mypy-range",
-        annotation_shape=("2-5", "2-5", "2-*"),
+        annotation_shape=(Range[L[2], L[5]], Range[L[2], L[5]], Range[L[2], int]),
         shape=(2, 5, 10),
         passes=True,
     ),
     ValidationCase(
         id="mypy-range-badshape",
-        annotation_shape=("2-5", "2-5", "2-*"),
+        annotation_shape=(Range[L[2], L[5]], Range[L[2], L[5]], Range[L[2], int]),
         shape=(1, 6, 10),
         passes=False,
     ),
     ValidationCase(
         id="mypy-range-badwildcard",
-        annotation_shape=("2-5", "2-5", "2-*"),
+        annotation_shape=(Range[L[2], L[5]], Range[L[2], L[5]], Range[L[2], int]),
         shape=(2, 5, 1),
         passes=False,
     ),

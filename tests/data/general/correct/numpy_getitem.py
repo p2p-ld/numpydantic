@@ -1,9 +1,15 @@
+# /// typecheck
+# [pyright]
+# requires = { numpy = ">=2.5,<2.6" }
+# ///
 """
 Ensure that mypy doesn't complain about slicing for ndarray types
 Basic test that the protocol class is type checking like a protocol class
 
 https://github.com/p2p-ld/numpydantic/issues/57
 """
+
+from typing import Literal as L
 
 import numpy as np
 from pydantic import BaseModel
@@ -12,7 +18,7 @@ from numpydantic import NDArray, Shape
 
 
 class Foo(BaseModel):
-    x: NDArray[Shape["3, 3, 3"], np.float64]
+    x: NDArray[Shape[L[3], L[3], L[3]], np.float64]
 
     def bar(self) -> None:
         print(self.x[0])

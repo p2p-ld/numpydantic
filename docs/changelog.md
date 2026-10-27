@@ -2,6 +2,18 @@
 
 ## Upcoming
 
+**Breaking**
+
+- `Shape` no longer uses `nptyping`'s string machinery. To type checkers, `Shape` is `tuple`,
+  and at runtime `Shape[...]` returns the equivalent `tuple[...]`. See [syntax](syntax.md).
+  The string form will be deprecated but maintained until numpydantic 3.0, and then removed.
+- `...` outside of a string now repeats the dimension before it, as in `tuple[X, ...]`:
+  `Shape[L[2], ...]` is any number of dimensions of length 2.
+  Use `*AnyDims` for any number of dimensions of any size.
+- Shape variables like `Shape["Dim, Dim"]` are no longer supported.
+  They will return as `TypeVar`s in a future version.
+- Range bounds must be `Literal` ints or `int`, e.g. `Range[L[2], L[4]]` rather than `Range[2, 4]`.
+
 **Fixed**
 
 - [`#99`](https://github.com/p2p-ld/numpydantic/pull/99) - Add new mypy type stub locations for `ones` and `full`
@@ -12,6 +24,20 @@
 
 - [`#85`](https://github.com/p2p-ld/numpydantic/issues/85), [`#102`](https://github.com/p2p-ld/numpydantic/pull/102) - 
   support mypy configuration via a `mypy.ini` file 
+- `Range[low, high]` for dimensions whose size is within an inclusive range
+- `AnyDims`, used like `Shape[L[3], *AnyDims]` for any number of trailing dimensions
+- Labelled dimensions with `Annotated`, like `Shape[Annotated[L[3], "x"]]`
+- Zero-dimensional shapes with `Shape[()]`
+- Unpacked tuples are flattened into shapes, so shapes can be composed from aliases
+- The mypy plugin checks that a range fits within the range it is assigned to
+- `unshape()` forgets an array's static shape so it can be assigned to a literal shape
+- `transposed()` reverses the static shape of an array transposed with `.T`, for up to 5 dimensions
+- `unliteral()` forgets an array's static sizes, keeping its number of dimensions
+
+**Deprecated**
+
+- The string form of shapes, like `Shape["3, 4"]`, emits a `DeprecationWarning`
+  and will be removed in 3.0.
 
 
 

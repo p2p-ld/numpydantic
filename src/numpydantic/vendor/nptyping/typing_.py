@@ -31,7 +31,6 @@ else:
 
 import numpy as np
 
-ShapeExpression: TypeAlias = str
 StructureExpression: TypeAlias = str
 DType: TypeAlias = np.generic | StructureExpression
 ShapeTuple: TypeAlias = tuple[int, ...]

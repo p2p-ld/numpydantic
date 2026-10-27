@@ -25,8 +25,6 @@ SOFTWARE.
 from numpydantic.vendor.nptyping.assert_isinstance import assert_isinstance
 from numpydantic.vendor.nptyping.error import (
     InvalidArgumentsError,
-    InvalidDTypeError,
-    InvalidShapeError,
     InvalidStructureError,
     NPTypingError,
 )
@@ -35,13 +33,9 @@ from numpydantic.vendor.nptyping.package_info import __version__
 
 # don't import unnecessarily since we don't use it
 # from numpydantic.vendor.nptyping.pandas_.dataframe import DataFrame
-from numpydantic.vendor.nptyping.recarray import RecArray
-from numpydantic.vendor.nptyping.shape import Shape
 from numpydantic.vendor.nptyping.shape_expression import (
-    normalize_shape_expression,
     validate_shape_expression,
 )
-from numpydantic.vendor.nptyping.structure import Structure
 from numpydantic.vendor.nptyping.typing_ import (
     Bool,
     Byte,
@@ -107,12 +101,9 @@ __all__ = [
     "RecArray",
     "assert_isinstance",
     "validate_shape_expression",
-    "normalize_shape_expression",
     "NPTypingError",
     "InvalidArgumentsError",
-    "InvalidShapeError",
     "InvalidStructureError",
-    "InvalidDTypeError",
     "Shape",
     "Structure",
     "__version__",

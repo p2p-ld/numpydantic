@@ -1,3 +1,7 @@
+# /// typecheck
+# [pyright]
+# requires = { numpy = ">=2.5,<2.6" }
+# ///
 """
 When used as a model field, checks against a numpy array
 """

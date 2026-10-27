@@ -8,6 +8,8 @@
 
 import importlib.metadata as metadata
 
+from sphinx.application import Sphinx
+
 project = "numpydantic"
 copyright = "2024, Jonny Saunders"
 author = "Jonny Saunders"
@@ -96,3 +98,15 @@ programoutput_use_ansi = False
 # Warnings
 # the lexer trivially fails on the tuples-of-types example in dtype
 suppress_warnings = ["misc.highlighting_failure"]
+
+
+def _clear_program_output(app: Sphinx) -> None:
+    # program-output keeps each command's output between builds,
+    # so pages whose examples changed would otherwise show the old output
+    from sphinxcontrib.programoutput import ProgramOutputCache
+
+    app.env.programoutput_cache = ProgramOutputCache()
+
+
+def setup(app: Sphinx) -> None:
+    app.connect("builder-inited", _clear_program_output)
