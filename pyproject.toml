@@ -57,7 +57,7 @@ video = [
     "opencv-python>=4.9.0.80",
 ]
 zarr = [
-    "zarr>=2.17.2,<3.0.0",
+    "zarr>=3.1.0", # ZDType added in 3.1.0
 ]
 arrays = [
     "numpydantic[dask,hdf5,zarr,video]"
@@ -143,8 +143,6 @@ testpaths = [
     "tests"
 ]
 filterwarnings = [
-    # zarr chunk size estimation for scalar arrays
-    'ignore:.*divide by zero encountered in log10.*',
     # our own deprecation of string shape expressions, which the tests still use
     'ignore:String shape expressions:DeprecationWarning',
     "ignore:Treating '...' in a string:DeprecationWarning",
@@ -228,10 +226,6 @@ plugins = [
     "numpydantic.mypy",
     "pydantic.mypy",
 ]
-
-[[tool.mypy.overrides]]
-module = ["zarr.*"]
-follow_untyped_imports = true
 
 [tool.numpydantic.mypy]
 interfaces = [
