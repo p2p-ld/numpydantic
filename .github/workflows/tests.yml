@@ -19,11 +19,10 @@ jobs:
           # Don't test intermediate versions on non-linux OSes, to save test time.
           - platform: "macos-latest"
             python-version: "3.12"
-          # mac struggles to build numcodecs with 3.14, from zarr<3
+          - platform: "macos-latest"
+            python-version: "3.13"
           - platform: "macos-latest"
             python-version: "3.14"
-          - platform: "macos-latest"
-            python-version: "3.15"
           - platform: "windows-latest"
             python-version: "3.12"
           - platform: "windows-latest"

@@ -18,7 +18,8 @@ U = TypeVar("U")
 def jsonize_array(value: Any, info: SerializationInfo) -> list | dict:
     """Use an interface class to render an array as JSON"""
     # perf: keys to skip in generation - anything named "value" is array data.
-    skip = ["value"]
+    # "info" is array metadata, which may contain strings that look like paths
+    skip = ["value", "info"]
 
     interface_cls = Interface.match_output(value)
     array = interface_cls.to_json(value, info)
