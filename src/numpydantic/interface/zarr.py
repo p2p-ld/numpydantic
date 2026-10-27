@@ -160,7 +160,6 @@ class _MetadataJsonSchema:
         return handler(schema)
 
 
-
 ZarrMetadata = Annotated[
     ArrayMetadata,
     GetPydanticSchema(
@@ -174,15 +173,17 @@ ZarrMetadata = Annotated[
     _MetadataJsonSchema(),
 ]
 """
-Wrapped Metadata dataclasses from zarr, supporting roundtrip json serialization and json schema generation.
+Wrapped Metadata dataclasses from zarr, supporting roundtrip json serialization 
+and json schema generation.
 
 By themselves, pydantic can't build a schema from zarr's metadata dataclasses,
 so use their own to_dict and from_dict methods instead.
 Generating JSON Schema is similarly finnicky - 
 we attempt to derive it from the TypedDict form of the schema, 
-but a complex three-way interaction between python version, pydantic version, and zarr version
-makes that fail on older versions of all three.
-So JSON schema for zarr metadata is "best effort" and falls back to being an unannotated `object` on failure. 
+but a complex three-way interaction between python version, pydantic version, 
+and zarr version makes that fail on older versions of all three.
+So JSON schema for zarr metadata is "best effort" 
+and falls back to being an unannotated `object` on failure. 
 """
 
 

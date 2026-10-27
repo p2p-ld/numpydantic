@@ -190,7 +190,8 @@ def test_zarr_hexdigest_from_files(nested, zarr_format, tmp_path):
     The hexdigest should be reproducible from the files on disk, without zarr.
 
     A *little* circular as a test, mostly checking OS level ordering thingz,
-    whether a naive `sorted(Path().rglob())` get us what we get from sorting zarr's manifest.
+    whether a naive `sorted(Path().rglob())` get us
+    what we get from sorting zarr's manifest.
     """
     data = np.arange(100).reshape(10, 10)
     if nested:
