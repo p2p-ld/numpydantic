@@ -86,7 +86,6 @@ from numpydantic.mypy.ranges import RangeValue, module_has_ranges
 from numpydantic.ndarray import NDArray
 from numpydantic.shape import Range, Shape
 from numpydantic.shape._variadic import _split_variadic
-from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 
 CONFIGFILE_KEY = "numpydantic-mypy"
 """the table in an INI file where npd-specific settings are"""
@@ -343,7 +342,7 @@ def _parse_shape_arg(arg: Type | None, ctx: AnalyzeTypeContext) -> TupleType | N
         if canonical is Any:
             return None
         return _canonical_to_type(canonical, ctx)
-    except (InvalidShapeExpressionError, InvalidArgumentsError) as exc:
+    except InvalidShapeExpressionError as exc:
         ctx.api.fail(str(exc), ctx.context)
         return None
 
