@@ -1,14 +1,14 @@
-import contextlib
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import cv2
 import dask.array as da
 import h5py
-import numcodecs
 import numpy as np
 import zarr
 from pydantic import BaseModel
+from zarr.storage import ZipStore
 
 from numpydantic.interface import (
     DaskInterface,
@@ -176,7 +176,26 @@ class _ZarrMetaCase(InterfaceCase):
 
     @classmethod
     def skip(cls, shape: tuple[int, ...], dtype: DtypeType) -> bool:
-        return issubclass(dtype, BaseModel) or dtype is str
+        # zarr 3 can't store arrays of python objects, including datetimes
+        return dtype is datetime or issubclass(dtype, BaseModel)
+
+    @classmethod
+    def _make(
+        cls,
+        shape: tuple[int, ...],
+        dtype: DtypeType,
+        array: NDArrayType | None,
+        **kwargs: Any,
+    ) -> zarr.Array:
+        if issubclass(dtype, np.datetime64):
+            dtype = np.dtype("M8[ns]")
+        elif dtype is np.str_:
+            # zarr can't make fixed-width string arrays without a width,
+            # use variable-length strings instead
+            dtype = str
+        if array is not None:
+            return zarr.array(array, dtype=dtype, chunks=-1, **kwargs)
+        return zarr.zeros(shape=shape, dtype=dtype, **kwargs)
 
 
 class ZarrCase(_ZarrMetaCase):
@@ -190,20 +209,7 @@ class ZarrCase(_ZarrMetaCase):
         path: Path | None = None,
         array: NDArrayType | None = None,
     ) -> zarr.Array | None:
-        if issubclass(dtype, np.datetime64):
-            dtype = np.dtype("M8[ns]")
-        if array is not None:
-            return zarr.array(array, dtype=dtype, chunks=-1)
-        elif dtype is datetime:
-            z = zarr.empty(
-                shape=shape, dtype=object, object_codec=numcodecs.pickles.Pickle()
-            )
-            # e.g. from zero-shaped arrays
-            with contextlib.suppress(IndexError):
-                z[:] = datetime.now(UTC)
-            return z
-        else:
-            return zarr.zeros(shape=shape, dtype=dtype)
+        return cls._make(shape, dtype, array)
 
 
 class ZarrDirCase(_ZarrMetaCase):
@@ -217,24 +223,7 @@ class ZarrDirCase(_ZarrMetaCase):
         path: Path | None = None,
         array: NDArrayType | None = None,
     ) -> zarr.Array | None:
-        if issubclass(dtype, np.datetime64):
-            dtype = np.dtype("M8[ns]")
-        store = zarr.DirectoryStore(str(path / "array.zarr"))
-        if array is not None:
-            return zarr.array(array, dtype=dtype, store=store, chunks=-1)
-        elif dtype is datetime:
-            z = zarr.empty(
-                shape=shape,
-                dtype=object,
-                store=store,
-                object_codec=numcodecs.pickles.Pickle(),
-            )
-            # e.g. from zero-shaped arrays
-            with contextlib.suppress(IndexError):
-                z[:] = datetime.now(UTC)
-            return z
-        else:
-            return zarr.zeros(shape=shape, dtype=dtype, store=store)
+        return cls._make(shape, dtype, array, store=str(path / "array.zarr"))
 
 
 class ZarrZipCase(_ZarrMetaCase):
@@ -248,24 +237,8 @@ class ZarrZipCase(_ZarrMetaCase):
         path: Path | None = None,
         array: NDArrayType | None = None,
     ) -> zarr.Array | None:
-        if issubclass(dtype, np.datetime64):
-            dtype = np.dtype("M8[ns]")
-        store = zarr.ZipStore(str(path / "array.zarr"), mode="w")
-        if array is not None:
-            return zarr.array(array, dtype=dtype, store=store, chunks=-1)
-        elif dtype is datetime:
-            z = zarr.empty(
-                shape=shape,
-                dtype=object,
-                store=store,
-                object_codec=numcodecs.pickles.Pickle(),
-            )
-            # e.g. from zero-shaped arrays
-            with contextlib.suppress(IndexError):
-                z[:] = datetime.now(UTC)
-            return z
-        else:
-            return zarr.zeros(shape=shape, dtype=dtype, store=store)
+        store = ZipStore(str(path / "array.zarr"), mode="w")
+        return cls._make(shape, dtype, array, store=store)
 
 
 class ZarrNestedCase(_ZarrMetaCase):
@@ -279,26 +252,10 @@ class ZarrNestedCase(_ZarrMetaCase):
         path: Path | None = None,
         array: NDArrayType | None = None,
     ) -> ZarrArrayPath:
-        if issubclass(dtype, np.datetime64):
-            dtype = np.dtype("M8[ns]")
         file = str(path / "nested.zarr")
-        root = zarr.open(file, mode="w")
         subpath = "a/b/c"
-        if array is not None:
-            _ = root.array(subpath, array, dtype=dtype)
-        elif dtype is datetime:
-            z = root.empty(
-                subpath,
-                shape=shape,
-                dtype=object,
-                object_codec=numcodecs.pickles.Pickle(),
-            )
-            # e.g. from zero-shaped arrays
-            with contextlib.suppress(IndexError):
-                z[:] = datetime.now(UTC)
-            return z
-        else:
-            _ = root.zeros(subpath, shape=shape, dtype=dtype)
+        zarr.open_group(file, mode="w")
+        cls._make(shape, dtype, array, store=file, path=subpath)
         return ZarrArrayPath(file=file, path=subpath)
 
 
