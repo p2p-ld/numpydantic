@@ -37,7 +37,7 @@ def zarr_nested_array(tmp_output_dir_func) -> ZarrArrayPath:
     file = tmp_output_dir_func / "nested.zarr"
     path = "a/b/c"
     root = zarr.open(str(file), mode="w")
-    _ = root.zeros(path, shape=(100, 100), chunks=(10, 10))
+    _ = root.zeros(name=path, shape=(100, 100), chunks=(10, 10))
     return ZarrArrayPath(file=file, path=path)
 
 

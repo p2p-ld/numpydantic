@@ -345,6 +345,29 @@ data = model.model_dump_json(
 print_json(data)
 ```
 
+### `hash_array`
+
+Include a hash of the stored array as `hexdigest`, which can be checked
+against the stored files without needing to load the array.
+Off by default, since it reads every stored file.
+
+```{warning}
+This is **experimental** and **likely to change**.
+See {func}`.zarr.hexdigest` for how the hash is computed.
+```
+
+Supported interfaces:
+- {class}`.ZarrInterface`
+
+```{code-cell}
+model = MyModel(array=("data/test.zarr",))
+data = model.model_dump_json(
+    round_trip=True, 
+    context={"hash_array": True}
+    )
+print_json(data)
+```
+
 
 
 [^normalstyle]: o ya we're posting JSON [normal style](https://normal.style)

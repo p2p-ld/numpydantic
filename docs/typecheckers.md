@@ -98,8 +98,8 @@ By default pydantic uses `Any` types for all the fields in its synthesized `__in
 so static checking for array types doesn't work.
 Numpydantic's plugin handles its input type transformations correctly (see [below](#pydantic-models)), so you likely want to set its `init_typed` option to `True`.
 
-If you are using numpydantic with zarr or any other array interface whose package is untyped,
-you will need to enable mypy's [`follow-untyped-imports`](https://mypy.readthedocs.io/en/stable/running_mypy.html) option.
+If you are using numpydantic with an array interface whose package is untyped,
+you will need to enable mypy's [`follow-untyped-imports`](https://mypy.readthedocs.io/en/stable/running_mypy.html) option for that package.
 
 A full configuration might then look like this:
 
@@ -111,10 +111,6 @@ plugins = [
   "numpydantic.mypy",
   "pydantic.mypy",
 ]
-
-[[tool.mypy.overrides]]
-module = ["zarr.*"]
-follow_untyped_imports = true
 
 [tool.numpydantic.mypy]
 interfaces = [
@@ -131,9 +127,6 @@ init_typed = true
 ```ini
 [mypy]
 plugins=numpydantic.mypy,pydantic.mypy
-
-[mypy-zarr.*]
-follow_untyped_imports=true
 
 [numpydantic-mypy]
 interfaces=numpy,dask,zarr

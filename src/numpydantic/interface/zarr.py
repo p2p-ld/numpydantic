@@ -3,29 +3,48 @@ Interface to zarr arrays
 """
 
 import contextlib
+import hashlib
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import numpy as np
-from pydantic import SerializationInfo
+from pydantic import (
+    GetJsonSchemaHandler,
+    GetPydanticSchema,
+    PydanticUserError,
+    SerializationInfo,
+    TypeAdapter,
+)
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import core_schema
 
 from numpydantic.interface.interface import Interface, JsonDict
 from numpydantic.interface.typing import ConstructorSpec, InterfaceTyping
-from numpydantic.types import DtypeType
 
 try:
     import zarr
-    from numcodecs import Pickle, VLenUTF8
-    from zarr.core import Array as ZarrArray
-    from zarr.storage import StoreLike
+    from zarr import Array as ZarrArray
+    from zarr.buffer import default_buffer_prototype
+    from zarr.core.metadata import (
+        ArrayMetadata,
+        ArrayMetadataDict,
+        ArrayV2Metadata,
+        ArrayV3Metadata,
+    )
+    from zarr.core.sync import sync
+    from zarr.storage import LocalStore, ZipStore
 except ImportError:  # pragma: no cover
     ZarrArray = None
-    StoreLike = None
-    storage = None
-    Pickle = None
-    VLenUTF8 = None
+    ArrayMetadata = Any
+    ArrayMetadataDict = None
+    ArrayV2Metadata = None
+    ArrayV3Metadata = None
+    LocalStore = None
+    ZipStore = None
 
 
 @dataclass
@@ -41,9 +60,13 @@ class ZarrArrayPath:
     path: str | None = None
     """Path to array within hierarchical zarr store"""
 
-    def open(self, **kwargs: dict) -> ZarrArray:
+    def open(self, mode: str = "a", **kwargs: dict) -> ZarrArray:
         """Open the zarr array at the provided path"""
-        return zarr.open(str(self.file), path=self.path, **kwargs)
+        store = str(self.file)
+        # zarr 2 opened .zip paths as zip stores automatically, zarr 3 does not
+        if store.endswith(".zip"):
+            store = ZipStore(store, mode=mode if mode in ("r", "w") else "a")
+        return zarr.open(store, path=self.path, mode=mode, **kwargs)
 
     @classmethod
     def from_iterable(cls, spec: Sequence) -> "ZarrArrayPath":
@@ -59,15 +82,125 @@ class ZarrArrayPath:
             raise ValueError("Only len 1-2 iterables can be used for a ZarrArrayPath")
 
 
+def hexdigest(array: ZarrArray) -> str:
+    """
+    SHA256 of the raw bytes of the files that make up a zarr array,
+    read in sorted path order.
+
+    .. warning::
+
+        This is **experimental** and **likely to change**.
+        If you need a more reliable or controllable hash,
+        please `open an issue <https://github.com/p2p-ld/numpydantic/issues>`_.
+
+    This hashes the bytes as stored, so it can be checked without zarr::
+
+        cd array.zarr
+        find . -type f | LC_ALL=C sort | xargs cat | sha256sum
+
+    The same values stored with different chunking, compression, metadata,
+    or zarr versions will have different hashes.
+    """
+    # zarr 3 only exposes the raw store contents through async methods
+    prefix = f"{array.path}/" if array.path else ""
+    prototype = default_buffer_prototype()
+
+    async def _digest() -> str:
+        keys = sorted([key async for key in array.store.list_prefix(prefix)])
+        digest = hashlib.sha256()
+        for key in keys:
+            value = await array.store.get(key, prototype=prototype)
+            digest.update(value.to_bytes())
+        return digest.hexdigest()
+
+    return sync(_digest())
+
+
+def _parse_metadata(value: Any) -> ArrayMetadata:
+    if isinstance(value, (ArrayV2Metadata, ArrayV3Metadata)):
+        return value
+    if not isinstance(value, dict) or value.get("zarr_format") not in (2, 3):
+        raise ValueError("Not zarr array metadata")
+    metadata_cls = ArrayV2Metadata if value["zarr_format"] == 2 else ArrayV3Metadata
+    try:
+        return metadata_cls.from_dict(value)
+    except (KeyError, TypeError) as e:
+        raise ValueError(f"Invalid zarr array metadata: {e}") from e
+
+
+@cache
+def _metadata_dict_schema() -> core_schema.CoreSchema | None:
+    """
+    Schema for zarr's TypedDict of array metadata as JSON,
+    or ``None`` if this version of pydantic can't read this version of zarr's types.
+    """
+    # zarr only imports JSON when type checking, so pydantic looks for it here instead
+    JSON = Any  # noqa: F841
+    try:
+        with warnings.catch_warnings():
+            # pydantic can't enforce zarr's ReadOnly fields, which is fine for a schema
+            warnings.filterwarnings("ignore", message=".*ReadOnly.*")
+            adapter = TypeAdapter(ArrayMetadataDict)
+            # newer pydantic doesn't raise until the schema is used
+            adapter.json_schema()
+    except (PydanticUserError, NameError):
+        return None
+    return adapter.core_schema
+
+
+class _MetadataJsonSchema:
+    """Describe metadata with zarr's TypedDict if we can, or as any object if not"""
+
+    def __get_pydantic_json_schema__(
+        self, _schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        schema = _metadata_dict_schema()
+        if schema is None:
+            return {"type": "object"}
+        return handler(schema)
+
+
+ZarrMetadata = Annotated[
+    ArrayMetadata,
+    GetPydanticSchema(
+        lambda _type, _handler: core_schema.no_info_plain_validator_function(
+            _parse_metadata,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda metadata: metadata.to_dict()
+            ),
+        )
+    ),
+    _MetadataJsonSchema(),
+]
+"""
+Wrapped Metadata dataclasses from zarr, supporting roundtrip json serialization 
+and json schema generation.
+
+By themselves, pydantic can't build a schema from zarr's metadata dataclasses,
+so use their own to_dict and from_dict methods instead.
+Generating JSON Schema is similarly finnicky - 
+we attempt to derive it from the TypedDict form of the schema, 
+but a complex three-way interaction between python version, pydantic version, 
+and zarr version makes that fail on older versions of all three.
+So JSON schema for zarr metadata is "best effort" 
+and falls back to being an unannotated `object` on failure. 
+"""
+
+
 class ZarrJsonDict(JsonDict):
     """Round-trip Json-able version of a Zarr Array"""
 
-    info: dict[str, str]
+    info: ZarrMetadata
+    """The array's metadata, in the format defined by the zarr spec"""
     type: Literal["zarr"]
     file: str | None = None
     path: str | None = None
     dtype: str | None = None
-    object_cls: str | None = None
+    hexdigest: str | None = None
+    """
+    Hash of the stored array, made by :func:`.hexdigest` when ``hash_array`` is
+    ``True`` in the serialization context
+    """
     value: list | None = None
 
     def to_array_input(self) -> ZarrArray | ZarrArrayPath:
@@ -76,36 +209,23 @@ class ZarrJsonDict(JsonDict):
         otherwise a ZarrArray
         """
         if self.file:
-            array = ZarrArrayPath(file=self.file, path=self.path)
-        else:
-            dtype = np.str_ if self.dtype == "str" else self.dtype
-            if self.dtype == "object" and self.object_cls is not None:
-                try:
-                    value = self.cast_objects(np.array(self.value), self.object_cls)
-                except (TypeError, ValueError):
-                    # pickled objects, deserialize below.
-                    value = self.value
-            else:
-                value = self.value
-
-            try:
-                array = zarr.array(value, dtype=dtype)
-            except ValueError:
-                # FIXME: infer codec from roundtrip info.
-                # Zarr encodes object codecs as strings, hard without eval'ing a string
-                # Just try pickle and bail - we need to update to zarr 3 anyway.
-                array = zarr.array(value, dtype=dtype, object_codec=Pickle())
-        return array
+            return ZarrArrayPath(file=self.file, path=self.path)
+        dtype = str if self.dtype == "str" else self.dtype
+        value = np.array(self.value, dtype=dtype)
+        # zero-length dimensions are lost when dumped to nested lists
+        if value.shape != self.info.shape:
+            value = self.reshape_input(value, self.info.shape)
+        return zarr.array(value, dtype=dtype)
 
 
 class ZarrTyping(InterfaceTyping):
     """Static-typing companion for :class:`ZarrInterface`."""
 
     constructors = (
-        ConstructorSpec(fullname="zarr.creation.zeros"),
-        ConstructorSpec(fullname="zarr.creation.ones"),
-        ConstructorSpec(fullname="zarr.creation.empty"),
-        ConstructorSpec(fullname="zarr.creation.full"),
+        ConstructorSpec(fullname="zarr.api.synchronous.zeros"),
+        ConstructorSpec(fullname="zarr.api.synchronous.ones"),
+        ConstructorSpec(fullname="zarr.api.synchronous.empty"),
+        ConstructorSpec(fullname="zarr.api.synchronous.full"),
     )
 
     @classmethod
@@ -189,19 +309,6 @@ class ZarrInterface(Interface):
         """
         return self._get_array(array)
 
-    def get_dtype(self, array: ZarrArray) -> DtypeType:
-        """
-        Override base dtype getter to handle zarr's string-as-object encoding.
-        """
-        if (
-            getattr(array.dtype, "type", None) is np.object_
-            and array.filters
-            and any([isinstance(f, VLenUTF8) for f in array.filters])
-        ):
-            return np.str_
-        else:
-            return array.dtype
-
     @classmethod
     def to_json(
         cls,
@@ -214,9 +321,11 @@ class ZarrInterface(Interface):
         If ``info.round_trip == False``, dump the array as a list of lists.
         This may be a memory-intensive operation.
 
-        Otherwise, dump the metadata for an array from
-        :meth:`zarr.core.Array.info_items`
-        plus the :meth:`zarr.core.Array.hexdigest` as a :class:`.ZarrJsonDict`
+        Otherwise, dump the array's metadata (see :attr:`zarr.Array.metadata`)
+        as a :class:`.ZarrJsonDict`
+
+        If the ``hash_array`` value in the context dictionary is ``True``,
+        include a hash of the stored array from :func:`.hexdigest`
 
         If either the ``dump_array`` value in the context dictionary is ``True``
         or the zarr array is an in-memory array, dump the array as well
@@ -237,21 +346,17 @@ class ZarrInterface(Interface):
             is_file = False
 
             as_json = {"type": cls.name}
-            as_json["dtype"] = array.dtype.name
-            as_json["object_cls"] = None
-            if hasattr(array.store, "dir_path"):
+            as_json["dtype"] = "str" if array.dtype.type is str else array.dtype.name
+            if isinstance(array.store, LocalStore):
                 is_file = True
-                as_json["file"] = array.store.dir_path()
-                as_json["path"] = array.name
-            as_json["info"] = {i[0]: i[1] for i in array.info_items()}
-            as_json["info"]["hexdigest"] = array.hexdigest()
+                as_json["file"] = str(array.store.root.absolute())
+                as_json["path"] = array.path or None
+            as_json["info"] = array.metadata
+            if info.context is not None and info.context.get("hash_array", False):
+                as_json["hexdigest"] = hexdigest(array)
 
             if dump_array or not is_file:
                 as_json["value"] = array[:].tolist()
-                if as_json["dtype"] == "object":
-                    with contextlib.suppress(AttributeError, IndexError):
-                        obj = np.array(array).ravel()[0].__class__
-                        as_json["object_cls"] = f"{obj.__module__}.{obj.__name__}"
 
             as_json = ZarrJsonDict(**as_json)
         else:
