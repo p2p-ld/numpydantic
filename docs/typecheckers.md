@@ -424,3 +424,35 @@ Additionally, you must always specify dtypes as numpy types rather than builtins
 This is strictly correct according to numpy's type annotations,
 which only accept subtypes of `np.dtype`,
 even if by convention builtins like `float` and `int` are accepted in constructors.
+
+## mypy and numpy's overloads
+
+See [](unshaping.md) for how to handle the shapes numpy gives.
+mypy handles some of numpy's overloads differently from pyright:
+
+### Constructors assigned directly
+
+Without the plugin, mypy accepts any shape for a constructor assigned straight to an annotation,
+because it falls back to a numpy overload that gives an unknown shape.
+Pyright and the mypy plugin check it:
+
+```{literalinclude} examples/numpy/mypy_context.py
+```
+
+**Without the plugin**
+
+```{program-output} mypy --config-file examples/blank_config.toml --pretty examples/numpy/mypy_context.py
+```
+
+**With the plugin**
+
+```{program-output} mypy --pretty examples/numpy/mypy_context.py
+:returncode: 1
+```
+
+### Nested numpy calls
+
+When a numpy function is called directly inside {func}`.unliteral` or {func}`.transposed`,
+like `transposed(np.transpose(a))`, mypy gives an unknown shape, which is accepted anywhere.
+mypy picks numpy's overload using the first of the helper's overloads, which is for unknown shapes.
+Assign numpy's result to a variable first, or use `a.T`.

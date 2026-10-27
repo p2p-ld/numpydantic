@@ -9,4 +9,10 @@
 .. autoclass:: numpydantic.shape.Range
 
 .. autofunction:: numpydantic.shape.validate_shape
+
+.. autofunction:: numpydantic.shape.unshape
+
+.. autofunction:: numpydantic.shape.unliteral
+
+.. autofunction:: numpydantic.shape.transposed
 ```

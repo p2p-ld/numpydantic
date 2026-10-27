@@ -30,6 +30,9 @@
 - Zero-dimensional shapes with `Shape[()]`
 - Unpacked tuples are flattened into shapes, so shapes can be composed from aliases
 - The mypy plugin checks that a range fits within the range it is assigned to
+- `unshape()` forgets an array's static shape so it can be assigned to a literal shape
+- `transposed()` reverses the static shape of an array transposed with `.T`, for up to 5 dimensions
+- `unliteral()` forgets an array's static sizes, keeping its number of dimensions
 
 **Deprecated**
 

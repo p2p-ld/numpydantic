@@ -541,6 +541,7 @@ dumped = instance.model_dump_json(round_trip=True, context={'dump_array': True})
 design
 syntax
 dtype
+unshaping
 serialization
 interfaces
 typecheckers
