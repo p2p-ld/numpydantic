@@ -1,10 +1,9 @@
 """
-Replacement of :mod:`nptyping.typing_`
+Abstract dtypes, adapted from nptyping's ``typing_`` module.
 
-In the transition away from using nptyping, we want to allow for greater
-control of dtype specifications - like different precision modes, etc.
-and allow for abstract specifications of dtype that can be checked across
-interfaces.
+These allow for control of dtype specifications - like different precision
+modes, etc. - and for abstract specifications of dtype that can be checked
+across interfaces.
 
 This module also allows for convenient access to all abstract dtypes in a single
 module, rather than needing to import each individually.

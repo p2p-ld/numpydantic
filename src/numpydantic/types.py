@@ -8,10 +8,8 @@ Note that these are types as in python typing types, not classes.
 
 from typing import Any, Protocol, TypeAlias, TypeVar, runtime_checkable
 
-from numpydantic.vendor.nptyping import DType
-
 ShapeType: TypeAlias = tuple[int, ...] | Any
-DtypeType: TypeAlias = str | type | Any | DType
+DtypeType: TypeAlias = str | type | Any
 
 _T_Shape = TypeVar("_T_Shape", bound=ShapeType)
 _T_Dtype = TypeVar("_T_Dtype", bound=DtypeType)

@@ -13,7 +13,7 @@ from pydantic import (
 
 from numpydantic import AnyDims, NDArray, NDArraySchema, Shape, dtype
 from numpydantic.dtype import Number
-from numpydantic.exceptions import DtypeError
+from numpydantic.exceptions import DtypeError, InvalidShapeExpressionError
 
 
 @pytest.mark.json_schema
@@ -186,6 +186,14 @@ def test_shape_anydims():
         array: NDArray[Shape[L[1], L[2], *AnyDims], Number]
 
     _ = MyModel(array=np.zeros((1, 2, 3, 4, 5)))
+
+
+@pytest.mark.shape
+@pytest.mark.parametrize("shape", [5, [3, 4]])
+def test_shape_invalid(shape):
+    """A shape argument that isn't a shape raises an InvalidShapeExpressionError"""
+    with pytest.raises(InvalidShapeExpressionError):
+        _ = NDArray[shape, np.float64]
 
 
 @pytest.mark.serialization

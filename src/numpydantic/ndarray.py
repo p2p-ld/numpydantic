@@ -32,7 +32,7 @@ from pydantic import GetJsonSchemaHandler
 from pydantic_core import core_schema
 
 from numpydantic.dtype import DType
-from numpydantic.exceptions import InterfaceError
+from numpydantic.exceptions import InterfaceError, InvalidShapeExpressionError
 from numpydantic.interface import Interface
 from numpydantic.maps import python_to_nptyping
 from numpydantic.schema import (
@@ -42,7 +42,6 @@ from numpydantic.schema import (
 from numpydantic.serialization import jsonize_array
 from numpydantic.types import DtypeType, NDArrayType, ShapeType
 from numpydantic.validation.dtype import is_union
-from numpydantic.vendor.nptyping.error import InvalidArgumentsError
 
 if TYPE_CHECKING:  # pragma: no cover
     from pydantic._internal._schema_generation_shared import (
@@ -68,7 +67,7 @@ def _get_shape(dtype_candidate: Any) -> Shape:
     elif isinstance(dtype_candidate, (str, tuple)):
         shape = Shape[dtype_candidate]
     else:
-        raise InvalidArgumentsError(
+        raise InvalidShapeExpressionError(
             f"Unexpected argument '{dtype_candidate}', expecting"
             " Shape[...], tuple[...], or typing.Any."
         )

@@ -143,8 +143,6 @@ testpaths = [
     "tests"
 ]
 filterwarnings = [
-    # nptyping's alias warnings
-    'ignore:.*deprecated alias.*Deprecated NumPy 1\.24.*',
     # zarr chunk size estimation for scalar arrays
     'ignore:.*divide by zero encountered in log10.*',
     # our own deprecation of string shape expressions, which the tests still use
@@ -245,15 +243,11 @@ interfaces = [
 [tool.pydantic-mypy]
 init_typed = true
 
-[tool.coverage.run]
-omit = [
-    "src/numpydantic/vendor/*"
-]
 [tool.codespell]
 # Ref: https://github.com/codespell-project/codespell#using-a-config-file
 # *.bib: BibTeX citation data — author names and verbatim quoted
 # abstracts must remain unmodified
-skip = '.git*,vendor,*.lock,*.css,*.bib'
+skip = '.git*,*.lock,*.css,*.bib'
 check-hidden = true
 # ignore-regex = ''
 ignore-words-list = 'afile,ND'

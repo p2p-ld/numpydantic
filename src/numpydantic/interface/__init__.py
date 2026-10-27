@@ -1,5 +1,5 @@
 """
-Interfaces between nptyping types and array backends
+Interfaces between array annotations and array backends
 """
 
 from numpydantic.interface.dask import DaskInterface

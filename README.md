@@ -521,9 +521,8 @@ dumped = instance.model_dump_json(round_trip=True, context={'dump_array': True})
 }
 ```
 
-## Vendored Dependencies
+## Third-party code
 
-We have vendored dependencies in the `src/numpydantic/vendor` package,
-and reproduced their licenses in the `licenses` directory.
-
-- [nptyping](https://github.com/ramonhagenaars/nptyping) - `numpydantic.vendor.nptyping` - `/licenses/nptyping.txt`
+numpydantic was originally built on [nptyping](https://github.com/ramonhagenaars/nptyping),
+and parts of it, like `numpydantic.dtype`, are adapted from nptyping.
+We have reproduced nptyping's license in `/licenses/nptyping.txt`.

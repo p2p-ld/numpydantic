@@ -13,6 +13,9 @@
 - Shape variables like `Shape["Dim, Dim"]` are no longer supported.
   They will return as `TypeVar`s in a future version.
 - Range bounds must be `Literal` ints or `int`, e.g. `Range[L[2], L[4]]` rather than `Range[2, 4]`.
+- The vendored copy of `nptyping` has been removed, along with `numpydantic.vendor`.
+- A bad shape argument to `NDArray[...]` now raises `numpydantic.exceptions.InvalidShapeExpressionError`
+  rather than nptyping's `InvalidArgumentsError`.
 
 **Fixed**
 

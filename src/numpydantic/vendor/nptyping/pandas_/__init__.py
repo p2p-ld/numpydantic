@@ -1,3 +1,0 @@
-"""
-Pandas dataframe types
-"""
