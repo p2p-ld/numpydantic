@@ -40,9 +40,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install HDF5 (h5py has no 3.15 wheels yet)
+      - name: Install HDF5 - linux (h5py has no 3.15 wheels yet)
         if: matrix.python-version == '3.15' && runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libhdf5-dev pkg-config
+
+      - name: Install HDF5 - mac (h5py has no 3.15 wheels yet)
+        if: matrix.python-version == '3.15' && runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          brew install hdf5
+          echo "HDF5_DIR=$(brew --prefix hdf5)" >> "$GITHUB_ENV"
 
       - name: Cache Dependencies
         id: cache-dependencies
