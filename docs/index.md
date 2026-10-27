@@ -347,7 +347,7 @@ nested_path = 'data/sets/here'
 
 root = zarr.open(array_file, mode='w')
 nested_array = root.zeros(
-    nested_path, 
+    name=nested_path,
     shape=(1000, 1080, 1920, 3), 
     dtype=np.uint8
 )
@@ -495,23 +495,28 @@ dumped = zarr_video.model_dump_json(round_trip=True)
   "array": {
     "type": "zarr",
     "info": {
-      "Name": "/data/sets/here",
-      "Type": "zarr.core.Array",
-      "Data type": "uint8",
-      "Shape": "(1000, 1080, 1920, 3)",
-      "Chunk shape": "(125, 135, 240, 1)",
-      "Order": "C",
-      "Read-only": "False",
-      "Compressor": "Blosc(cname='lz4', clevel=5, shuffle=SHUFFLE, blocksize=0)",
-      "Store type": "zarr.storage.DirectoryStore",
-      "No. bytes": "6220800000 (5.8G)",
-      "No. bytes stored": "390",
-      "Storage ratio": "15950769.2",
-      "Chunks initialized": "0/1536",
-      "hexdigest": "e8bffe128d7146cb5acd7df5bdc4f657e9851203"
+      "shape": [1000, 1080, 1920, 3],
+      "data_type": "uint8",
+      "chunk_grid": {
+        "name": "regular",
+        "configuration": {"chunk_shape": [125, 135, 240, 1]}
+      },
+      "chunk_key_encoding": {
+        "name": "default",
+        "configuration": {"separator": "/"}
+      },
+      "fill_value": 0,
+      "codecs": [
+        {"name": "bytes"},
+        {"name": "zstd", "configuration": {"level": 0, "checksum": false}}
+      ],
+      "attributes": {},
+      "zarr_format": 3,
+      "node_type": "array",
+      "storage_transformers": []
     },
     "file": "data/array.zarr",
-    "path": "/data/sets/here",
+    "path": "data/sets/here",
     "dtype": "uint8"
   }
 }

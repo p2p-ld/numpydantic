@@ -16,9 +16,24 @@
 - The vendored copy of `nptyping` has been removed, along with `numpydantic.vendor`.
 - A bad shape argument to `NDArray[...]` now raises `numpydantic.exceptions.InvalidShapeExpressionError`
   rather than nptyping's `InvalidArgumentsError`.
+- [`#44`](https://github.com/p2p-ld/numpydantic/issues/44) - The zarr interface now requires `zarr>=3.1`.
+  Arrays written with zarr 2 can still be read.
+  - zarr 3 can't store arrays of python objects, so zarr arrays of `datetime` objects
+    or other pickled objects are no longer supported. Use `np.datetime64` arrays instead,
+    which validate against both `np.datetime64` and `datetime` annotations.
+  - Round-trip JSON dumps of zarr arrays have changed: `info` is now the array's metadata
+    as defined by the zarr spec, `path` has no leading `/`, and `object_cls` has been removed.
+  - `hexdigest` has moved out of `info` to its own field, and is only included
+    when `hash_array` is `True` in the serialization context. It is now a SHA256 of the
+    raw bytes of the files that make up the array, which can be checked without zarr.
+    It's made by {func}`.zarr.hexdigest`, which is experimental and likely to change.
+  - zarr 3 arrays don't support `len()`.
 
 **Fixed**
 
+- Array metadata in `info` is no longer searched for paths to relativize
+  when dumping to JSON
+- Zero-length zarr arrays now keep their shape when round-tripped through JSON
 - [`#99`](https://github.com/p2p-ld/numpydantic/pull/99) - Add new mypy type stub locations for `ones` and `full`
 - [`#92`](https://github.com/p2p-ld/numpydantic/issues/92), [`#108`](https://github.com/p2p-ld/numpydantic/pull/108) - 
   `NDArraySchema` annotations now correctly create JSON schemas equivalent to `NDArray`
@@ -36,6 +51,7 @@
 - `unshape()` forgets an array's static shape so it can be assigned to a literal shape
 - `transposed()` reverses the static shape of an array transposed with `.T`, for up to 5 dimensions
 - `unliteral()` forgets an array's static sizes, keeping its number of dimensions
+- Variable-length string arrays in zarr
 
 **Deprecated**
 
