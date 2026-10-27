@@ -1,3 +1,7 @@
+# /// typecheck
+# [pyright]
+# requires = { numpy = ">=2.5,<2.6" }
+# ///
 """Axis labels are documentation and don't affect type checking."""
 
 from typing import Annotated as A

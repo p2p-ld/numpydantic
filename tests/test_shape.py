@@ -11,7 +11,7 @@ import pytest
 from annotated_types import Interval
 from pydantic import BaseModel, ValidationError
 
-from numpydantic import AnyDims, NDArray, Range, Shape
+from numpydantic import AnyDims, NDArray, Range, Shape, transposed, unshape
 from numpydantic.exceptions import InvalidShapeExpressionError, ShapeError
 
 pytestmark = pytest.mark.shape
@@ -452,3 +452,15 @@ def test_range_shape_schema():
     assert schema["array_range_zero"]["minItems"] == 0
     assert schema["array_range_exclusive"]["minItems"] == 2
     assert schema["array_range_exclusive"]["maxItems"] == 4
+
+
+def test_transposed() -> None:
+    """transposed does nothing at runtime"""
+    array = np.zeros((3, 4)).T
+    assert transposed(array) is array
+
+
+def test_unshape() -> None:
+    """unshape does nothing at runtime"""
+    array = np.zeros((3, 4))
+    assert unshape(array) is array

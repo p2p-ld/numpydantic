@@ -1,3 +1,10 @@
+# /// typecheck
+# [mypy]
+# requires = { numpy = "<2.6" }
+# [pyright]
+# requires = { numpy = "<2.6" }
+# ///
+
 from typing import Literal
 
 import numpy as np

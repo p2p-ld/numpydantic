@@ -22,6 +22,7 @@ from numpydantic.mypy.plugin_ import CONFIGFILE_KEY, MypyPluginOptions
 from numpydantic.mypy.ranges import RangeValue
 from numpydantic.testing import ValidationCase
 from numpydantic.testing.cases import MYPY_CASES
+from tests.fixtures.typecheck import shared_params, typecheck_params
 
 DATA_DIR = Path(__file__).parent / "data"
 MYPY_DIR = DATA_DIR / "mypy"
@@ -56,13 +57,7 @@ def all_interfaces_config(tmp_path_factory) -> Path:
     return config_path
 
 
-@pytest.mark.parametrize(
-    "test_file",
-    [
-        pytest.param(p, id=p.stem)
-        for p in sorted((DATA_DIR / "general" / "correct").glob("*.py"))
-    ],
-)
+@pytest.mark.parametrize("test_file", shared_params("correct", "mypy"))
 def test_mypy_handwritten_correct(test_file: Path, mypy_cache_dir):
     """The mypy examples should pass static type checking with only the stub"""
     res = mypy.api.run(
@@ -77,13 +72,7 @@ def test_mypy_handwritten_correct(test_file: Path, mypy_cache_dir):
     assert res[1] == ""
 
 
-@pytest.mark.parametrize(
-    "test_file",
-    [
-        pytest.param(p, id=p.stem)
-        for p in sorted((DATA_DIR / "general" / "incorrect").glob("*.py"))
-    ],
-)
+@pytest.mark.parametrize("test_file", shared_params("incorrect", "mypy"))
 def test_mypy_handwritten_incorrect(test_file: Path, mypy_cache_dir):
     """The mypy examples should pass static type checking with only the stub"""
     res = mypy.api.run(
@@ -97,10 +86,7 @@ def test_mypy_handwritten_incorrect(test_file: Path, mypy_cache_dir):
     assert res[1] == ""
 
 
-@pytest.mark.parametrize(
-    "test_file",
-    [pytest.param(p, id=p.stem) for p in sorted((MYPY_DIR / "correct").glob("*.py"))],
-)
+@pytest.mark.parametrize("test_file", typecheck_params("mypy", MYPY_DIR / "correct"))
 def test_mypy_correct(test_file: Path, mypy_cache_dir) -> None:
     """Files in correct/ must pass mypy with zero errors."""
     stdout, stderr, returncode = mypy.api.run(
@@ -113,7 +99,7 @@ def test_mypy_correct(test_file: Path, mypy_cache_dir) -> None:
     assert returncode == 0
 
 
-@pytest.mark.parametrize("test_file", sorted((MYPY_DIR / "incorrect").glob("*.py")))
+@pytest.mark.parametrize("test_file", typecheck_params("mypy", MYPY_DIR / "incorrect"))
 def test_mypy_incorrect(test_file: Path, mypy_cache_dir) -> None:
     """Files in incorrect/ must fail mypy, and ``# E:`` markers must match."""
     stdout, stderr, returncode = mypy.api.run(
@@ -279,9 +265,7 @@ def test_range_cache(tmp_path: Path) -> None:
     where they would otherwise be loaded as plain strings
     """
     (tmp_path / "mypy.ini").write_text(
-        "[mypy]\n"
-        "plugins = numpydantic.mypy\n"
-        f"mypy_path = {MYPY_DIR / 'correct'}\n"
+        f"[mypy]\nplugins = numpydantic.mypy\nmypy_path = {MYPY_DIR / 'correct'}\n"
     )
     # compare a wide range and a narrow range from the cached module
     user = tmp_path / "user.py"

@@ -1,3 +1,7 @@
+# /// typecheck
+# [pyright]
+# requires = { numpy = ">=2.5,<2.6" }
+# ///
 """
 Ensure that mypy doesn't complain about slicing for ndarray types
 Basic test that the protocol class is type checking like a protocol class
