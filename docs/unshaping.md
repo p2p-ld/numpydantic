@@ -48,7 +48,7 @@ This requires us to be explicit with which part of the [Rumsfeldian quartet](htt
 we are on: 
 - Known knowns: we know that we correctly know the literal shape and should check it accordingly
 - Unknown knowns: [`typing.cast`](#cast) and [plain annotations](#annotation) - the type checker doesn't know the shape, but *we* know the shape, and give it an explicit annotation.
-- Known unknowns: [`unshape`](#unshape) / [`unliteral`](#numpy-kept-sizes-that-changed)  - we explicitly affirm that we *don't* know the literal shape and should be permissive when accepting it and allow its type to be narrowed
+- Known unknowns: [`unshape`](#unshape) / [`unliteral`](#unliteral)  - we explicitly affirm that we *don't* know the literal shape and should be permissive when accepting it and allow its type to be narrowed
 - Unknown unknowns: we don't know the shape and don't know what to do with it, so the typechecker fails and alerts us that more information is needed
 
 Numpydantic has a few helpers to tell the type checker what it can't work out.
@@ -116,6 +116,7 @@ b) the dtypes are checked as matching.
 ```
 
 ```{program-output} mypy --config-file examples/blank_config.toml --pretty examples/numpy/unshape.py
+:returncode: 1
 ```
 
 (unliteral)=
