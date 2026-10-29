@@ -1,4 +1,4 @@
-from typing import Any, Literal, Unpack, get_args, get_origin
+from typing import Any, Literal, TypeVar, Unpack, get_args, get_origin
 
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import _RangeDim
@@ -6,6 +6,7 @@ from numpydantic.shape._string import (
     _str_dim_to_tuple,
     normalize_string_shape_expression,
 )
+from numpydantic.shape._typevars import check_typevar
 from numpydantic.shape._variadic import (
     _is_any_shape,
     _unpacked_tuple_args,
@@ -96,6 +97,9 @@ def _normalize_tuple_item(item: Any) -> Any:
         return Literal[item]
     elif isinstance(item, _RangeDim):
         return item.annotation
+    elif isinstance(item, TypeVar):
+        check_typevar(item)
+        return item
     elif get_origin(item) is Unpack:
         # Unpack[X] is *X
         return next(iter(get_args(item)[0]))

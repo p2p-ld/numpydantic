@@ -3,32 +3,31 @@ Helper functions for use with :class:`~numpydantic.NDArray` - see the note in
 :mod:`~numpydantic.ndarray` for why these are separated.
 """
 
+import dataclasses
 import hashlib
 import json
-from collections.abc import Callable
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
     Literal,
-    Optional,
     get_args,
     get_origin,
 )
 
 import numpy as np
 from annotated_types import Interval
-from pydantic import BaseModel
+from pydantic import BaseModel, GetJsonSchemaHandler
 from pydantic_core import CoreSchema, core_schema
-from pydantic_core.core_schema import ListSchema, ValidationInfo
+from pydantic_core.core_schema import ListSchema
 
 from numpydantic import dtype as dt
-from numpydantic.exceptions import DtypeError, ShapeError
 from numpydantic.interface import Interface
 from numpydantic.maps import np_to_python
+from numpydantic.serialization import jsonize_array
 from numpydantic.shape._variadic import _split_variadic
-from numpydantic.types import DtypeType, NDArrayType, ShapeType
+from numpydantic.types import DtypeType, ShapeType
+from numpydantic.validation.array import get_validate_interface
 from numpydantic.validation.dtype import is_union
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -281,32 +280,95 @@ def make_json_schema(
     return list_schema
 
 
-def get_validate_interface(shape: ShapeType, dtype: DtypeType) -> Callable:
+def make_core_schema(
+    shape: ShapeType,
+    dtype: DtypeType,
+    handler: "CallbackGetCoreSchemaHandler",
+    source_type: Any = None,
+) -> CoreSchema:
     """
-    Validate using a matching :class:`.Interface` class using its
-    :meth:`.Interface.validate` method
+    The core schema for an array with a normalized shape and dtype.
+
+    With a ``source_type``, as with :func:`.NDArraySchema`, the value also has to be
+    an instance of that type, or of an input type of the interface it's a proxy for.
     """
+    serialization = core_schema.plain_serializer_function_ser_schema(
+        jsonize_array, when_used="json", info_arg=True
+    )
+    # The JSON schema's core schema is made here, where the dtype's schema
+    # can be generated, and rendered by make_ndarray_json_schema.
+    metadata = {
+        "numpydantic": {
+            "json_schema": make_json_schema(shape, dtype, handler),
+            "dtype": dtype,
+        }
+    }
+    validate_interface = get_validate_interface(
+        shape,
+        dtype,
+        cross_field_validation=_supports_cross_field_validation(handler),
+    )
 
-    def validate_interface(
-        value: Any, info: Optional["ValidationInfo"] = None
-    ) -> NDArrayType:
-        interface_cls = Interface.match(value)
-        interface = interface_cls(shape, dtype)
-        try:
-            value = interface.validate(value)
-        except (ShapeError, DtypeError) as e:
-            _warn_about_possible_missing_deps(e, value)
-        return value
-
-    return validate_interface
-
-
-def _warn_about_possible_missing_deps(e: Exception, value: Any) -> None:
-    if isinstance(value, (str, Path)):
-        new_ex = type(e)(
-            str(e) + "\nThe passed input looks like a path, "
-            "make sure you have the required dependencies installed to load the array!"
+    if source_type is None:
+        return core_schema.with_info_plain_validator_function(
+            validate_interface, serialization=serialization, metadata=metadata
         )
-        raise new_ex
+
+    if hasattr(source_type, "proxy_for"):
+        interface: type[Interface] = source_type.proxy_for()
+        isinstance_schema = core_schema.union_schema(
+            [
+                core_schema.is_instance_schema(itype)
+                for itype in list(interface.input_types) + [source_type]
+            ]
+        )
     else:
-        raise e
+        isinstance_schema = core_schema.is_instance_schema(source_type)
+    return core_schema.chain_schema(
+        [
+            isinstance_schema,
+            core_schema.with_info_plain_validator_function(validate_interface),
+        ],
+        serialization=serialization,
+        metadata=metadata,
+    )
+
+
+def make_ndarray_json_schema(
+    schema: CoreSchema, handler: GetJsonSchemaHandler
+) -> dict[str, Any]:
+    """Render the JSON schema stored by :func:`.make_core_schema`"""
+    stored = schema["metadata"]["numpydantic"]
+    dtype = stored["dtype"]
+    json_schema = handler.resolve_ref_schema(handler(stored["json_schema"]))
+
+    if (
+        not isinstance(dtype, tuple)
+        and dtype.__module__
+        not in (
+            "builtins",
+            "typing",
+            "types",
+        )
+        and hasattr(dtype, "__name__")
+    ):
+        json_schema["dtype"] = ".".join([dtype.__module__, dtype.__name__])
+
+    return json_schema
+
+
+def _supports_cross_field_validation(handler: "CallbackGetCoreSchemaHandler") -> bool:
+    """
+    Whether shape variable sizes can be shared between fields through ``info.data``.
+
+    ``info.data`` becomes the ``__dict__`` of a model or dataclass,
+    but for a TypedDict it's the dict that's returned, so the sizes would show up in it.
+    """
+    # pydantic doesn't tell a field what it belongs to.
+    # If this private attribute changes, sizes are only matched within one array.
+    generator = getattr(handler, "_generate_schema", None)
+    stack = getattr(generator, "model_type_stack", None)
+    owner = stack.get() if stack is not None else None
+    return isinstance(owner, type) and (
+        issubclass(owner, BaseModel) or dataclasses.is_dataclass(owner)
+    )
