@@ -10,12 +10,21 @@
 - `...` outside of a string now repeats the dimension before it, as in `tuple[X, ...]`:
   `Shape[L[2], ...]` is any number of dimensions of length 2.
   Use `*AnyDims` for any number of dimensions of any size.
-- Shape variables like `Shape["Dim, Dim"]` are no longer supported.
-  They will return as `TypeVar`s in a future version.
+- Named dimensions in string shapes, like `Shape["Dim, Dim"]`, are no longer supported.
+  Use a shape typevar instead, like `Shape[N, N]`.
+- A shape item that isn't a dimension, like `Shape[str]`, `Shape[L[3], None]`,
+  or a nested repeat like `Shape[*tuple[..., ...]]`, now raises
+  `InvalidShapeExpressionError` when the shape is declared,
+  rather than failing every validation.
 - Range bounds must be `Literal` ints or `int`, e.g. `Range[L[2], L[4]]` rather than `Range[2, 4]`.
 - The vendored copy of `nptyping` has been removed, along with `numpydantic.vendor`.
 - A bad shape argument to `NDArray[...]` now raises `numpydantic.exceptions.InvalidShapeExpressionError`
   rather than nptyping's `InvalidArgumentsError`.
+- `NDArray` is no longer a `Protocol` with a metaclass. `NDArray[shape, dtype]` is now a generic alias,
+  so `typing.get_args` returns its normalized shape and dtype, and equivalent annotations are equal.
+  Calling it and `isinstance(x, NDArray[shape, dtype])` still validate,
+  but `isinstance(x, NDArray)` without arguments is now an ordinary class check.
+  `NDArrayMeta` has been removed.
 - [`#44`](https://github.com/p2p-ld/numpydantic/issues/44) - The zarr interface now requires `zarr>=3.1`.
   Arrays written with zarr 2 can still be read.
   - zarr 3 can't store arrays of python objects, so zarr arrays of `datetime` objects
@@ -37,6 +46,10 @@
 - [`#99`](https://github.com/p2p-ld/numpydantic/pull/99) - Add new mypy type stub locations for `ones` and `full`
 - [`#92`](https://github.com/p2p-ld/numpydantic/issues/92), [`#108`](https://github.com/p2p-ld/numpydantic/pull/108) - 
   `NDArraySchema` annotations now correctly create JSON schemas equivalent to `NDArray`
+- A `TypeVar` as the shape of `NDArray[S, dtype]` no longer discards the dtype,
+  and a `TypeVar` dtype now means any dtype
+- The mypy plugin no longer crashes on `str`, `bytes`, `datetime`, `timedelta`, and `object` dtypes,
+  or on dtypes that aren't numpy types, like `list`, which are treated as arrays of objects (`numpy.object_`)
 
 **Added**
 
@@ -44,6 +57,8 @@
   support mypy configuration via a `mypy.ini` file 
 - `Range[low, high]` for dimensions whose size is within an inclusive range
 - `AnyDims`, used like `Shape[L[3], *AnyDims]` for any number of trailing dimensions
+- `Any` as one dimension, like `Shape[L[3], Any]` or numpy's own `tuple[Any, ...]`,
+  is a dimension of any size, like `int`
 - Labelled dimensions with `Annotated`, like `Shape[Annotated[L[3], "x"]]`
 - Zero-dimensional shapes with `Shape[()]`
 - Unpacked tuples are flattened into shapes, so shapes can be composed from aliases
@@ -52,13 +67,35 @@
 - `transposed()` reverses the static shape of an array transposed with `.T`, for up to 5 dimensions
 - `unliteral()` forgets an array's static sizes, keeping its number of dimensions
 - Variable-length string arrays in zarr
+- (Experimental) Shape typevars: a `TypeVar` in a shape, like `Shape[N, N]`, 
+  which has the same size everywhere it's used,
+  including across the fields of a generic model, 
+  where they're fixed once the model is made.
+  Parametrizing a model replaces them.
+  Shape typevars can be bound to a size, like `TypeVar("N", bound=int)`,
+  or constrained to sizes, like `TypeVar("N", L[3], L[4])`.
+  - The mypy plugin refuses calls that give a shape typevar different sizes,
+    including arrays that are items of a list or dict written in the call.
+  - The mypy plugin checks sizes against a shape typevar's `Range` bound or constraints.
+    To the plugin, a `Range` outside of a shape, like in a `TypeVar`'s bound,
+    is a range rather than `int`.
 
 **Deprecated**
 
 - The string form of shapes, like `Shape["3, 4"]`, emits a `DeprecationWarning`
   and will be removed in 3.0.
 
+**Testing**
 
+- Type checker test files are controlled by header and inline metadata:
+   - in `incorrect/` directories mark each line that should be refused
+     with `# E: message`, or `# E[mypy]:` / `# E[pyright]:` for a line only one checker refuses.
+     A test fails if a marked line isn't refused, if any other line is,
+     or if mypy's error doesn't contain the marker's message.
+     Before, these tests only checked that the checker reported an error somewhere in the file. 
+   - A type checker test file can be skipped (`skip = "reason"`) or expected to fail
+   - (`xfail = "reason"`) for one checker in its `# /// typecheck` block,
+   - or require a version of python, like `requires = { python = ">=3.12" }`.
 
 **Packaging**
 
