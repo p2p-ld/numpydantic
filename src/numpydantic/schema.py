@@ -359,7 +359,7 @@ def make_ndarray_json_schema(
 
 def _supports_cross_field_validation(handler: "CallbackGetCoreSchemaHandler") -> bool:
     """
-    Whether shape variable sizes can be shared between fields through ``info.data``.
+    Whether shape typevar sizes can be shared between fields through ``info.data``.
 
     ``info.data`` becomes the ``__dict__`` of a model or dataclass,
     but for a TypedDict it's the dict that's returned, so the sizes would show up in it.

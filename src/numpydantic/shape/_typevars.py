@@ -8,18 +8,18 @@ from numpydantic.shape._variadic import _split_variadic
 
 def check_typevar(var: TypeVar) -> None:
     """
-    Raise if a shape variable's bound or constraints aren't sizes:
+    Raise if a shape typevar's bound or constraints aren't sizes:
     ``int``, a ``Literal`` int, a :class:`.Range`, or a union of those
     """
     if var.__bound__ is None and not var.__constraints__:
         raise InvalidShapeExpressionError(
-            "Shape variables must be bound or constrained to sizes, "
+            "Shape typevars must be bound or constrained to sizes, "
             f"like TypeVar({var.__name__!r}, bound=int), got {var!r}"
         )
     for spec in typevar_specs(var):
         if not _is_size(spec):
             raise InvalidShapeExpressionError(
-                f"Shape variable {var!r} can only be bound or constrained to sizes, "
+                f"Shape typevar {var!r} can only be bound or constrained to sizes, "
                 f"like int, a Literal int, or a Range, got {spec!r}"
             )
 
@@ -38,7 +38,7 @@ def _is_size(spec: Any) -> bool:
 
 def typevar_specs(var: TypeVar) -> tuple[Any, ...]:
     """
-    The specs a shape variable's size can fit: its constraints, or its bound.
+    The specs a shape typevar's size can fit: its constraints, or its bound.
     Unions are split into their members, since a size only has to fit one of them.
     """
     specs = var.__constraints__ or (var.__bound__,)
@@ -55,9 +55,9 @@ def _members(spec: Any) -> tuple[Any, ...]:
 
 def typevar_positions(target: Any) -> dict[int, str]:
     """
-    The name of the shape variable at each index of a normalized shape.
+    The name of the shape typevar at each index of a normalized shape.
 
-    A repeated shape variable, as in ``Shape[N, ...]``, is at the first index it
+    A repeated shape typevar, as in ``Shape[N, ...]``, is at the first index it
     repeats from, which a shape that matches has all the same size from.
     """
     if target is Any:

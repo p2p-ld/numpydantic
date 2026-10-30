@@ -249,7 +249,7 @@ class Interface(ABC, Generic[T]):
         Args:
             shape: The normalized shape to validate against
             dtype: The dtype to validate against
-            typevar_sizes: Sizes that the shape variables in ``shape``
+            typevar_sizes: Sizes that the shape typevars in ``shape``
                 already have, by name, e.g. from other fields of the same model
         """
         self.shape = shape
@@ -428,7 +428,7 @@ class Interface(ABC, Generic[T]):
             )
             if self.typevar_sizes:
                 sizes = ", ".join(f"{k}={v}" for k, v in self.typevar_sizes.items())
-                message += f"\nShape variables already set: {sizes}"
+                message += f"\nShape typevars already set: {sizes}"
             raise ShapeError(message)
 
     def after_validation(self, array: NDArrayType) -> T:

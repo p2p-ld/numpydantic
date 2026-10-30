@@ -18,7 +18,7 @@ def validate_shape(
     Check whether the given shape corresponds to the given shape_expression.
     :param shape: the shape in question.
     :param target: the shape expression to which shape is tested.
-    :param typevar_sizes: sizes that shape variables already have, by name
+    :param typevar_sizes: sizes that shape typevars already have, by name
     :return: True if the given shape corresponds to shape_expression.
     """
     if typevar_sizes:
@@ -52,7 +52,7 @@ def _validate_shape(
 def _validate_dim(
     size: int, dim: Any, typevar_sizes: dict[str, int] | None = None
 ) -> bool:
-    if dim is int:
+    if dim is int or dim is Any:
         return True
     if isinstance(dim, TypeVar):
         typevar_sizes = {} if typevar_sizes is None else typevar_sizes
