@@ -79,27 +79,24 @@ mypy/pylance/pyright hooks for dynamic type evaluation.
 As of 1.9.0 - we have added [an experimental mypy plugin](mypy-plugin)
 ```
 
-Since type annotations are static, each `NDArray[]` usage effectively creates a new
-class. The `shape` and `dtype` specifications are thus not available at the time
-that the validation is performed (see how [pydantic handles Annotated types](https://github.com/pydantic/pydantic/blob/87adc65888ce54ef4314ef874f7ecba52f129f84/pydantic/_internal/_generate_schema.py#L1788)
-at the time that the class definition is evaluated by generating pydantic "core schemas", 
-which are passed to the rust `pydantic_core` for fast validation, which can't be 
-done with python-based validation functions). The validation function for each
-`NDArray` pseudo-subclass is a {func}`closure <numpydantic.schema.get_validate_interface>` 
-that uses the *class declaration*-timed `shape` and `dtype` annotations with the
-*instantiation*-timed array object to find the matching validator interface and apply it.
+Pydantic builds a core schema for each annotation once, when a model class is defined,
+and validates with that schema afterwards. A validator function in a core schema
+is only called with the value and a `ValidationInfo`,
+which says which field is being validated but not what its annotation was.
+So the `shape` and `dtype` of `NDArray[shape, dtype]` are read when the schema is built,
+from the alias's type arguments, and bound into the validator with a
+{func}`closure <numpydantic.validation.array.get_validate_interface>`,
+which applies them to the array when it's validated.
 
-We are initially adopting `nptyping`'s syntax for array specification. It is a longstanding
-answer to the desire for more granular array type annotations, but it also was 
-developed before some key developments in python and its typing system, and is 
-no longer actively maintained. We make some minor modifications to its 
-{mod}`~numpydantic.dtype` specification (eg. to allow builtin python types like `int`
-and `float`), but any existing `nptyping` annotations can be used as-is with
-`numpydantic`. In [v2.*](todo.md#v2) we will be reimplementing it, as well as 
-making an extended syntax for shape and dtype specifications, so that the 
-only required dependencies are {mod}`numpy` and {mod}`pydantic`. This will also
-let us better hook into pydantic 2's use of `Annotated`, eliminating some
-of the complexity in how specification information is passed to the validators.
+Numpydantic started out using `nptyping`'s syntax for array specifications.
+It was a longstanding answer to the desire for more granular array type annotations,
+but it was developed before some key developments in python and its typing system,
+and is no longer actively maintained.
+Shapes are now ordinary type expressions: to type checkers, `Shape` is `tuple`,
+and at runtime `Shape[...]` returns the equivalent `tuple[...]` (see [syntax](syntax.md)).
+`nptyping`'s string form, like `Shape["3, 4"]`, is deprecated, and will be removed in 3.0.
+`nptyping` is no longer vendored, so the only required dependencies
+are {mod}`numpy` and {mod}`pydantic`.
 
 Numpydantic is *not* an array library, but a tool that allows you to use existing
 array libraries with pydantic. It tries to be a transparent passthrough to 
