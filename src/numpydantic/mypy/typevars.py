@@ -10,6 +10,7 @@ are left to mypy, which already refuses them.
 """
 
 from collections.abc import Iterator
+from typing import TypeGuard
 
 from mypy import errorcodes as codes
 from mypy.constraints import SUPERTYPE_OF, infer_constraints
@@ -34,6 +35,7 @@ from mypy.types import (
     FunctionLike,
     Instance,
     LiteralType,
+    ProperType,
     TupleType,
     Type,
     TypeOfAny,
@@ -216,12 +218,7 @@ def _sizes(
     """
     for constraint in infer_constraints(annotation, actual, SUPERTYPE_OF):
         size = get_proper_type(constraint.target)
-        # ranges are literals too, but with strings for values
-        if (
-            constraint.type_var in shape_vars
-            and isinstance(size, LiteralType)
-            and type(size.value) is int
-        ):
+        if constraint.type_var in shape_vars and _is_literal_int(size):
             yield constraint.origin_type_var, size.value
 
 
@@ -312,16 +309,23 @@ def _single_size(var: Type) -> bool:
     which mypy already keeps to one size. Constraints like int, a Range,
     or L[1, 2] can each fit several sizes, so they're checked here::
 
-        TypeVar("N", L[3], L[4])     -> True
-        TypeVar("N", int, L[3])      -> False
-        TypeVar("N", L[1, 2], L[5])  -> False
-        TypeVar("N", bound=int)      -> False
+        TypeVar("N", L[3], L[4])                          -> True
+        TypeVar("N", int, L[3])                           -> False
+        TypeVar("N", L[1, 2], L[5])                       -> False
+        TypeVar("N", Range[L[1], L[2]], Range[L[5], L[6]])  -> False
+        TypeVar("N", bound=int)                           -> False
     """
     return (
         isinstance(var, TypeVarType)
         and bool(var.values)
-        and all(isinstance(get_proper_type(value), LiteralType) for value in var.values)
+        and all(_is_literal_int(get_proper_type(value)) for value in var.values)
     )
+
+
+def _is_literal_int(typ: ProperType) -> TypeGuard[LiteralType]:
+    """Whether a type is one size, like L[3], and not a range or a bool"""
+    # ranges are literals too, but with strings for values
+    return isinstance(typ, LiteralType) and type(typ.value) is int
 
 
 def _conflict_message(
