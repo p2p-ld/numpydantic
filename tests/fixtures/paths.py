@@ -6,11 +6,13 @@ import pytest
 
 
 @pytest.fixture(scope="session")
-def tmp_output_dir(request: pytest.FixtureRequest) -> Path:
-    path = Path(__file__).parents[1].resolve() / "__tmp__"
+def tmp_output_dir(request: pytest.FixtureRequest, worker_id: str) -> Path:
+    root = Path(__file__).parents[1].resolve() / "__tmp__"
+    # each xdist worker gets its own directory, since they all run this fixture
+    path = root if worker_id == "master" else root / worker_id
     if path.exists():
         shutil.rmtree(str(path))
-    path.mkdir()
+    path.mkdir(parents=True)
 
     yield path
 

@@ -33,11 +33,11 @@ def hdf5_at_path() -> Callable[[Path], None]:
     Path(_path).unlink(missing_ok=True)
 
 
-def test_relative_path(hdf5_at_path, tmp_output_dir, model_blank):
+def test_relative_path(hdf5_at_path, tmp_output_dir_func, model_blank):
     """
     By default, we should make all paths relative to the cwd
     """
-    out_path = tmp_output_dir / "relative.h5"
+    out_path = tmp_output_dir_func / "relative.h5"
     hdf5_at_path(out_path)
     model = model_blank(array=(out_path, "/data"))
     rt = model.model_dump_json(round_trip=True)
@@ -50,14 +50,15 @@ def test_relative_path(hdf5_at_path, tmp_output_dir, model_blank):
     assert out_file == out_path.resolve()
 
 
-def test_relative_to_path(hdf5_at_path, tmp_output_dir, model_blank):
+def test_relative_to_path(hdf5_at_path, tmp_output_dir_func, model_blank):
     """
     When explicitly passed a path to be ``relative_to`` ,
     relative to that instead of cwd
     """
-    out_path = tmp_output_dir / "relative.h5"
-    relative_to_path = Path(__file__) / "fake_dir" / "sub_fake_dir"
-    expected_path = Path("../../../__tmp__/relative.h5")
+    out_path = tmp_output_dir_func / "relative.h5"
+    tests_dir = Path(__file__).resolve().parent
+    relative_to_path = tests_dir / "test_serialization.py" / "fake_dir" / "sub_fake_dir"
+    expected_path = Path("../../..") / out_path.relative_to(tests_dir)
 
     hdf5_at_path(out_path)
     model = model_blank(array=(out_path, "/data"))
@@ -93,11 +94,11 @@ def test_relative_to_root_dir():
     assert walked["some_field"] == str(test_path)
 
 
-def test_absolute_path(hdf5_at_path, tmp_output_dir, model_blank):
+def test_absolute_path(hdf5_at_path, tmp_output_dir_func, model_blank):
     """
     When told, we make paths absolute
     """
-    out_path = tmp_output_dir / "relative.h5"
+    out_path = tmp_output_dir_func / "relative.h5"
     expected_dataset = "subpath/to/dataset"
 
     hdf5_at_path(out_path)
