@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Annotated, Any, TypeAlias, TypeVar, Unpack
+from typing import Annotated, Any, TypeAlias, TypeVar
 
 import numpy as np
 from pydantic import BaseModel
 
-from numpydantic import AnyDims, L, Range
+from numpydantic import L, Range, Repeat
 from numpydantic.dtype import Float, Integer, Number
 from numpydantic.testing.helpers import ValidationCase, merged_product
 from numpydantic.testing.interfaces import (
@@ -580,20 +580,20 @@ MYPY_SHAPE_CASES = [
         passes=False,
     ),
     ValidationCase(
-        id="mypy-anydims",
-        annotation_shape=(L[3], L[3], Unpack[AnyDims]),
+        id="mypy-repeat",
+        annotation_shape=(L[3], L[3], *Repeat),
         shape=(3, 3, 3, 3),
         passes=True,
     ),
     ValidationCase(
-        id="mypy-anydims-samecardinality",
-        annotation_shape=(L[3], L[3], Unpack[AnyDims]),
+        id="mypy-repeat-samecardinality",
+        annotation_shape=(L[3], L[3], *Repeat),
         shape=(3, 3),
         passes=True,
     ),
     ValidationCase(
-        id="mypy-anydims-badshape",
-        annotation_shape=(L[3], L[3], Unpack[AnyDims]),
+        id="mypy-repeat-badshape",
+        annotation_shape=(L[3], L[3], *Repeat),
         shape=(2, 2),
         passes=False,
     ),

@@ -312,7 +312,7 @@ class ValidationCase(BaseModel):
         imports = typer.emit_imports() + [
             "from typing import Any, Literal as L",
             "from typing_extensions import Unpack",
-            "from numpydantic import AnyDims, NDArray, Range, Shape",
+            "from numpydantic import NDArray, Range, Repeat, Shape",
             "from numpydantic.dtype import Integer, Float",
             "import numpy",
         ]
@@ -372,7 +372,7 @@ def _render_shape_dim(dim: Any) -> str:
     elif isinstance(dim, _RangeDim):
         return repr(dim)
     elif _variadic_item(dim) is int:
-        return "Unpack[AnyDims]"
+        return "Unpack[Repeat]"
     raise ValueError(f"Don't know how to render shape dimension {dim!r}")
 
 
