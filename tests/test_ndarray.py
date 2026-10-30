@@ -413,6 +413,17 @@ def test_generic_alias_substitution():
     assert isinstance(np.zeros(3), get_args(filled)[0])
 
 
+def test_typevar_as_whole_shape_or_dtype() -> None:
+    """
+    A type variable as the whole shape or dtype means any shape or dtype,
+    and doesn't change the other argument
+    """
+    S = TypeVar("S")
+    D = TypeVar("D")
+    assert NDArray[S, np.float64].__args__ == (Any, np.float64)
+    assert NDArray[Shape[L[3]], D].__args__ == (tuple[L[3]], Any)
+
+
 def test_callable():
     """
     NDArray objects are callable to validate and cast

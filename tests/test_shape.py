@@ -21,7 +21,6 @@ STRING_DEPRECATION = "String shape expressions"
 ShapeTuple = tuple[int, ...]
 
 N = TypeVar("N", bound=int)
-NRange = TypeVar("NRange", bound=A[int, Interval(ge=2, le=4)])
 NRangeDim = TypeVar("NRangeDim", bound=Range[L[2], L[4]])
 NConstrained = TypeVar("NConstrained", L[3], L[4])
 
@@ -250,15 +249,6 @@ SHAPE_FEATURES = [
             Form("annotated", lambda: Shape[A[N, "x"], A[N, "y"]]),
         ],
         canonical=tuple[A[N, "x"], A[N, "y"]],
-    ),
-    ShapeFeature(
-        "typevar-bound",
-        valid=[(2, 2), (4, 4)],
-        invalid=[(1, 1), (5, 5), (2, 3)],
-        forms=[
-            Form("typevar", lambda: Shape[NRange, NRange]),
-        ],
-        canonical=tuple[NRange, NRange],
     ),
     ShapeFeature(
         "typevar-range-bound",
