@@ -91,6 +91,7 @@ try:
         UnpackType,
         get_proper_type,
     )
+    from mypy.typevars import fill_typevars_with_any
 except ImportError as exc:  # pragma: no cover
     raise ImportError("mypy must be installed to use the numpydantic plugin") from exc
 
@@ -579,7 +580,7 @@ def _dtype_as_numpy(
             if isinstance(node, TypeAlias):
                 t = node.target
             else:
-                t = symbol.node.type_object_type.ret_type
+                t = fill_typevars_with_any(node)
 
         return t
     elif isinstance(t, LiteralType):
