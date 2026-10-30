@@ -492,11 +492,21 @@ def test_string_ellipsis_deprecation() -> None:
             lambda: Shape[TypeVar("U", bound=L[3] | str)], id="typevar-union-with-str"
         ),
         pytest.param(lambda: Shape[TypeVar("U")], id="typevar-unbounded"),
+        pytest.param(lambda: Shape[str], id="not-a-dimension"),
+        pytest.param(lambda: Shape[L[3], None], id="none-dimension"),
+        pytest.param(lambda: Shape[*tuple[str, ...]], id="repeated-not-a-dimension"),
+        pytest.param(lambda: Shape[A[str, "x"]], id="labelled-not-a-dimension"),
+        pytest.param(lambda: Shape[*tuple[..., ...]], id="repeated-ellipsis"),
+        pytest.param(lambda: Shape[*tuple[*AnyDims, ...]], id="repeated-anydims"),
+        pytest.param(lambda: Shape[A[..., "x"]], id="labelled-ellipsis"),
     ],
 )
 @pytest.mark.filterwarnings(f"ignore:{STRING_DEPRECATION}:DeprecationWarning")
 def test_shape_invalid_forms(build: Callable[[], Any]) -> None:
-    """Misused Range, AnyDims, and ... raise a clear error when the shape is declared"""
+    """
+    Misused Range, AnyDims, and ..., and items that aren't dimensions,
+    raise a clear error when the shape is declared
+    """
     with pytest.raises(InvalidShapeExpressionError):
         _ = NDArray[build(), Any]
 
