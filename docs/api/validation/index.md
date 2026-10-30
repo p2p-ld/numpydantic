@@ -1,5 +1,6 @@
 # validation
 
 ```{toctree}
+array
 dtype
 ```
