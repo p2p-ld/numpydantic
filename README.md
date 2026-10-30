@@ -93,11 +93,12 @@ error: Argument 1 to "grayscale_mask" has incompatible type
 ```
 
 *(New in 2.0.0, experimental)*:
-Use a `TypeVar` as a shape variable when dimensions have to match,
-across the fields of a model or the arguments of a function.
+Use a `TypeVar` in a shape (a shape typevar, also referred to as a shape variable)
+when dimensions have to match: across the fields of a model when it's validated,
+and across the arguments of a function with the mypy plugin.
 
-(See: [shape variables](https://numpydantic.readthedocs.io/en/latest/syntax.html#shape-variables)
-and [what each type checker does](https://numpydantic.readthedocs.io/en/latest/typecheckers.html#shape-variables-checkers))
+(See: [shape typevars](https://numpydantic.readthedocs.io/en/latest/syntax.html#shape-typevars)
+and [what each type checker does](https://numpydantic.readthedocs.io/en/latest/typecheckers.html#shape-typevars-checkers))
 
 ```python
 from typing import Generic, TypeVar
