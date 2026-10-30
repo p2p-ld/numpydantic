@@ -11,6 +11,7 @@ from typing import (
 
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import _RangeDim
+from numpydantic.shape._repeat import Repeat
 from numpydantic.shape._string import (
     _str_dim_to_tuple,
     normalize_string_shape_expression,
@@ -30,7 +31,7 @@ def normalize_shape_expression(expression: Any) -> tuple | Any:
 
     Accepts:
 
-    - Type expressions, like ``Shape[L[1], int, Range[L[2], L[4]], *AnyDims]``
+    - Type expressions, like ``Shape[L[1], int, Range[L[2], L[4]], *Repeat]``
     - Bare ints, like ``Shape[1, 2]``
     - Deprecated string expressions, like ``Shape["1, *, 2-4, ..."]``
     """
@@ -60,6 +61,11 @@ def _normalize_tuple(expression: tuple) -> tuple | Any:
     _check_positions(normalized)
     if normalized[-1] is Ellipsis and len(normalized) > 2:
         normalized = (*normalized[:-1], _repeated(normalized[-2]))
+    elif (
+        len(normalized) == 1 and (repeated := _variadic_item(normalized[0])) is not None
+    ):
+        # tuple[*tuple[X, ...]] is tuple[X, ...]
+        normalized = (repeated, ...)
     if _is_any_shape(normalized):
         return Any
     return normalized
@@ -85,7 +91,7 @@ def _check_positions(expression: tuple) -> None:
     *init, last = expression
     if any(_repeats(item) for item in init):
         raise InvalidShapeExpressionError(
-            "... and unpacked dimensions like *AnyDims must be the last item in a shape"
+            "... and unpacked dimensions like *Repeat must be the last item in a shape"
         )
     if last is Ellipsis and not init:
         raise InvalidShapeExpressionError("... must follow a dimension")
@@ -96,7 +102,7 @@ def _check_positions(expression: tuple) -> None:
             inner = _variadic_item(item)
         if _repeats(inner):
             raise InvalidShapeExpressionError(
-                f"... and unpacked dimensions like *AnyDims can't be nested: {item!r}"
+                f"... and unpacked dimensions like *Repeat can't be nested: {item!r}"
             )
 
 
@@ -150,4 +156,8 @@ def _normalize_tuple_item(item: Any) -> Any:
     elif get_origin(item) is Annotated:
         base, *metadata = get_args(item)
         return Annotated[(_normalize_tuple_item(base), *metadata)]
+    elif item is Repeat or get_origin(item) is tuple:
+        raise InvalidShapeExpressionError(
+            f"Repeated dimensions have to be unpacked, like *Repeat, got {item!r}"
+        )
     raise InvalidShapeExpressionError(f"Invalid shape dimension: {item!r}")
