@@ -289,16 +289,14 @@ def test_range_bound_cache(tmp_path: Path) -> None:
     A range bound on a shape typevar is still checked
     when mypy reuses its cache for a module that only declares the typevar
     """
-    lib = tmp_path / "lib"
-    lib.mkdir()
-    (lib / "bounded.py").write_text(
+    # next to user.py, where mypy finds it without mypy_path,
+    # which would split a windows path like C:\... at the colon
+    (tmp_path / "bounded.py").write_text(
         "from typing import Literal as L, TypeVar\n"
         "from numpydantic import Range\n"
         'R = TypeVar("R", bound=Range[L[2], L[4]])\n'
     )
-    (tmp_path / "mypy.ini").write_text(
-        f"[mypy]\nplugins = numpydantic.mypy\nmypy_path = {lib}\n"
-    )
+    (tmp_path / "mypy.ini").write_text("[mypy]\nplugins = numpydantic.mypy\n")
     user = tmp_path / "user.py"
     user.write_text(
         "import numpy as np\n"

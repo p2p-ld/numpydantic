@@ -39,11 +39,10 @@ as ``S32`` isoformatted byte strings (timezones optional) like:
 
 """
 
-import sys
 from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, NamedTuple, TypeVar, get_args
+from typing import Any, NamedTuple, TypeAlias, TypeVar, get_args
 
 import numpy as np
 from pydantic import SerializationInfo
@@ -55,11 +54,6 @@ try:
     import h5py
 except ImportError:  # pragma: no cover
     h5py = None
-
-if sys.version_info.minor >= 10:
-    from typing import TypeAlias
-else:
-    from typing import TypeAlias
 
 H5Arraylike: TypeAlias = tuple[Path | str, str]
 

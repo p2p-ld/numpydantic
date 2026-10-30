@@ -488,7 +488,14 @@ def test_string_ellipsis_deprecation() -> None:
         pytest.param(lambda: Shape[A[str, "x"]], id="labelled-not-a-dimension"),
         pytest.param(lambda: Shape[*tuple[..., ...]], id="repeated-ellipsis"),
         pytest.param(lambda: Shape[*tuple[*AnyDims, ...]], id="repeated-anydims"),
-        pytest.param(lambda: Shape[A[..., "x"]], id="labelled-ellipsis"),
+        pytest.param(
+            lambda: Shape[A[..., "x"]],
+            id="labelled-ellipsis",
+            marks=pytest.mark.skipif(
+                sys.version_info < (3, 12),
+                reason="python can't make Annotated[..., 'x'] before 3.12",
+            ),
+        ),
     ],
 )
 @pytest.mark.filterwarnings(f"ignore:{STRING_DEPRECATION}:DeprecationWarning")

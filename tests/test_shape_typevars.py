@@ -3,9 +3,10 @@ Shape typevars within one array, and shared between the arrays of a model
 """
 
 import dataclasses
+import sys
 from pathlib import Path
 from typing import Annotated as A
-from typing import Any, Generic, TypedDict, TypeVar
+from typing import Any, Generic, TypeVar
 from typing import Literal as L
 
 import numpy as np
@@ -25,6 +26,11 @@ from numpydantic import NDArray, Shape
 from numpydantic.testing.cases import TYPEVAR_CASES
 from numpydantic.testing.helpers import ValidationCase
 from numpydantic.testing.interfaces import NumpyCase
+
+if sys.version_info >= (3, 12):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 pytestmark = pytest.mark.shape
 
