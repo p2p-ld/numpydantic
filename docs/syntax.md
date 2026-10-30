@@ -64,7 +64,7 @@ The examples below use these imports:
 
 ```python
 from typing import Annotated as A, Literal as L
-from numpydantic import AnyDims, NDArray, Range, Shape
+from numpydantic import NDArray, Range, Repeat, Shape
 ```
 
 ### Exact sizes
@@ -113,43 +113,45 @@ Type checkers can't check ranges on their own, so to them a range is just an `in
 The [mypy plugin](mypy-plugin) checks ranges, including that a range
 fits within the range it is assigned to.
 
-### Any number of dimensions
-
-{data}`.AnyDims` is any number of dimensions of any size, including none.
-Unpack it as the last item in a shape, after any other dimensions:
-
-```python
-# at least two dimensions, the first two of which are 3 x 4
-Shape[L[3], L[4], *AnyDims]
-```
-
-`*` unpacking in a subscript needs python 3.11 or later -
-before that, use `Unpack`:
-
-```python
-from typing_extensions import Unpack
-
-Shape[L[3], L[4], Unpack[AnyDims]]
-```
-
-### Repeated dimensions
+(shape-repeat)=
+### Repeated Dimensions
 
 As with `tuple[X, ...]`, `Shape[X, ...]` is any number of dimensions matching `X`:
 
 ```python
-# any number of dimensions of length 2, including none
+# any number of 2s, including none
 Shape[L[2], ...]
 ```
 
-After more than one dimension, `...` repeats the last one.
-This is not valid for `tuple`, so only the mypy plugin understands it statically:
+This is only valid when a single dimension is declared within the shape.
+When multiple dimensions are declared, to repeat the final dimension, unpack {class}`.Repeat`:
 
 ```python
-# a 1-length dimension, a 2-length dimension, and any number of additional 2s
-Shape[L[1], L[2], ...]
-# the same, as a valid type expression
-Shape[L[1], L[2], *tuple[L[2], ...]]
+from numpydantic import Repeat
+# 1 dimension of length 1, then any number (including 0) of length-2 dimensions
+Shape[L[1], *Repeat[L[2]]]
+# A shorthand equivalent for
+Shape[L[1], *tuple[L[2], ...]]
+
+# any number of dimensions that are each 2 to 4 long
+Shape[L[3], *Repeat[Range[L[2], L[4]]]]
+# Any number of dimensions all of the same size
+N = TypeVar("N", bound=int)
+Shape[L[1], *Repeat[N]]
 ```
+
+For any number of trailing dimensions of any shape:
+
+```python
+Shape[L[1], *Repeat]
+# A shorthand equivalent for
+Shape[L[1], *tuple[int, ...]]
+```
+
+Repeated dimensions must:
+
+- be unpacked with `*`: `Shape[L[3], Repeat]` is an error
+- be the last item in a shape: `Shape[*Repeat, L[3]]` is an error
 
 ### Labels
 
@@ -161,23 +163,20 @@ propagated to the generated JSON Schema.
 Shape[A[L[3], "x"], A[L[4], "y"], A[int, "z"]]
 ```
 
+(shape-any)=
 ### Any shape
 
-If `dtype` is also `Any`, one can just use 
+Use `Any` for an array of any shape:
+
+```python
+field: NDArray[Any, int]
+```
+
+If `dtype` is also `Any`, one can just use
 
 ```python
 field: NDArray
 ```
-
-If a `dtype` is being passed, use `Any` or a bare `Shape` for the shape:
-
-```python
-field: NDArray[Any, int]
-# or
-field: NDArray[Shape, int]
-```
-
-`Shape[int, ...]` and `Shape[*AnyDims]` also mean any shape.
 
 ### Zero-dimensional arrays
 
@@ -476,7 +475,7 @@ Each part of a string shape has an equivalent in the tuple form:
 | `Shape["3, *"]`        | `Shape[L[3], int]`                           |
 | `Shape["2-4, 2-*, *-4"]` | `Shape[Range[L[2], L[4]], Range[L[2], int], Range[int, L[4]]]` |
 | `Shape["3 x, * y"]`    | `Shape[A[L[3], "x"], A[int, "y"]]`           |
-| `Shape["3, 4, ..."]`   | `Shape[L[3], L[4], *AnyDims]`                |
+| `Shape["3, 4, ..."]`   | `Shape[L[3], L[4], *Repeat]`                |
 | `Shape["*, ..."]`      | `Any`                                        |
 
 The string can also be wrapped in a `Literal`, like `Literal["3, 4"]`,
@@ -488,7 +487,7 @@ The meaning of `...` is different in the string form:
 in a string, `...` is any number of dimensions of any size,
 but outside of a string, `...` repeats the dimension before it, as it does in `tuple[X, ...]`.
 
-Use `*AnyDims` for any number of dimensions of any size.
+Use `*Repeat` for any number of dimensions of any size.
 ```
 
 ## Caveats

@@ -12,17 +12,15 @@ class _RepeatMeta(type):
 
 class Repeat(metaclass=_RepeatMeta):
     """
-    Any number of dimensions, including none, as the last item in a shape.
+    Shorthand for any number of dimensions, including none,
+    as the last item in a shape.
 
-    Use it unpacked, either bare for dimensions of any size,
-    or with one dimension that every repeated dimension has to match::
+    ``Repeat[X]`` is ``tuple[X, ...]``, and bare ``Repeat`` is ``tuple[int, ...]``,
+    so these are the same as unpacking those tuples::
 
         Shape[L[3], *Repeat]          # 3, then any dimensions
         Shape[L[3], *Repeat[L[2]]]    # 3, then any number of 2s
         Shape[L[3], *Repeat[N]]       # 3, then any number of dimensions of size N
-
-    To type checkers, ``Repeat[X]`` is ``tuple[X, ...]``,
-    and bare ``Repeat`` is ``tuple[int, ...]``.
     """
 
     def __class_getitem__(cls, item: Any) -> Any:

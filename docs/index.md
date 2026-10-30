@@ -65,12 +65,12 @@ but the rest of your code will just see the field as a normal array.
 
 ```python
 from typing import Annotated as A
-from numpydantic import AnyDims, NDArraySchema
+from numpydantic import NDArraySchema, Repeat
 
 class MyAnnotatedModel(BaseModel):
-    array: A[np.ndarray, NDArraySchema(Shape[L[3], L[4], L[5], *AnyDims], int)]
+    array: A[np.ndarray, NDArraySchema(Shape[L[3], L[4], L[5], *Repeat], int)]
     # or, throw out the shape object altogether!
-    array: A[np.ndarray, NDArraySchema((3, 4, 5, *AnyDims), int)]
+    array: A[np.ndarray, NDArraySchema((3, 4, 5, *Repeat), int)]
 ```
 
 ```{version-added} 1.9.0

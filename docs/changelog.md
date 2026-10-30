@@ -9,7 +9,7 @@
   The string form will be deprecated but maintained until numpydantic 3.0, and then removed.
 - `...` outside of a string now repeats the dimension before it, as in `tuple[X, ...]`:
   `Shape[L[2], ...]` is any number of dimensions of length 2.
-  Use `*AnyDims` for any number of dimensions of any size.
+  Use `*Repeat` for any number of dimensions of any size.
 - Named dimensions in string shapes, like `Shape["Dim, Dim"]`, are no longer supported.
   Use a shape typevar instead, like `Shape[N, N]`.
 - A shape item that isn't a dimension, like `Shape[str]`, `Shape[L[3], None]`,
@@ -59,7 +59,9 @@
 - [`#85`](https://github.com/p2p-ld/numpydantic/issues/85), [`#102`](https://github.com/p2p-ld/numpydantic/pull/102) - 
   support mypy configuration via a `mypy.ini` file 
 - `Range[low, high]` for dimensions whose size is within an inclusive range
-- `AnyDims`, used like `Shape[L[3], *AnyDims]` for any number of trailing dimensions
+- `Repeat`, used like `Shape[L[3], *Repeat]` for any number of trailing dimensions,
+  `Shape[L[3], *Repeat[L[2]]]` for any number of 2s, or `Shape[L[3], *Repeat[N]]`
+  for any number of dimensions that are all the same size
 - `Any` as one dimension, like `Shape[L[3], Any]` or numpy's own `tuple[Any, ...]`,
   is a dimension of any size, like `int`
 - Labelled dimensions with `Annotated`, like `Shape[Annotated[L[3], "x"]]`

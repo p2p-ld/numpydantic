@@ -213,7 +213,7 @@ even if left-hand annotations can accept shape ranges.
 #### Any size & any number of dimensions
 
 As during runtime, `int` specifies that an array dimension must exist but can be any size,
-and `*AnyDims` specifies that any number of additional dimensions may be included.
+and `*Repeat` specifies that any number of additional dimensions may be included.
 
 **Correct**
 

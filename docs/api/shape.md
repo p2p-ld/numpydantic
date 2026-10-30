@@ -8,6 +8,8 @@
 
 .. autoclass:: numpydantic.shape.Range
 
+.. autoclass:: numpydantic.shape.Repeat
+
 .. autofunction:: numpydantic.shape.validate_shape
 
 .. autofunction:: numpydantic.shape.unshape
