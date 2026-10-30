@@ -37,6 +37,17 @@ Support different precision modes - eg. exact precision, or minimum precision
 where specifying a float32 would also accept a float64, etc.
 ```
 
+```{todo}
+Revisit how [shape typevars](shape-typevars) are matched across the fields of a model
+when pydantic's plugin system is stable. A plugin's `on_enter`/`on_success` hooks
+could keep the sizes for one validation without writing them into the model's `__dict__`,
+which would also let TypedDicts be checked across fields
+and remove the private `model_type_stack` lookup.
+Check that plugins run for `validate_assignment` and can't be turned off by users,
+and that the result stays thread- and async-safe.
+See {func}`numpydantic.validation.array.get_validate_interface`.
+```
+
 ## Metadata
 
 ```{todo}
