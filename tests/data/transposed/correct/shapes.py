@@ -10,7 +10,7 @@ from typing import Literal as L
 
 import numpy as np
 
-from numpydantic import AnyDims, NDArray, Shape, transposed
+from numpydantic import NDArray, Repeat, Shape, transposed
 
 f = np.float64
 
@@ -43,7 +43,7 @@ def unknown(
     assert_type(transposed(d6.T), NDArray[Shape[Any, ...], f])
     assert_type(transposed(any_shape.T), NDArray[Shape[Any, ...], f])
     # pyright gives tuple[int, ...] and mypy gives tuple[Any, ...]
-    reversed_ndim: NDArray[Shape[*AnyDims], f] = transposed(any_ndim.T)
+    reversed_ndim: NDArray[Shape[*Repeat], f] = transposed(any_ndim.T)
     print(reversed_ndim)
 
 

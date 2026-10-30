@@ -6,7 +6,7 @@ from typing import Literal as L
 
 import numpy as np
 
-from numpydantic import AnyDims, NDArray, Range, Shape, unliteral
+from numpydantic import NDArray, Range, Repeat, Shape, unliteral
 
 f = np.float64
 
@@ -36,14 +36,14 @@ def widens(
 def unknown(
     d6: NDArray[Shape[L[1], L[2], L[3], L[4], L[5], L[6]], f],
     any_ndim: NDArray[Shape[int, ...], f],
-    mixed: NDArray[Shape[L[3], *AnyDims], f],
+    mixed: NDArray[Shape[L[3], *Repeat], f],
     any_shape: NDArray[Any, f],
 ) -> None:
     assert_type(unliteral(d6), NDArray[Shape[Any, ...], f])
     assert_type(unliteral(mixed), np.ndarray[tuple[int, ...], np.dtype[f]])
     assert_type(unliteral(any_shape), NDArray[Shape[Any, ...], f])
     # pyright gives tuple[int, ...] and mypy gives tuple[Any, ...]
-    widened_ndim: NDArray[Shape[*AnyDims], f] = unliteral(any_ndim)
+    widened_ndim: NDArray[Shape[*Repeat], f] = unliteral(any_ndim)
     print(widened_ndim)
 
 

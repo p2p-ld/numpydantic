@@ -47,9 +47,9 @@ def _get_shape(dtype_candidate: Any) -> Shape:
     """
     Normalize the shape argument of ``NDArray[shape, dtype]`` with :class:`.Shape`
     """
-    from numpydantic.shape import Shape
+    from numpydantic.shape import Repeat, Shape
 
-    if dtype_candidate is Any or dtype_candidate is Shape:
+    if dtype_candidate is Any or dtype_candidate is Shape or dtype_candidate is Repeat:
         shape = Any
     elif get_origin(dtype_candidate) is Literal:
         shape_expression = dtype_candidate.__args__[0]

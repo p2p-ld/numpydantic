@@ -4,9 +4,9 @@ from typing import Literal as L
 
 import numpy as np
 
-from numpydantic import AnyDims, NDArray, Shape, transposed
+from numpydantic import NDArray, Repeat, Shape, transposed
 
 
-def f(a: NDArray[Shape[L[3], *AnyDims], np.float64]) -> None:
+def f(a: NDArray[Shape[L[3], *Repeat], np.float64]) -> None:
     b: NDArray[Shape[L[3], L[4]], np.float64] = transposed(a.T)  # E: Incompatible types in assignment
     print(b)

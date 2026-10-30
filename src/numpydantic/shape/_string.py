@@ -5,6 +5,7 @@ from typing import Annotated, Literal, TypeAlias, get_args, get_origin
 
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import Range
+from numpydantic.shape._repeat import Repeat
 
 StrShapeExpression: TypeAlias = str
 
@@ -57,13 +58,13 @@ def _warn_string_expression(item: str | tuple) -> None:
     message = (
         f"String shape expressions like {item!r} are deprecated, "
         "use type expressions instead, e.g. "
-        "Shape[L[3], int, Range[L[2], L[4]], *AnyDims]"
+        "Shape[L[3], int, Range[L[2], L[4]], *Repeat]"
     )
     warnings.warn(message, DeprecationWarning, stacklevel=_user_stacklevel())
     if any("..." in s for s in strings):
         message = (
             "Treating '...' in a string as meaning any number of dimensions "
-            "of any size is now written as *AnyDims. "
+            "of any size is now written as *Repeat. "
             "The old behavior is deprecated in 2.0 and will be removed in 3.0."
         )
         warnings.warn(message, DeprecationWarning, stacklevel=_user_stacklevel())
@@ -123,8 +124,7 @@ def _str_dim_to_tuple(part: str) -> type:
     match = _RE_DIMENSION_COMPILED.fullmatch(part.strip())
     if not match:
         if part.strip() == "...":
-            # *AnyDims
-            return next(iter(tuple[int, ...]))
+            return next(iter(Repeat))
         raise InvalidShapeExpressionError(
             f"{part} is not a valid dimension expression!"
         )

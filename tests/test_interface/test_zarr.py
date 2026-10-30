@@ -8,7 +8,7 @@ import zarr
 from pydantic import BaseModel
 from zarr.storage import ZipStore
 
-from numpydantic import AnyDims, NDArray, Shape
+from numpydantic import NDArray, Repeat, Shape
 from numpydantic.interface import ZarrInterface
 from numpydantic.interface import zarr as zarr_interface
 from numpydantic.interface.zarr import ZarrArrayPath, ZarrJsonDict, hexdigest
@@ -105,7 +105,7 @@ def test_zarr_v2_format(dtype, dump_array, tmp_output_dir_func):
     """Arrays written in the zarr 2 format should still validate and roundtrip"""
 
     class Model(BaseModel):
-        array: NDArray[Shape[*AnyDims], dtype]
+        array: NDArray[Shape[*Repeat], dtype]
 
     file = tmp_output_dir_func / "v2.zarr"
     data = np.array([[1, 2], [3, 4]]).astype(str if dtype is str else int)

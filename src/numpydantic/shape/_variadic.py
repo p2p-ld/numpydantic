@@ -33,6 +33,6 @@ def _is_any_shape(args: tuple) -> bool:
     if len(args) == 1 and args[0] is Any:
         return True
     fixed, tail = _split_variadic(args)
-    # (int, *AnyDims) is how "*, ..." is parsed, which has always meant any shape,
+    # (int, *Repeat) is how "*, ..." is parsed, which has always meant any shape,
     # including 0-d arrays
     return tail is int and fixed in ((), (int,))

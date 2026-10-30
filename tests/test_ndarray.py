@@ -11,7 +11,7 @@ from pydantic import (
     ValidationError,
 )
 
-from numpydantic import AnyDims, NDArray, NDArraySchema, Shape, dtype
+from numpydantic import NDArray, NDArraySchema, Repeat, Shape, dtype
 from numpydantic.dtype import Number
 from numpydantic.exceptions import DtypeError, InvalidShapeExpressionError
 
@@ -177,13 +177,13 @@ def test_ndarray_coercion():
 
 
 @pytest.mark.shape
-def test_shape_anydims():
+def test_shape_repeat():
     """
-    AnyDims allows any number of dimensions of any size after the others
+    Repeat allows any number of dimensions of any size after the others
     """
 
     class MyModel(BaseModel):
-        array: NDArray[Shape[L[1], L[2], *AnyDims], Number]
+        array: NDArray[Shape[L[1], L[2], *Repeat], Number]
 
     _ = MyModel(array=np.zeros((1, 2, 3, 4, 5)))
 
@@ -356,19 +356,19 @@ def _recursive_array(schema):
 
 @pytest.mark.shape
 @pytest.mark.json_schema
-def test_json_schema_anydims():
+def test_json_schema_repeat():
     """
     NDArray types should create a recursive JSON schema for any-shaped arrays
     """
 
     class AnyShape(BaseModel):
-        array: NDArray[Shape[*AnyDims], np.uint8]
+        array: NDArray[Shape[*Repeat], np.uint8]
 
     schema = AnyShape.model_json_schema()
     _recursive_array(schema)
 
     class ConstrainedAnyShape(BaseModel):
-        array: NDArray[Shape[L[3], L[4], *AnyDims], np.uint8]
+        array: NDArray[Shape[L[3], L[4], *Repeat], np.uint8]
 
     schema = ConstrainedAnyShape.model_json_schema()
     _recursive_array(schema)
@@ -470,7 +470,7 @@ def test_annotation_rejects_array_type():
 
 
 @pytest.mark.parametrize(
-    "shape", ((L[1], L[2], Unpack[AnyDims]), (1, 2, 3)), ids=["tuple-form", "ints"]
+    "shape", ((L[1], L[2], Unpack[Repeat]), (1, 2, 3)), ids=["tuple-form", "ints"]
 )
 def test_annotation_allows_not_using_shape(shape):
     """

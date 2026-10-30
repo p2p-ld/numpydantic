@@ -3,9 +3,9 @@ from typing import reveal_type
 
 import numpy as np
 
-from numpydantic import AnyDims, NDArray, Shape
+from numpydantic import NDArray, Repeat, Shape
 
-AT_LEAST_2D = NDArray[Shape[int, int, *AnyDims]]
+AT_LEAST_2D = NDArray[Shape[int, int, *Repeat]]
 
 
 def returns_atleast2d() -> AT_LEAST_2D:

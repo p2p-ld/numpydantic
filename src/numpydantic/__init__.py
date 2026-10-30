@@ -5,25 +5,27 @@
 from typing import Literal as L
 
 from numpydantic.ndarray import NDArray
-from numpydantic.shape import AnyDims, Range, Shape, transposed, unliteral, unshape
+from numpydantic.shape import Range, Repeat, Shape, transposed, unliteral, unshape
 from numpydantic.annotation import NDArraySchema
 from numpydantic import dtype
 
 S = Shape
 R = Range
+Rep = Repeat
 ND = NDArray
 figurative = unliteral  # come on lol how could i not
 
 __all__ = [
-    "AnyDims",
     "NDArray",
     "NDArraySchema",
     "Range",
+    "Repeat",
     "Shape",
     "S",
     "L",
     "ND",
     "R",
+    "Rep",
     "dtype",
     "figurative",
     "transposed",

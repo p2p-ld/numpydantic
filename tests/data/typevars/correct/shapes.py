@@ -6,7 +6,7 @@ from typing import TypeVar
 
 import numpy as np
 
-from numpydantic import NDArray, Range, Shape
+from numpydantic import NDArray, Range, Repeat, Shape
 
 N = TypeVar("N", bound=int)
 F = np.float64
@@ -15,6 +15,8 @@ F = np.float64
 def labelled(a: NDArray[Shape[A[N, "x"], A[N, "y"]], F]) -> None: ...
 def repeated(a: NDArray[Shape[N, ...], F]) -> None: ...
 def unpacked(a: NDArray[Shape[L[2], *tuple[N, ...]], F]) -> None: ...
+def repeat(a: NDArray[Shape[L[2], *Repeat[N]], F]) -> None: ...
+def at_least_one(a: NDArray[Shape[L[2], N, *Repeat[N]], F]) -> None: ...
 def triple(a: NDArray[Shape[N, N, N], F]) -> None: ...
 
 
@@ -31,6 +33,11 @@ def use(
     repeated(c333)
     # a typevar repeated after a fixed size passes when the repeated sizes are equal
     unpacked(t233)
+    # the same, written with Repeat
+    repeat(t233)
+    # a typevar both fixed and repeated, the spelling of Shape[L[2], N, ...]
+    # that type checkers accept, passes when all its sizes are equal
+    at_least_one(t233)
     # a size that isn't known, int, can't disagree with the equal sizes around it
     triple(c3i3)
     # a range of sizes can't disagree with the equal sizes around it
