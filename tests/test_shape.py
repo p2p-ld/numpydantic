@@ -3,7 +3,7 @@ import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Annotated as A
-from typing import Any, Literal, TypeVarTuple, Unpack
+from typing import Any, Literal, TypeVar, TypeVarTuple, Unpack
 from typing import Literal as L
 
 import numpy as np
@@ -19,6 +19,11 @@ pytestmark = pytest.mark.shape
 STRING_DEPRECATION = "String shape expressions"
 
 ShapeTuple = tuple[int, ...]
+
+N = TypeVar("N", bound=int)
+NRange = TypeVar("NRange", bound=A[int, Interval(ge=2, le=4)])
+NRangeDim = TypeVar("NRangeDim", bound=Range[L[2], L[4]])
+NConstrained = TypeVar("NConstrained", L[3], L[4])
 
 
 @dataclass
@@ -217,6 +222,62 @@ SHAPE_FEATURES = [
         ],
         canonical=tuple[A[L[3], "x"], A[int, "y"]],
     ),
+    ShapeFeature(
+        "typevar",
+        valid=[(1, 1), (3, 3)],
+        invalid=[(3, 4), (3,), (3, 3, 3)],
+        forms=[
+            Form("typevar", lambda: Shape[N, N]),
+            Form("tuple", lambda: tuple[N, N]),
+        ],
+        canonical=tuple[N, N],
+    ),
+    ShapeFeature(
+        "typevar-repeated",
+        valid=[(), (2,), (2, 2, 2)],
+        invalid=[(2, 3)],
+        forms=[
+            Form("typevar", lambda: Shape[N, ...]),
+            Form("tuple", lambda: tuple[N, ...]),
+        ],
+        canonical=tuple[N, ...],
+    ),
+    ShapeFeature(
+        "typevar-labels",
+        valid=[(3, 3)],
+        invalid=[(3, 4)],
+        forms=[
+            Form("annotated", lambda: Shape[A[N, "x"], A[N, "y"]]),
+        ],
+        canonical=tuple[A[N, "x"], A[N, "y"]],
+    ),
+    ShapeFeature(
+        "typevar-bound",
+        valid=[(2, 2), (4, 4)],
+        invalid=[(1, 1), (5, 5), (2, 3)],
+        forms=[
+            Form("typevar", lambda: Shape[NRange, NRange]),
+        ],
+        canonical=tuple[NRange, NRange],
+    ),
+    ShapeFeature(
+        "typevar-range-bound",
+        valid=[(2, 2), (4, 4)],
+        invalid=[(1, 1), (5, 5), (2, 3)],
+        forms=[
+            Form("typevar", lambda: Shape[NRangeDim, NRangeDim]),
+        ],
+        canonical=tuple[NRangeDim, NRangeDim],
+    ),
+    ShapeFeature(
+        "typevar-constrained",
+        valid=[(3, 3), (4, 4)],
+        invalid=[(3, 4), (5, 5)],
+        forms=[
+            Form("typevar", lambda: Shape[NConstrained, NConstrained]),
+        ],
+        canonical=tuple[NConstrained, NConstrained],
+    ),
 ]
 
 _CANONICAL = {feature.id: feature.canonical for feature in SHAPE_FEATURES}
@@ -414,6 +475,23 @@ def test_string_ellipsis_deprecation() -> None:
         pytest.param(lambda: Shape["...", 3], id="string-ellipsis-not-last"),
         pytest.param(lambda: Shape["1, 2", 3], id="string-dimension-with-comma"),
         pytest.param(lambda: Shape["Dim, Dim"], id="string-variables"),
+        pytest.param(
+            lambda: Shape[TypeVar("C", L[3], str)], id="typevar-str-constraint"
+        ),
+        pytest.param(lambda: Shape[TypeVar("S", bound=str)], id="typevar-str-bound"),
+        pytest.param(
+            lambda: Shape[TypeVar("F", bound=float)], id="typevar-float-bound"
+        ),
+        pytest.param(
+            lambda: Shape[TypeVar("S", bound=L["a"])], id="typevar-str-literal-bound"
+        ),
+        pytest.param(
+            lambda: Shape[TypeVar("B", bound=L[True])], id="typevar-bool-literal-bound"
+        ),
+        pytest.param(
+            lambda: Shape[TypeVar("U", bound=L[3] | str)], id="typevar-union-with-str"
+        ),
+        pytest.param(lambda: Shape[TypeVar("U")], id="typevar-unbounded"),
     ],
 )
 @pytest.mark.filterwarnings(f"ignore:{STRING_DEPRECATION}:DeprecationWarning")
