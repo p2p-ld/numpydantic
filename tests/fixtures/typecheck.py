@@ -10,6 +10,7 @@ written like inline script metadata (PEP 723) with TOML contents::
     # ///
 
 The file is skipped for that checker when an installed version doesn't match.
+``python`` is the version of python running the tests, like ``python = ">=3.12"``.
 
 A file that only one checker can handle is skipped for the other with a reason::
 
@@ -40,6 +41,7 @@ import re
 import tomllib
 from importlib.metadata import version
 from pathlib import Path
+from platform import python_version
 from typing import Any, Literal, get_args
 
 import pytest
@@ -129,7 +131,7 @@ def _marks(path: Path, checker: Checker) -> list[pytest.MarkDecorator]:
             pytest.mark.xfail(reason=f"{checker}: {options['xfail']}", strict=True)
         )
     for package, spec in requires.items():
-        installed = version(package)
+        installed = python_version() if package == "python" else version(package)
         if not SpecifierSet(spec).contains(installed, prereleases=True):
             marks.append(
                 pytest.mark.skip(
