@@ -147,7 +147,8 @@ SHAPE_FEATURES = [
                 lambda: Shape[L[1], L[2], Unpack[AnyDims]],  # noqa: UP044
             ),
         ],
-        canonical=tuple[L[1], L[2], *tuple[int, ...]],
+        # a repeated dimension is normalized to Unpack, which isn't equal to *
+        canonical=tuple[L[1], L[2], Unpack[tuple[int, ...]]],  # noqa: UP044
     ),
     ShapeFeature(
         "one-then-variadic",
@@ -162,7 +163,7 @@ SHAPE_FEATURES = [
             ),
             Form("tuple-anydims", lambda: tuple[L[2], *AnyDims]),
         ],
-        canonical=tuple[L[2], *AnyDims],
+        canonical=tuple[L[2], Unpack[AnyDims]],  # noqa: UP044
     ),
     ShapeFeature(
         "repeat-last",
@@ -175,7 +176,7 @@ SHAPE_FEATURES = [
             Form("unpack", lambda: Shape[L[1], L[2], *tuple[L[2], ...]]),
             Form("tuple-unpack", lambda: tuple[L[1], L[2], *tuple[L[2], ...]]),
         ],
-        canonical=tuple[L[1], L[2], *tuple[L[2], ...]],
+        canonical=tuple[L[1], L[2], Unpack[tuple[L[2], ...]]],  # noqa: UP044
     ),
     ShapeFeature(
         "homogeneous",

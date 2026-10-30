@@ -22,6 +22,9 @@
   rather than nptyping's `InvalidArgumentsError`.
 - `NDArray` is no longer a `Protocol` with a metaclass. `NDArray[shape, dtype]` is now a generic alias,
   so `typing.get_args` returns its normalized shape and dtype, and equivalent annotations are equal.
+  In the normalized shape, a dimension repeated at the end is `typing.Unpack[tuple[X, ...]]`,
+  however it was written, since pydantic loses the unpacking of `*tuple[X, ...]`
+  when it parametrizes a generic model.
   Calling it and `isinstance(x, NDArray[shape, dtype])` still validate,
   but `isinstance(x, NDArray)` without arguments is now an ordinary class check.
   `NDArrayMeta` has been removed.

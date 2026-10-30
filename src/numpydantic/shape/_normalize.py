@@ -59,7 +59,7 @@ def _normalize_tuple(expression: tuple) -> tuple | Any:
     normalized = tuple(_normalize_tuple_item(item) for item in expression)
     _check_positions(normalized)
     if normalized[-1] is Ellipsis and len(normalized) > 2:
-        normalized = (*normalized[:-1], *tuple[normalized[-2], ...])
+        normalized = (*normalized[:-1], _repeated(normalized[-2]))
     if _is_any_shape(normalized):
         return Any
     return normalized
@@ -105,6 +105,16 @@ def _repeats(item: Any) -> bool:
     return item is Ellipsis or _variadic_item(item) is not None
 
 
+def _repeated(dim: Any) -> Any:
+    """
+    A dimension repeated at the end of a shape, like ``*tuple[X, ...]``.
+
+    It's written as ``Unpack[tuple[X, ...]]`` because when pydantic parametrizes
+    a model, it keeps ``Unpack`` but turns ``*tuple[X, ...]`` into a plain tuple.
+    """
+    return Unpack[tuple[dim, ...]]
+
+
 def _normalize_tuple_item(item: Any) -> Any:
     if get_origin(item) is Unpack:
         unpacked = get_args(item)[0]
@@ -125,7 +135,7 @@ def _normalize_tuple_item(item: Any) -> Any:
         item = args[0]
 
     if isinstance(item, str):
-        return _str_dim_to_tuple(item)
+        return _normalize_tuple_item(_str_dim_to_tuple(item))
     elif isinstance(item, int):
         return Literal[item]
     elif isinstance(item, _RangeDim):
@@ -136,7 +146,7 @@ def _normalize_tuple_item(item: Any) -> Any:
     elif item is int or item is Any or item is Ellipsis:
         return item
     elif (repeated := _variadic_item(item)) is not None:
-        return next(iter(tuple[_normalize_tuple_item(repeated), ...]))
+        return _repeated(_normalize_tuple_item(repeated))
     elif get_origin(item) is Annotated:
         base, *metadata = get_args(item)
         return Annotated[(_normalize_tuple_item(base), *metadata)]
