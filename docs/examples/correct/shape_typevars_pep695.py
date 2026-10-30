@@ -5,7 +5,9 @@ import numpy as np
 from numpydantic import NDArray, Shape, unshape
 
 
-def diagonal[N: int](matrix: NDArray[Shape[N, N], np.float64]) -> NDArray[Shape[N], np.float64]:
+def diagonal[N: int](
+    matrix: NDArray[Shape[N, N], np.float64],
+) -> NDArray[Shape[N], np.float64]:
     return unshape(np.diagonal(matrix))
 
 
