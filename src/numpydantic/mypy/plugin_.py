@@ -210,9 +210,14 @@ class NumpydanticMypyPlugin(Plugin):
     def get_type_analyze_hook(
         self, fullname: str
     ) -> Callable[[AnalyzeTypeContext], Type] | None:
-        """Convert an NDArray annotation to an enriched np.ndarray annotation"""
+        """
+        Convert an NDArray annotation to an enriched np.ndarray annotation,
+        and a Range outside of a shape, like in a TypeVar's bound, to a range
+        """
         if fullname == NDARRAY_FULLNAME:
             return _analyze_ndarray_type
+        elif fullname == RANGE_FULLNAME:
+            return _analyze_range_type
         return None
 
     def get_function_hook(
@@ -323,6 +328,20 @@ def plugin(version: str) -> type[NumpydanticMypyPlugin]:  # noqa: ARG001
 # ---------------------------------------------------------------------------
 # NDArray type-analyze hook
 # ---------------------------------------------------------------------------
+
+
+def _analyze_range_type(ctx: AnalyzeTypeContext) -> Type:
+    """
+    Render ``Range[low, high]`` as the same range it is within a shape,
+    so mypy checks sizes against a TypeVar bound or constrained to it
+    """
+    try:
+        dim = _to_runtime(ctx.type, ctx)
+        int_instance = ctx.api.named_type("builtins.int", [])
+        return _dim_to_mypy(dim.annotation, ctx, int_instance)
+    except InvalidShapeExpressionError as exc:
+        ctx.api.fail(str(exc), ctx.context)
+        return AnyType(TypeOfAny.from_error)
 
 
 def _analyze_ndarray_type(ctx: AnalyzeTypeContext) -> Type:
@@ -441,6 +460,8 @@ def _to_runtime(typ: Type, ctx: AnalyzeTypeContext) -> Any:
     elif isinstance(typ, AnyType):
         return Any
     elif isinstance(typ, LiteralType):
+        if isinstance(typ.value, RangeValue):
+            return Annotated[int, Interval(ge=typ.value.low, le=typ.value.high)]
         return Literal[typ.value]
     elif isinstance(typ, Instance):
         if typ.type.fullname == "builtins.int":

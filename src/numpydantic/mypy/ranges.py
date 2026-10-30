@@ -19,6 +19,7 @@ from mypy.nodes import (
     SymbolTable,
     TypeAlias,
     TypeInfo,
+    TypeVarExpr,
     Var,
 )
 from mypy.type_visitor import TypeQuery
@@ -114,6 +115,9 @@ def _names_have_ranges(names: SymbolTable, module_name: str) -> bool:
             types = [node.type]
         elif isinstance(node, TypeAlias):
             types = [node.target]
+        elif isinstance(node, TypeVarExpr):
+            # a range as a bound or constraint, like TypeVar("R", bound=Range[...])
+            types = [node.upper_bound, *node.values]
         else:
             continue
         # the query keeps state, so each type gets a new one
