@@ -11,6 +11,8 @@ can statically reject:
   disagree.
 - Functions whose declared ``NDArray`` return shape/dtype disagrees with the
   numpy constructor used in the function body
+- Calls that give a shape typevar different sizes,
+  like ``N`` in ``Shape[N, N]``, which type checkers accept on their own.
 
 For NDArray-NDArray assignments this is straightforward.
 For np.ndarray-NDArray and NDArray-np.ndarray assignments,
@@ -39,7 +41,17 @@ from collections.abc import Callable
 from configparser import ConfigParser
 from dataclasses import dataclass, field, fields
 from tomllib import load as load_toml
-from typing import Annotated, Any, Final, Literal, Self, get_args, get_origin
+from typing import (
+    Annotated,
+    Any,
+    Final,
+    Literal,
+    Self,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+)
 
 from annotated_types import Interval
 
@@ -55,7 +67,9 @@ try:
         AnalyzeTypeContext,
         ClassDefContext,
         FunctionContext,
+        FunctionSigContext,
         MethodContext,
+        MethodSigContext,
         Plugin,
         ReportConfigContext,
     )
@@ -63,6 +77,7 @@ try:
         AnyType,
         CallableType,
         EllipsisType,
+        FunctionLike,
         Instance,
         LiteralType,
         ProperType,
@@ -70,6 +85,7 @@ try:
         TupleType,
         Type,
         TypeOfAny,
+        TypeVarType,
         UnboundType,
         UnionType,
         UnpackType,
@@ -83,6 +99,7 @@ from pydantic.mypy import PydanticPluginConfig
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.mypy.pydantic_ import _make_pydantic_hook
 from numpydantic.mypy.ranges import RangeValue, module_has_ranges
+from numpydantic.mypy.typevars import check_shape_typevars, has_shape_typevars
 from numpydantic.ndarray import NDArray
 from numpydantic.shape import Range, Shape
 from numpydantic.shape._variadic import _split_variadic
@@ -163,7 +180,23 @@ class MypyPluginOptions:
 
 
 class NumpydanticMypyPlugin(Plugin):
-    """Static type checking for ``numpydantic.NDArray``."""
+    """
+    Static type checking for ``numpydantic.NDArray``.
+
+    ``NDArray`` annotations are converted to the ``numpy.ndarray`` types they
+    stand for, and mypy's own type checking does the rest: once a shape is
+    ``tuple[Literal[3]]``, mypy refuses an array whose shape is ``tuple[Literal[4]]``.
+
+    Shape typevars are the exception. When mypy solves a type variable from
+    the arguments of a call, it picks the narrowest type that fits all of them,
+    so sizes 3 and 4 give ``int`` and the call is accepted. Solving only happens
+    at calls, so the signature hooks refuse calls where the arguments give a
+    shape typevar different sizes. Not covered:
+
+    - calls through a variable, like ``f = pair; f(a, b)``, since mypy only
+      asks for signature hooks for callables it knows the full name of
+    - overloaded functions, which are untested
+    """
 
     def __init__(self, options: Options):
         super().__init__(options)
@@ -205,6 +238,28 @@ class NumpydanticMypyPlugin(Plugin):
         spec = self._methods.get(fullname)
         if spec is not None:
             return _make_method_hook(spec)
+        return None
+
+    def get_function_signature_hook(
+        self, fullname: str
+    ) -> Callable[[FunctionSigContext], FunctionLike] | None:
+        """Refuse calls that give one shape typevar different sizes"""
+        return self._typevar_hook(fullname)
+
+    def get_method_signature_hook(
+        self, fullname: str
+    ) -> Callable[[MethodSigContext], FunctionLike] | None:
+        """Refuse calls that give one shape typevar different sizes"""
+        return self._typevar_hook(fullname)
+
+    def _typevar_hook(
+        self, fullname: str
+    ) -> Callable[[FunctionSigContext | MethodSigContext], FunctionLike] | None:
+        # mypy only uses the first plugin that returns a signature hook,
+        # so only return one for callables that need it.
+        sym = self.lookup_fully_qualified(fullname)
+        if sym is not None and has_shape_typevars(sym.node):
+            return check_shape_typevars
         return None
 
     def get_base_class_hook(
@@ -341,14 +396,20 @@ def _parse_shape_arg(arg: Type | None, ctx: AnalyzeTypeContext) -> TupleType | N
             canonical = NDArray[shape, Any].__args__[0]
         if canonical is Any:
             return None
-        return _canonical_to_type(canonical, ctx)
+        return _to_mypy(canonical, ctx)
     except InvalidShapeExpressionError as exc:
         ctx.api.fail(str(exc), ctx.context)
         return None
 
 
 def _to_runtime(typ: Type, ctx: AnalyzeTypeContext) -> Any:
-    """The runtime object that an unanalyzed shape annotation stands for"""
+    """
+    The runtime object that a shape annotation stands for,
+    so the shape can be normalized by the same code as at runtime.
+
+    Most shape syntax, like ``Shape[3, 4]`` or ``Range[...]``, isn't a valid mypy
+    type, so it's read from the unanalyzed annotation. Mypy only analyzes names.
+    """
     typ = get_proper_type(typ)
     if isinstance(typ, RawExpressionType):
         return typ.literal_value
@@ -367,8 +428,32 @@ def _to_runtime(typ: Type, ctx: AnalyzeTypeContext) -> Any:
         elif fullname == "builtins.tuple" and typ.args:
             # Shape is tuple to type checkers, and Shape[...] normalizes tuple args
             return Shape[tuple(_to_runtime(arg, ctx) for arg in typ.args)]
-
-    return _analyzed_to_runtime(get_proper_type(ctx.api.analyze_type(typ)), typ)
+        return _to_runtime(ctx.api.analyze_type(typ), ctx)
+    elif isinstance(typ, TypeVarType):
+        if typ.values:
+            values = (_to_runtime(value, ctx) for value in typ.values)
+            return TypeVar(typ.name, *values)
+        bound = get_proper_type(typ.upper_bound)
+        # an unbounded type variable's bound is object
+        if isinstance(bound, Instance) and bound.type.fullname == "builtins.object":
+            return TypeVar(typ.name)
+        return TypeVar(typ.name, bound=_to_runtime(bound, ctx))
+    elif isinstance(typ, AnyType):
+        return Any
+    elif isinstance(typ, LiteralType):
+        return Literal[typ.value]
+    elif isinstance(typ, Instance):
+        if typ.type.fullname == "builtins.int":
+            return int
+        elif typ.type.fullname == "builtins.tuple" and len(typ.args) == 1:
+            # a variadic tuple, like AnyDims
+            return tuple[_to_runtime(typ.args[0], ctx), ...]
+    elif isinstance(typ, TupleType):
+        return tuple[tuple(_to_runtime(item, ctx) for item in typ.items)]
+    elif isinstance(typ, UnionType):
+        # items can be mypy types, which don't support |
+        return Union[tuple(_to_runtime(item, ctx) for item in typ.items)]  # noqa: UP007
+    return typ
 
 
 def _resolve_fullname(typ: UnboundType, ctx: AnalyzeTypeContext) -> str | None:
@@ -387,44 +472,29 @@ def _resolve_fullname(typ: UnboundType, ctx: AnalyzeTypeContext) -> str | None:
     return node.fullname
 
 
-def _analyzed_to_runtime(typ: ProperType, original: Type) -> Any:
-    """The runtime object for a type that mypy has analyzed, like ``int``"""
-    if isinstance(typ, AnyType):
-        return Any
-    elif isinstance(typ, LiteralType):
-        return Literal[typ.value]
-    elif isinstance(typ, Instance):
-        if typ.type.fullname == "builtins.int":
-            return int
-        elif typ.type.fullname == "builtins.tuple" and len(typ.args) == 1:
-            # a variadic tuple, like AnyDims
-            item = _analyzed_to_runtime(get_proper_type(typ.args[0]), original)
-            return tuple[item, ...]
-    elif isinstance(typ, TupleType):
-        items = (_analyzed_to_runtime(get_proper_type(t), original) for t in typ.items)
-        return tuple[tuple(items)]
-    raise InvalidShapeExpressionError(f"Invalid shape dimension: {original}")
-
-
-def _canonical_to_type(canonical: Any, ctx: AnalyzeTypeContext) -> TupleType:
+def _to_mypy(canonical: Any, ctx: AnalyzeTypeContext) -> TupleType:
     """Convert a canonical runtime shape like ``tuple[L[3], *AnyDims]`` to mypy"""
     int_instance = ctx.api.named_type("builtins.int", [])
     fixed, tail = _split_variadic(get_args(canonical))
-    items = [_canonical_dim_to_type(dim, int_instance) for dim in fixed]
+    items = [_dim_to_mypy(dim, ctx, int_instance) for dim in fixed]
     if tail is not None:
-        repeated = _canonical_dim_to_type(tail, int_instance)
+        repeated = _dim_to_mypy(tail, ctx, int_instance)
         items.append(UnpackType(ctx.api.named_type("builtins.tuple", [repeated])))
     return TupleType(
         items, fallback=ctx.api.named_type("builtins.tuple", [int_instance])
     )
 
 
-def _canonical_dim_to_type(dim: Any, int_instance: Instance) -> Type:
+def _dim_to_mypy(dim: Any, ctx: AnalyzeTypeContext, int_instance: Instance) -> Type:
     """Convert one dimension of a canonical runtime shape to mypy"""
     if dim is int:
         return int_instance
     elif dim is Any:
         return AnyType(TypeOfAny.special_form)
+    elif isinstance(dim, TypeVar):
+        # mypy's type variable has to be the one bound in this scope,
+        # so look the name up again, not build a new one
+        return ctx.api.analyze_type(UnboundType(dim.__name__))
 
     origin = get_origin(dim)
     if origin is Literal and len(get_args(dim)) == 1:
@@ -435,7 +505,7 @@ def _canonical_dim_to_type(dim: Any, int_instance: Instance) -> Type:
             if isinstance(meta, Interval):
                 return LiteralType(RangeValue(meta), fallback=int_instance)
         # other metadata, like labels, doesn't change the type
-        return _canonical_dim_to_type(base, int_instance)
+        return _dim_to_mypy(base, ctx, int_instance)
     raise InvalidShapeExpressionError(f"Invalid shape dimension: {dim!r}")
 
 
