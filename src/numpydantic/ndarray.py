@@ -9,45 +9,37 @@ serialization
     type checkers will complain about using any helper functions elsewhere -
     those all belong in :mod:`numpydantic.schema` .
 
-    NDArrayMeta is in this module even though it's excluded from the type stub.
+    :class:`.NDArrayAlias` is in this module even though it's excluded
+    from the type stub.
 
 """
 
 from __future__ import annotations
 
+import types
 from typing import (
     TYPE_CHECKING,
     Any,
     Literal,
-    Protocol,
     TypeVar,
-    _ProtocolMeta,
     get_args,
     get_origin,
-    runtime_checkable,
 )
 
 import numpy as np
-from pydantic import GetJsonSchemaHandler
+from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
 from pydantic_core import core_schema
 
 from numpydantic.dtype import DType
 from numpydantic.exceptions import InterfaceError, InvalidShapeExpressionError
 from numpydantic.interface import Interface
 from numpydantic.maps import python_to_nptyping
-from numpydantic.schema import (
-    get_validate_interface,
-    make_json_schema,
-)
-from numpydantic.serialization import jsonize_array
-from numpydantic.types import DtypeType, NDArrayType, ShapeType
+from numpydantic.schema import make_core_schema, make_ndarray_json_schema
+from numpydantic.types import NDArrayType
+from numpydantic.validation.array import validate_array
 from numpydantic.validation.dtype import is_union
 
 if TYPE_CHECKING:  # pragma: no cover
-    from pydantic._internal._schema_generation_shared import (
-        CallbackGetCoreSchemaHandler,
-    )
-
     from numpydantic import Shape
 
 
@@ -97,165 +89,73 @@ def _get_dtype(dtype_candidate: Any) -> DType:
     return dtype
 
 
-TShape = TypeVar("TShape")
-TDType = TypeVar("TDType")
-
-
-class NDArrayMeta(_ProtocolMeta):
+class NDArrayAlias(types.GenericAlias):
     """
-    Metaclass to provide class-level methods to NDArray protocol
-    without suggesting they are part of the protocol definition.
+    ``NDArray[shape, dtype]``, with the normalized shape and dtype as its ``__args__``.
+
+    Calling it validates an array, and ``isinstance`` checks whether an array is valid.
     """
 
-    __args__: tuple[ShapeType, DtypeType] = (Any, Any)
+    def __call__(self, value: Any) -> NDArrayType:
+        """Validate an array, returning the validated array"""
+        return validate_array(value, *self.__args__)
 
-    def __call__(cls, val: NDArrayType) -> NDArrayType:
-        """Call ndarray as a validator function"""
-        return get_validate_interface(cls.__args__[0], cls.__args__[1])(val)
-
-    def __instancecheck__(self, instance: Any):
-        """
-        Extended type checking that determines whether
-
-        1) the ``type`` of the given instance is one of those in
-            :meth:`.Interface.input_types`
-
-        but also
-
-        2) it satisfies the constraints set on the :class:`.NDArray` annotation
-
-        Args:
-            instance (:class:`typing.Any`): Thing to check!
-
-        Returns:
-            bool: ``True`` if matches constraints, ``False`` otherwise.
-        """
+    def __instancecheck__(self, instance: Any) -> bool:
+        """Whether ``instance`` is an array of any supported type that validates"""
         shape, dtype = self.__args__
         try:
             interface_cls = Interface.match(instance, fast=True)
-            interface = interface_cls(shape, dtype)
-            _ = interface.validate(instance)
-            return True
+            interface_cls(shape, dtype).validate(instance)
         except InterfaceError:
             return False
+        return True
 
-    def _dtype_to_str(cls, dtype: Any) -> str:
-        if dtype is Any:
-            result = "Any"
-        elif isinstance(dtype, tuple):
-            result = ", ".join([str(dt) for dt in dtype])
-        else:
-            result = str(dtype)
-        return result
+    def __getitem__(self, item: Any) -> NDArrayAlias:
+        # Filling in type variables, like in list[NDArray[Shape[N]]][L[3]].
+        # The base class would give a plain GenericAlias without normalizing.
+        return self.__origin__[super().__getitem__(item).__args__]
 
-    def __getitem__(cls, args: type[Any] | tuple[type[Any], type[Any]]):
+
+class NDArray:
+    """
+    Constrained array type with :class:`.Shape` and dtype validation
+    and serialization.
+
+    ``NDArray[shape, dtype]`` is a generic alias of this class,
+    and its arguments can be read with :func:`typing.get_args`.
+    pydantic validates it with the relevant :ref:`interface <Interfaces>`,
+    so any supported array type with a matching shape and dtype is valid.
+
+    Calling ``NDArray`` or ``NDArray[shape, dtype]`` validates an array,
+    and returns the validated array rather than an instance of this class.
+
+    References:
+        - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
+    """
+
+    def __class_getitem__(cls, args: Any) -> NDArrayAlias:
         if not isinstance(args, tuple) or (isinstance(args, tuple) and len(args) == 1):
             # just shape passed
             shape = args if not isinstance(args, TypeVar) else Any
             dtype = Any
         else:
             shape = args[0] if not isinstance(args[0], TypeVar) else Any
-            dtype = args[1] if not isinstance(args[0], TypeVar) else Any
+            dtype = args[1] if not isinstance(args[1], TypeVar) else Any
+        return NDArrayAlias(cls, (_get_shape(shape), _get_dtype(dtype)))
 
-        shape = _get_shape(shape)
-        dtype = _get_dtype(dtype)
+    def __new__(cls, value: Any) -> NDArrayType:  # type: ignore[misc]
+        """Validate an array with any shape and dtype"""
+        return validate_array(value, Any, Any)
 
-        return type(cls.__name__, (cls,), {**cls.__dict__, "__args__": (shape, dtype)})
-
+    @classmethod
     def __get_pydantic_core_schema__(
-        cls,
-        _source_type: NDArray | Any,
-        _handler: CallbackGetCoreSchemaHandler,
+        cls, source: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
-        shape, dtype = cls.__args__
-        shape: ShapeType
-        dtype: DtypeType
+        shape, dtype = get_args(source) if get_origin(source) is cls else (Any, Any)
+        return make_core_schema(shape, dtype, handler)
 
-        serialization = core_schema.plain_serializer_function_ser_schema(
-            jsonize_array, when_used="json", info_arg=True
-        )
-
-        # make core schema for json schema, store it and any model definitions
-        # so that we can use them when rendering json schema
-        json_schema = make_json_schema(shape, dtype, _handler)
-
-        if (
-            not hasattr(_source_type, "__class__")
-            or _source_type.__class__ is not NDArrayMeta
-        ):
-            if hasattr(_source_type, "proxy_for"):
-                interface: type[Interface] = _source_type.proxy_for()
-                isinstance_schema = core_schema.union_schema(
-                    [
-                        core_schema.is_instance_schema(itype)
-                        for itype in list(interface.input_types) + [_source_type]
-                    ]
-                )
-            else:
-                isinstance_schema = core_schema.is_instance_schema(_source_type)
-
-            return core_schema.chain_schema(
-                [
-                    isinstance_schema,
-                    core_schema.with_info_plain_validator_function(
-                        get_validate_interface(shape, dtype)
-                    ),
-                ],
-                serialization=serialization,
-                metadata=json_schema,
-            )
-        else:
-            return core_schema.with_info_plain_validator_function(
-                get_validate_interface(shape, dtype),
-                serialization=serialization,
-                metadata=json_schema,
-            )
-
+    @classmethod
     def __get_pydantic_json_schema__(
         cls, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
     ) -> core_schema.JsonSchema:
-        shape, dtype = cls.__args__
-        json_schema = handler(schema["metadata"])
-        json_schema = handler.resolve_ref_schema(json_schema)
-
-        if (
-            not isinstance(dtype, tuple)
-            and dtype.__module__
-            not in (
-                "builtins",
-                "typing",
-                "types",
-            )
-            and hasattr(dtype, "__name__")
-        ):
-            json_schema["dtype"] = ".".join([dtype.__module__, dtype.__name__])
-
-        return json_schema
-
-
-@runtime_checkable
-class NDArray(Protocol[TShape, TDType], metaclass=NDArrayMeta):
-    """
-    Constrained array type with :class:`.Shape` and dtype validation
-    and serialization.
-
-    This class is not intended to be instantiable, and support for static type
-    checking is limited,
-    it implements the ``__get_pydantic_core_schema__`` method to invoke
-    the relevant :ref:`interface <Interfaces>` for validation and serialization.
-
-    It is callable, however, which validates and attempts to coerce input to a
-    supported array type.
-    There is no such thing as an "NDArray instance," but one can think of it
-    as a validating passthrough callable.
-
-    References:
-        - https://docs.pydantic.dev/latest/usage/types/custom/#handling-third-party-types
-    """
-
-    shape = np.ndarray.shape
-    dtype = np.ndarray.dtype
-
-    def __getitem__(self: Any, key: Any) -> Any: ...
-
-    def __setitem__(self: Any, key: Any, value: Any) -> Any: ...
+        return make_ndarray_json_schema(schema, handler)

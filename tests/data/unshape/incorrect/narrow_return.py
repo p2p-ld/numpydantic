@@ -18,4 +18,4 @@ def make_square() -> NDArray[Shape[L[3], L[3]], np.float64]:
     return unshape(np.zeros((size(), size())))
 
 
-takes_4x4(make_square())
+takes_4x4(make_square())  # E: incompatible type

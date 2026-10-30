@@ -3,8 +3,8 @@ import numpy as np
 from numpydantic import NDArray, Shape
 
 
-def f(frame: NDArray[Shape[1080, 1920], np.uint8]) -> int: ...
+def f(frame: NDArray[Shape[1080, 1920], np.uint8]) -> None: ...  # E[pyright]: bare ints aren't types
 
 
 rgb = np.zeros((1080, 1920, 3), dtype=np.uint8)
-f(rgb)
+f(rgb)  # E: incompatible type

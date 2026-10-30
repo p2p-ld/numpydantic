@@ -12,4 +12,4 @@ def takes_3x4(array: NDArray[Shape[L[3], L[4]], np.float64]) -> None: ...
 
 def f(a: NDArray[Shape[L[3], L[4]], np.float64]) -> None:
     b = unliteral(a)
-    takes_3x4(b)
+    takes_3x4(b)  # E: incompatible type

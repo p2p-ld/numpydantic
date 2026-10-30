@@ -16,13 +16,8 @@ For internal helper functions for validating dtype,
 see :mod:`numpydantic.validation.dtype`
 """
 
-import sys
 from datetime import datetime
-
-if sys.version_info.minor >= 10:
-    from typing import TypeAlias
-else:
-    from typing import TypeAlias
+from typing import TypeAlias
 
 import numpy as np
 

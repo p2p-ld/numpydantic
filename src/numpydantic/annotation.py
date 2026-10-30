@@ -3,11 +3,12 @@ A :class:`pydantic.GetPydanticCoreSchema` - like type annotation
 to make type checkers happy :)
 """
 
-from typing import Any
+from typing import Any, get_args
 
 from pydantic import GetPydanticSchema
 
 from numpydantic import NDArray
+from numpydantic.schema import make_core_schema, make_ndarray_json_schema
 from numpydantic.shape import Shape
 from numpydantic.types import DtypeType
 
@@ -56,8 +57,9 @@ def NDArraySchema(
     Returns:
 
     """
-    ndarray = NDArray[shape, dtype]
+    shape, dtype = get_args(NDArray[shape, dtype])
 
     return GetPydanticSchema(
-        ndarray.__get_pydantic_core_schema__, ndarray.__get_pydantic_json_schema__
+        lambda source, handler: make_core_schema(shape, dtype, handler, source),
+        make_ndarray_json_schema,
     )

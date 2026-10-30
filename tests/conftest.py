@@ -1,8 +1,14 @@
+import sys
+
 import pytest
 
 from numpydantic.testing.cases import DTYPE_CASES, SHAPE_CASES
 from numpydantic.testing.helpers import ValidationCase
 from tests.fixtures import *
+
+if sys.version_info < (3, 12):
+    # python 3.12's generic syntax can't be parsed by older versions
+    collect_ignore = ["test_shape_typevars_pep695.py"]
 
 
 def pytest_addoption(parser):

@@ -7,7 +7,5 @@ import numpy as np
 from numpydantic import AnyDims, NDArray, Shape
 
 
-def f() -> (
-    NDArray[Shape[*AnyDims, L[3]], np.uint8]
-):  # E: must be the last item in a shape
+def f() -> NDArray[Shape[*AnyDims, L[3]], np.uint8]:  # E: must be the last item in a shape
     return np.zeros((1,), dtype=np.uint8)

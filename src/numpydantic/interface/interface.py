@@ -8,6 +8,7 @@ import inspect
 import sys
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from datetime import datetime
 from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, version
@@ -238,9 +239,22 @@ class Interface(ABC, Generic[T]):
     into static constructor inference.
     """
 
-    def __init__(self, shape: ShapeType = Any, dtype: DtypeType = Any) -> None:
+    def __init__(
+        self,
+        shape: ShapeType = Any,
+        dtype: DtypeType = Any,
+        typevar_sizes: Mapping[str, int] | None = None,
+    ) -> None:
+        """
+        Args:
+            shape: The normalized shape to validate against
+            dtype: The dtype to validate against
+            typevar_sizes: Sizes that the shape typevars in ``shape``
+                already have, by name, e.g. from other fields of the same model
+        """
         self.shape = shape
         self.dtype = dtype
+        self.typevar_sizes = typevar_sizes
 
     def validate(self, array: Any) -> T:
         """
@@ -398,7 +412,7 @@ class Interface(ABC, Generic[T]):
         if self.shape is Any:
             return True
 
-        return validate_shape(shape, self.shape)
+        return validate_shape(shape, self.shape, self.typevar_sizes)
 
     def raise_for_shape(self, valid: bool, shape: tuple[int, ...]) -> None:
         """
@@ -408,10 +422,14 @@ class Interface(ABC, Generic[T]):
             :class:`~numpydantic.exceptions.ShapeError`
         """
         if not valid:
-            raise ShapeError(
+            message = (
                 f"Invalid shape! expected shape {get_args(self.shape)}, "
                 f"got shape {shape}"
             )
+            if self.typevar_sizes:
+                sizes = ", ".join(f"{k}={v}" for k, v in self.typevar_sizes.items())
+                message += f"\nShape typevars already set: {sizes}"
+            raise ShapeError(message)
 
     def after_validation(self, array: NDArrayType) -> T:
         """

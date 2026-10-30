@@ -7,5 +7,5 @@ from numpydantic import NDArray, Shape, unliteral
 
 
 def f(a: NDArray[Shape[L[3], L[4]], Any]) -> None:
-    b: NDArray[Shape[L[3], L[4]], Any] = unliteral(a)
+    b: NDArray[Shape[L[3], L[4]], Any] = unliteral(a)  # E: Incompatible types in assignment
     print(b)

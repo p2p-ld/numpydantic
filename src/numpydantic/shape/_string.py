@@ -138,7 +138,8 @@ def _str_dim_to_tuple(part: str) -> type:
         inner = Literal[int(dim)]
     elif _RE_VARIABLE_COMPILED.fullmatch(dim):
         raise InvalidShapeExpressionError(
-            f"Shape variables like {dim!r} are not supported"
+            f"Named dimensions in string shapes, like {dim!r}, aren't supported, "
+            "use a TypeVar instead, like Shape[N, N]"
         )
     else:
         raise InvalidShapeExpressionError(

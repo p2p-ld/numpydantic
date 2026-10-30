@@ -11,6 +11,4 @@ def size() -> int:
     return 3
 
 
-x: NDArray[Shape[L[3], L[3]], np.float64] = unshape(
-    np.zeros((size(), size()), dtype=np.uint8)
-)
+x: NDArray[Shape[L[3], L[3]], np.float64] = unshape(np.zeros((size(), size()), dtype=np.uint8))  # E: incompatible type

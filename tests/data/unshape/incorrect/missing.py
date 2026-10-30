@@ -11,4 +11,4 @@ def size() -> int:
     return 3
 
 
-x: NDArray[Shape[L[3], L[3]], np.float64] = np.zeros((size(), size()))
+x: NDArray[Shape[L[3], L[3]], np.float64] = np.zeros((size(), size()))  # E: Incompatible types in assignment

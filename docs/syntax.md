@@ -187,6 +187,222 @@ As with `tuple[()]`, an empty shape is a zero-dimensional array:
 Shape[()]
 ```
 
+(shape-typevars)=
+(shape-variables)=
+### Shape typevars
+
+```{admonition} Experimental!
+:class: warning
+
+Shape typevars are experimental, and how they're validated across the fields
+of a model may change. pydantic doesn't give a type like `NDArray` a way to share
+state between fields, so the sizes are kept in the model's `__dict__`,
+which is a "terrible" way to do it, and only works because pydantic doesn't use
+`__dict__` like how every other python class does. 
+When pydantic's plugin system is stable, we may move to that instead.
+```
+
+Shapes can use a {class}`typing.TypeVar` for a dimension
+(also referred to as a shape variable because saying "shape type var" out loud sucks really bad).
+A shape typevar is a dimension of any size,
+as long as it's the same size everywhere it's used.
+
+A shape typevar has to be bound or constrained to sizes.
+The simplest is bound to `int`, which can be any size:
+
+`````{tab-set}
+````{tab-item} Python >= 3.12
+```python
+# a square matrix
+def trace[N: int](matrix: NDArray[Shape[N, N], np.float64]) -> float: ...
+
+# any number of dimensions, all the same size
+def fill[N: int](array: NDArray[Shape[N, ...], np.float64]) -> None: ...
+```
+````
+````{tab-item} Python < 3.12
+```python
+N = TypeVar("N", bound=int)
+
+# a square matrix
+def trace(matrix: NDArray[Shape[N, N], np.float64]) -> float: ...
+
+# any number of dimensions, all the same size
+def fill(array: NDArray[Shape[N, ...], np.float64]) -> None: ...
+```
+````
+`````
+
+Like other type variables, a shape typevar belongs to the function or class that uses it.
+In a generic model, the arrays in every field have to agree:
+
+`````{tab-set}
+````{tab-item} Python >= 3.12
+```python
+class Model[N: int, K: int](BaseModel):
+    vector: NDArray[Shape[N], np.float64]
+    matrix: NDArray[Shape[N, K], np.float64]
+
+Model(vector=np.zeros(3), matrix=np.zeros((3, 4)))  # valid
+Model(vector=np.zeros(3), matrix=np.zeros((4, 4)))  # invalid
+```
+````
+````{tab-item} Python < 3.12
+```python
+N = TypeVar("N", bound=int)
+K = TypeVar("K", bound=int)
+
+class Model(BaseModel, Generic[N, K]):
+    vector: NDArray[Shape[N], np.float64]
+    matrix: NDArray[Shape[N, K], np.float64]
+
+Model(vector=np.zeros(3), matrix=np.zeros((3, 4)))  # valid
+Model(vector=np.zeros(3), matrix=np.zeros((4, 4)))  # invalid
+```
+````
+`````
+
+Parametrizing the model replaces its shape typevars,
+so `Model[L[3], int]` has a `vector` of length 3 and a `matrix` with 3 rows.
+
+This includes arrays in containers, like the items of a `list[NDArray[Shape[N]]]`.
+Nested models have their own sizes.
+
+```{note}
+Shape typevars aren't represented in the generated JSON Schema.
+JSON Schema can't express a size that depends on another dimension or another array
+(see: https://github.com/orgs/json-schema-org/discussions/730).
+```
+
+```{important}
+Type checkers don't treat a `TypeVar` as one size everywhere:
+they accept arrays whose sizes disagree by widening the variable to cover all of them.
+The [mypy plugin](mypy-plugin) refuses those calls.
+See [](#shape-typevars-checkers) for what each type checker does,
+and [this thread](https://discuss.python.org/t/support-function-with-multiple-generic-parameters-same-type/57931/15)
+for details.
+```
+
+#### Constraints
+
+Constraints behave like an "exact union" where a shape has to match exactly one value.
+Each constraint has to be a size: `int`, a `Literal` int, a multi-value `Literal`,
+a {class}`.Range`, or a union of them.
+
+`````{tab-set}
+````{tab-item} Python >= 3.12
+```python
+# these are equivalent: 
+# (L[1], L[2, 3, 4, 5])
+# (L[1], L[2] | L[3] | L[4] | L[5]), 
+# (L[1], L[2], L[3], L[4], L[5])
+
+def blend[
+    RGB: (L[3], L[4]),  # 3 or 4
+    N: (L[1], L[2, 3, 4, 5]),  # any one of 1 to 5
+    Window: (Range[L[1], L[2]], Range[L[5], L[6]]),  # 1 to 2, or 5 to 6
+](
+    a: NDArray[Shape[N, Window, RGB], np.uint8],
+    b: NDArray[Shape[N, Window, RGB], np.uint8],
+) -> NDArray[Shape[N, Window, RGB], np.uint8]: ...
+
+# valid
+blend(np.zeros((2, 5, 3), dtype=np.uint8), np.zeros((2, 5, 3), dtype=np.uint8))  
+# invalid: N is 2 and 3
+blend(np.zeros((2, 5, 3), dtype=np.uint8), np.zeros((3, 5, 3), dtype=np.uint8))
+# invalid: N as 3 is out of both ranges  
+blend(np.zeros((3, 5, 3), dtype=np.uint8), np.zeros((3, 5, 3), dtype=np.uint8))
+```
+````
+````{tab-item} Python < 3.12
+```python
+# these are equivalent:
+# (L[1], L[2, 3, 4, 5]), 
+# (L[1], L[2] | L[3] | L[4] | L[5]), 
+# (L[1], L[2], L[3], L[4], L[5])
+
+RGB = TypeVar("RGB", L[3], L[4])  # 3 or 4
+N = TypeVar("N", L[1], L[2, 3, 4, 5])  # any one of 1 to 5
+Window = TypeVar("Window", Range[L[1], L[2]], Range[L[5], L[6]])  # 1 to 2, or 5 to 6
+
+def blend(
+    a: NDArray[Shape[N, Window, RGB], np.uint8],
+    b: NDArray[Shape[N, Window, RGB], np.uint8],
+) -> NDArray[Shape[N, Window, RGB], np.uint8]: ...
+
+# valid
+blend(np.zeros((2, 5, 3), dtype=np.uint8), np.zeros((2, 5, 3), dtype=np.uint8))  
+# invalid: N is 2 and 3
+blend(np.zeros((2, 5, 3), dtype=np.uint8), np.zeros((3, 5, 3), dtype=np.uint8))
+# invalid: N as 3 is out of both ranges  
+blend(np.zeros((3, 5, 3), dtype=np.uint8), np.zeros((3, 5, 3), dtype=np.uint8))
+```
+````
+`````
+
+#### Bounds
+
+A bound is the set of sizes the typevar can have.
+Besides `int`, it can be a `Literal` int, a multi-value `Literal`, a {class}`.Range`,
+or a union of them.
+
+`````{tab-set}
+````{tab-item} Python >= 3.12
+```python
+# a square matrix of at most 4 x 4
+def invert[Small: Range[L[1], L[4]]](
+    matrix: NDArray[Shape[Small, Small], np.float64],
+) -> NDArray[Shape[Small, Small], np.float64]: ...
+
+# 1, 3, or 4 channels, the same in every array that uses Channels
+def blend[Channels: L[1, 3, 4]](
+    a: NDArray[Shape[int, int, Channels], np.uint8],
+    b: NDArray[Shape[int, int, Channels], np.uint8],
+) -> NDArray[Shape[int, int, Channels], np.uint8]: ...
+```
+````
+````{tab-item} Python < 3.12
+```python
+Small = TypeVar("Small", bound=Range[L[1], L[4]])
+Channels = TypeVar("Channels", bound=L[1, 3, 4])
+
+# a square matrix of at most 4 x 4
+def invert(
+    matrix: NDArray[Shape[Small, Small], np.float64],
+) -> NDArray[Shape[Small, Small], np.float64]: ...
+
+# 1, 3, or 4 channels, the same in every array that uses Channels
+def blend(
+    a: NDArray[Shape[int, int, Channels], np.uint8],
+    b: NDArray[Shape[int, int, Channels], np.uint8],
+) -> NDArray[Shape[int, int, Channels], np.uint8]: ...
+```
+````
+`````
+
+At runtime, a bound and constraints behave the same, since a shape typevar is one size everywhere.
+Type checkers treat them differently: see [](#shape-typevars-checkers).
+
+#### Bounds or constraints?
+
+With runtime validation and the [mypy plugin](mypy-plugin), a bound and constraints
+that allow the same sizes are checked the same way.
+They only differ for other type checkers, so choose by what you want those to catch:
+
+- For any size, use `bound=int`.
+- For one of a few exact sizes, use constraints of single `Literal`s, like `L[3], L[4]`.
+  Every type checker correctly refuses a size outside them cross-instance mismatches.
+  A `Literal` bound, like `bound=L[3, 4]`, is refused when a size is outside it,
+  but other type checkers pass cross-instance mismatches.
+- For a range of sizes, use a {class}`.Range` bound.
+  Other type checkers see a range as `int`, so only the mypy plugin and runtime validation
+  check it. Use {class}`.Range` constraints only for ranges that don't overlap,
+  like `Range[L[1], L[2]], Range[L[5], L[6]]`.
+- In constraints, list sizes as separate `Literal`s, like `L[1], L[2], L[3]`,
+  rather than one multi-value `Literal`, when other type checkers matter:
+  they read `L[2, 3, 4, 5]` as a group of sizes that can differ.
+
+
 ### Composing shapes
 
 Unpacked tuples are flattened into the shape,
@@ -281,20 +497,3 @@ Use `*AnyDims` for any number of dimensions of any size.
 numpydantic currently does not support structured dtypes or {class}`numpy.recarray`
 specifications like nptyping does. It will in future versions.
 ```
-
-````{todo}
-numpydantic also does not support shape variables, where dimensions
-must be the same size as each other, like nptyping's string form
-
-```python
-Shape['Dim, Dim']
-```
-
-These will be supported with {class}`typing.TypeVar` and {class}`typing.TypeVarTuple`
-in a future version. JSON Schema can't express this kind of constraint
-(ie. `minItems`/`maxItems` that depend on the shape of another array),
-so it will not be represented in the generated JSON Schema.
-
-See: https://github.com/orgs/json-schema-org/discussions/730
-
-````

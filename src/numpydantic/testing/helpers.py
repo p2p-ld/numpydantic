@@ -363,6 +363,8 @@ reveal_type(x)
 def _render_shape_dim(dim: Any) -> str:
     if dim is int:
         return "int"
+    elif dim is Any:
+        return "Any"
     elif isinstance(dim, int):
         return f"L[{dim}]"
     elif get_origin(dim) is Literal:

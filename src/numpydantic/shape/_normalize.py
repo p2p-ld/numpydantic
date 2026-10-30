@@ -1,4 +1,13 @@
-from typing import Any, Literal, Unpack, get_args, get_origin
+from typing import (
+    Annotated,
+    Any,
+    Literal,
+    TypeVar,
+    TypeVarTuple,
+    Unpack,
+    get_args,
+    get_origin,
+)
 
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import _RangeDim
@@ -6,6 +15,7 @@ from numpydantic.shape._string import (
     _str_dim_to_tuple,
     normalize_string_shape_expression,
 )
+from numpydantic.shape._typevars import check_typevar
 from numpydantic.shape._variadic import (
     _is_any_shape,
     _unpacked_tuple_args,
@@ -49,7 +59,7 @@ def _normalize_tuple(expression: tuple) -> tuple | Any:
     normalized = tuple(_normalize_tuple_item(item) for item in expression)
     _check_positions(normalized)
     if normalized[-1] is Ellipsis and len(normalized) > 2:
-        normalized = (*normalized[:-1], *tuple[normalized[-2], ...])
+        normalized = (*normalized[:-1], _repeated(normalized[-2]))
     if _is_any_shape(normalized):
         return Any
     return normalized
@@ -68,17 +78,51 @@ def _flatten(expression: tuple) -> tuple:
 
 
 def _check_positions(expression: tuple) -> None:
-    """``...`` and *tuple[X, ...] can only be the last item in a shape"""
+    """
+    ``...`` and *tuple[X, ...] can only be the last item in a shape,
+    and can only repeat a dimension
+    """
     *init, last = expression
-    if any(item is Ellipsis or _variadic_item(item) is not None for item in init):
+    if any(_repeats(item) for item in init):
         raise InvalidShapeExpressionError(
             "... and unpacked dimensions like *AnyDims must be the last item in a shape"
         )
     if last is Ellipsis and not init:
         raise InvalidShapeExpressionError("... must follow a dimension")
+    for item in expression:
+        if get_origin(item) is Annotated:
+            inner = get_args(item)[0]
+        else:
+            inner = _variadic_item(item)
+        if _repeats(inner):
+            raise InvalidShapeExpressionError(
+                f"... and unpacked dimensions like *AnyDims can't be nested: {item!r}"
+            )
+
+
+def _repeats(item: Any) -> bool:
+    """Whether an item repeats a dimension, like ... or *tuple[X, ...]"""
+    return item is Ellipsis or _variadic_item(item) is not None
+
+
+def _repeated(dim: Any) -> Any:
+    """
+    A dimension repeated at the end of a shape, like ``*tuple[X, ...]``.
+
+    It's written as ``Unpack[tuple[X, ...]]`` because when pydantic parametrizes
+    a model, it keeps ``Unpack`` but turns ``*tuple[X, ...]`` into a plain tuple.
+    """
+    return Unpack[tuple[dim, ...]]
 
 
 def _normalize_tuple_item(item: Any) -> Any:
+    if get_origin(item) is Unpack:
+        unpacked = get_args(item)[0]
+        # TypeVarTuples aren't supported yet, so they're kept as they are
+        if isinstance(unpacked, TypeVarTuple):
+            return item
+        # Unpack[X] is *X
+        item = next(iter(unpacked))
     if get_origin(item) is Literal:
         args = get_args(item)
         if len(args) > 1:
@@ -91,12 +135,19 @@ def _normalize_tuple_item(item: Any) -> Any:
         item = args[0]
 
     if isinstance(item, str):
-        return _str_dim_to_tuple(item)
+        return _normalize_tuple_item(_str_dim_to_tuple(item))
     elif isinstance(item, int):
         return Literal[item]
     elif isinstance(item, _RangeDim):
         return item.annotation
-    elif get_origin(item) is Unpack:
-        # Unpack[X] is *X
-        return next(iter(get_args(item)[0]))
-    return item
+    elif isinstance(item, TypeVar):
+        check_typevar(item)
+        return item
+    elif item is int or item is Any or item is Ellipsis:
+        return item
+    elif (repeated := _variadic_item(item)) is not None:
+        return _repeated(_normalize_tuple_item(repeated))
+    elif get_origin(item) is Annotated:
+        base, *metadata = get_args(item)
+        return Annotated[(_normalize_tuple_item(base), *metadata)]
+    raise InvalidShapeExpressionError(f"Invalid shape dimension: {item!r}")

@@ -1,5 +1,5 @@
 import json
-from typing import Annotated, Any, Unpack
+from typing import Annotated, Any, TypeVar, Unpack, get_args, get_origin
 from typing import Literal as L
 
 import dask.array
@@ -392,6 +392,36 @@ def test_instancecheck():
         return array
 
     my_function(np.zeros((1, 2, 3), int))
+
+
+def test_generic_alias():
+    """
+    ``NDArray[shape, dtype]`` is a generic alias of NDArray,
+    whose arguments are the normalized shape and dtype
+    """
+    array_type = NDArray[Shape[3, 4], np.int64]
+    assert get_origin(array_type) is NDArray
+    assert get_args(array_type) == (tuple[L[3], L[4]], np.int64)
+    assert array_type == NDArray[tuple[L[3], L[4]], np.int64]
+
+
+def test_generic_alias_substitution():
+    """Filling in shape typevars gives a normalized NDArray alias"""
+    N = TypeVar("N", bound=int)
+    filled = list[NDArray[Shape[N], np.float64]][L[3]]
+    assert get_args(filled)[0] == NDArray[Shape[L[3]], np.float64]
+    assert isinstance(np.zeros(3), get_args(filled)[0])
+
+
+def test_typevar_as_whole_shape_or_dtype() -> None:
+    """
+    A type variable as the whole shape or dtype means any shape or dtype,
+    and doesn't change the other argument
+    """
+    S = TypeVar("S")
+    D = TypeVar("D")
+    assert NDArray[S, np.float64].__args__ == (Any, np.float64)
+    assert NDArray[Shape[L[3]], D].__args__ == (tuple[L[3]], Any)
 
 
 def test_callable():

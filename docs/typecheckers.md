@@ -238,6 +238,69 @@ and `*AnyDims` specifies that any number of additional dimensions may be include
 :returncode: 1
 ```
 
+#### Shape typevars
+
+A [shape typevar](shape-typevars) has one size everywhere it's used in a call,
+within one argument and across all of them.
+Type checkers accept a call whose arguments give it different sizes:
+they widen the variable until every argument fits.
+The plugin refuses those calls, including when the arrays are items of a list or dict,
+and checks sizes against a shape typevar's {class}`.Range` bound or constraints.
+Sizes that aren't known, like `int` and ranges, can't disagree.
+See [](#shape-typevars-checkers) for how this compares to mypy without the plugin, and to pyright.
+
+**Correct**
+
+`````{tab-set}
+````{tab-item} Python >= 3.12
+```{literalinclude} examples/correct/shape_typevars_pep695.py
+:lines: 8-
+:linenos:
+:lineno-start: 8
+```
+
+```{program-output} mypy --pretty examples/correct/shape_typevars_pep695.py
+```
+````
+````{tab-item} Python < 3.12
+```{literalinclude} examples/correct/shape_typevars.py
+:lines: 8-
+:linenos:
+:lineno-start: 8
+```
+
+```{program-output} mypy --pretty examples/correct/shape_typevars.py
+```
+````
+`````
+
+**Incorrect**
+
+`````{tab-set}
+````{tab-item} Python >= 3.12
+```{literalinclude} examples/incorrect/shape_typevars_pep695.py
+:lines: 8-
+:linenos:
+:lineno-start: 8
+```
+
+```{program-output} mypy --pretty examples/incorrect/shape_typevars_pep695.py
+:returncode: 1
+```
+````
+````{tab-item} Python < 3.12
+```{literalinclude} examples/incorrect/shape_typevars.py
+:lines: 8-
+:linenos:
+:lineno-start: 8
+```
+
+```{program-output} mypy --pretty examples/incorrect/shape_typevars.py
+:returncode: 1
+```
+````
+`````
+
 ### Dtype Checking
 
 **Correct**
@@ -400,6 +463,19 @@ e.g. `Range[L[2], L[4]]` can be assigned to `L[3]`, even though it shouldn't be.
 
 Pull requests welcome!
 
+#### Shape typevars
+
+The plugin checks the sizes a call gives a [shape typevar](shape-typevars),
+but not in every kind of call:
+
+- Calls through a variable, like `f = add; f(a, b)`, aren't checked,
+  since mypy only asks plugins about callables it knows the full name of.
+- A variable that already holds a list of arrays with different sizes,
+  like `arrays = [x3, x4]; many(arrays)`, isn't checked,
+  since mypy joins the sizes into `int` when the list is made.
+  A list written in the call, like `many([x3, x4])`, is checked.
+- Overloaded functions aren't tested yet.
+
 ## pyright
 
 Pyright can only use the standard types and the type stubs by design.
@@ -413,10 +489,113 @@ The deprecated string form and bare integers like `Shape[3, 3]` can't be used.
 def some_function(array: NDArray[Shape[Literal[3], Literal[3]], np.uint8]) -> None: ...
 ```
 
+[Shape typevars](shape-typevars) can be used,
+but pyright doesn't refuse sizes that disagree:
+see [](#shape-typevars-checkers).
+
 Additionally, you must always specify dtypes as numpy types rather than builtins like `float`.
 This is strictly correct according to numpy's type annotations,
 which only accept subtypes of `np.dtype`,
 even if by convention builtins like `float` and `int` are accepted in constructors.
+
+(shape-typevars-checkers)=
+(shape-variables-checkers)=
+## Shape typevars
+
+A [shape typevar](shape-typevars) means one size everywhere it's used,
+but that isn't what a `TypeVar` means to type checkers.
+The typing spec lets a checker solve a type variable to
+[any type that all the arguments fit](https://typing.python.org/en/latest/spec/generics.html#type-variables-with-an-upper-bound),
+so arrays whose sizes disagree are accepted by widening the variable:
+to `int` by mypy and to `Literal[100, 90]` by pyright.
+numpydantic's mypy plugin refuses those calls.
+
+`````{tab-set}
+````{tab-item} Python >= 3.12
+```{literalinclude} examples/incorrect/shape_typevars_training_pep695.py
+:lines: 8-
+```
+
+**Without the plugin**
+
+```{program-output} mypy --config-file examples/blank_config.toml --pretty examples/incorrect/shape_typevars_training_pep695.py
+```
+
+**With the plugin**
+
+```{program-output} mypy --pretty examples/incorrect/shape_typevars_training_pep695.py
+:returncode: 1
+```
+````
+````{tab-item} Python < 3.12
+```{literalinclude} examples/incorrect/shape_typevars_training.py
+:lines: 8-
+```
+
+**Without the plugin**
+
+```{program-output} mypy --config-file examples/blank_config.toml --pretty examples/incorrect/shape_typevars_training.py
+```
+
+**With the plugin**
+
+```{program-output} mypy --pretty examples/incorrect/shape_typevars_training.py
+:returncode: 1
+```
+````
+`````
+
+What each checker does with shape typevars, using:
+
+```python
+from typing import Literal as L, cast
+
+import numpy as np
+from pydantic import BaseModel
+
+from numpydantic import NDArray, Range, Shape
+
+F = np.float64
+x1 = cast(NDArray[Shape[L[1]], F], np.zeros((1,)))
+x2 = cast(NDArray[Shape[L[2]], F], np.zeros((2,)))
+x3 = cast(NDArray[Shape[L[3]], F], np.zeros((3,)))
+x4 = cast(NDArray[Shape[L[4]], F], np.zeros((4,)))
+x5 = cast(NDArray[Shape[L[5]], F], np.zeros((5,)))
+m34 = cast(NDArray[Shape[L[3], L[4]], F], np.zeros((3, 4)))
+m52 = cast(NDArray[Shape[L[5], L[2]], F], np.zeros((5, 2)))
+
+# with each row's T in the brackets, like def pair[T: int](...)
+def pair[T](a: NDArray[Shape[T], F], b: NDArray[Shape[T], F]) -> NDArray[Shape[T], F]: ...
+def matmul[M: int, T, P: int](a: NDArray[Shape[M, T], F], b: NDArray[Shape[T, P], F]) -> NDArray[Shape[M, P], F]: ...
+class Model[T](BaseModel):
+    vector: NDArray[Shape[T], F]
+```
+
+✅ means the checker does what numpydantic does, accepting the call or refusing it.
+❌ means it accepts a call that numpydantic refuses.
+"mypy" is mypy with pydantic's plugin, but not numpydantic's.
+
+| `T` | Call | mypy + plugin | mypy | pyright |
+|---|---|---|---|---|
+| `T: int` | `pair(x3, x3)` | ✅ | ✅ | ✅ |
+| `T: int` | `pair(x3, x4)` | ✅ | ❌ | ❌ |
+| `T: int` | `y: NDArray[Shape[L[3]], F] = pair(x3, x4)` | ✅ | ✅ | ✅ |
+| `T: int` | `matmul(m34, m52)` | ✅ | ❌ | ❌ |
+| `T: int` | `Model[L[3]](vector=x4)` | ✅ | ✅ | ✅ |
+| `T: (L[3], L[4])` | `pair(x3, x4)` | ✅ | ✅ | ✅ |
+| `T: (L[1, 2], L[5])` | `pair(x1, x2)` | ✅ | ✅ | ❌ |
+| `T: (int, L[3])` | `pair(x3, x4)` | ✅ | ❌ | ❌ |
+| `T: Range[L[2], L[4]]` | `pair(x5, x5)` | ✅ | ❌ | ❌ |
+| `T: (Range[L[1], L[2]], Range[L[5], L[6]])` | `pair(x1, x2)` | ✅ | ❌ | ❌ |
+| `T: (Range[L[1], L[2]], Range[L[5], L[6]])` | `pair(x3, x3)` | ✅ | ❌ | ❌ |
+| `T` | (declaring `pair`) | ✅ | ✅ | ❌ |
+
+So without the plugin, sizes that disagree are only caught where the result
+meets a declared literal shape, which never happens when the variable
+isn't in the result. If you use pyright, prefer variables constrained to single sizes
+when the possible sizes are known, and parametrize generic models explicitly.
+
+Validation at runtime always checks shape typevars, whichever type checker you use.
 
 ## mypy and numpy's overloads
 

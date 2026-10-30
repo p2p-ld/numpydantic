@@ -8,4 +8,4 @@ def main(array: NDArray) -> NDArray:
     return array
 
 
-array = main(array=H5ArrayPath("/tmp/test.h5", "some/dataset"))
+array = main(array=H5ArrayPath("/tmp/test.h5", "some/dataset"))  # E: incompatible type

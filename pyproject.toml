@@ -76,6 +76,7 @@ tests = [
     "coveralls>=3.3.1",
     "pyright>=1.1.408",
     "pytest-xdist>=3.8.0",
+    "typing-extensions>=4.16.0;python_version<'3.12'",
 ]
 docs = [
     "numpydantic[arrays,mypy]",
@@ -97,38 +98,6 @@ dev = [
     "ruff<1.0.0,>=0.2.0"
 ]
 
-
-[tool.pdm]
-distribution = true
-
-[tool.pdm.build]
-includes = []
-
-[tool.pdm.resolution]
-exclude-newer = "7d"
-
-[tool.pdm.scripts]
-lint.composite = [
-    "ruff check",
-    "black . --diff",
-]
-format.composite = [
-    "black .",
-    "ruff check --fix",
-]
-lock.composite = [
-    'pdm lock --with :all --python=">=3.11,<3.12"',
-    'pdm lock --with :all --python=">=3.12,<3.14" --append',
-    'pdm lock --with :all --python=">=3.14" --append'
-]
-test = "pytest"
-docs = "sphinx-autobuild ./docs ./docs/_build"
-docs-prod = "python -m sphinx -M html ./docs ./docs/_build -W -E -a --keep-going"
-
-[tool.pdm.version]
-source = "scm"
-tag_filter = "v*"
-tag_regex = 'v(?P<version>([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|c|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$)$'
 
 [build-system]
 requires = ["pdm-backend"]
@@ -169,10 +138,17 @@ markers = [
 
 [tool.black]
 target-version = ["py311", "py312", "py313", "py314", "py315"]
+# wrapping a line would move its "# E:" marker away from the line that has the error
+extend-exclude = "^/tests/data/"
 
 [tool.ruff]
 target-version = "py311"
 include = ["src/numpydantic/**/*.py", "tests/**/*.py", "pyproject.toml"]
+
+[tool.ruff.per-file-target-version]
+# tests of python 3.12's generic syntax, which are skipped on older versions
+"tests/data/typevars/*/pep695.py" = "py312"
+"tests/test_shape_typevars_pep695.py" = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -220,6 +196,8 @@ fixable = ["ALL"]
 [tool.ruff.lint.per-file-ignores]
 "src/numpydantic/testing/*" = ["D", "F722"]
 "tests/*" = ["D", "F403", "F722", "ANN", ]
+# a line with an error keeps its "# E:" marker, however long that makes it
+"tests/data/*" = ["E501"]
 
 [tool.mypy]
 plugins = [
@@ -245,3 +223,36 @@ skip = '.git*,*.lock,*.css,*.bib'
 check-hidden = true
 # ignore-regex = ''
 ignore-words-list = 'afile,ND'
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.build]
+includes = []
+
+[tool.pdm.resolution]
+exclude-newer = "7d"
+
+[tool.pdm.scripts]
+lint.composite = [
+    "ruff check",
+    "black . --diff",
+]
+format.composite = [
+    "black .",
+    "ruff check --fix",
+]
+lock.composite = [
+    'pdm lock --with :all --python=">=3.11,<3.12"',
+    'pdm lock --with :all --python=">=3.12,<3.14" --append',
+    'pdm lock --with :all --python=">=3.14" --append'
+]
+test = "pytest"
+docs = "sphinx-autobuild ./docs ./docs/_build"
+docs-prod = "python -m sphinx -M html ./docs ./docs/_build -W -E -a --keep-going"
+
+[tool.pdm.version]
+source = "scm"
+tag_filter = "v*"
+tag_regex = 'v(?P<version>([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|c|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?$)$'
+
