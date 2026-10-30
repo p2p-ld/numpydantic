@@ -104,6 +104,35 @@ error: Argument 1 to "grayscale_mask" has incompatible type
     expected "ndarray[tuple[int, int], dtype[unsignedinteger[_8Bit]]]"  [arg-type]
 ```
 
+```{version-added} 2.0.0
+(Experimental) Use a `TypeVar` as a shape variable when dimensions have to match,
+across the fields of a model or the arguments of a function.
+
+See: [shape variables](shape-variables) and [](#shape-variables-checkers)
+```
+
+```python
+from typing import Generic, TypeVar
+
+Samples = TypeVar("Samples", bound=int)
+Features = TypeVar("Features", bound=int)
+
+class TrainingData(BaseModel, Generic[Samples, Features]):
+    X: NDArray[Shape[Samples, Features], np.float64]
+    y: NDArray[Shape[Samples], np.float64]
+
+TrainingData(X=np.zeros((100, 4)), y=np.zeros(90))
+# ValidationError: ... Shape typevars already set: Samples=100
+
+def fit_predict(
+    X: NDArray[Shape[Samples, Features], np.float64],
+    y: NDArray[Shape[Samples], np.float64],
+) -> NDArray[Shape[Samples], np.float64]: ...
+
+fit_predict(np.zeros((100, 4)), np.zeros((90,)))
+# error: Shape typevar "Samples" is 100 in "X" but 90 in "y"  [arg-type]
+```
+
 `numpydantic` supports pydantic but none of its behavior is dependent on it!
 Use the `NDArray` type annotation like a regular type outside
 of pydantic -- eg. to validate an array anywhere, use `isinstance`:
