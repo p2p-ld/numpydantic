@@ -169,6 +169,8 @@ markers = [
 
 [tool.black]
 target-version = ["py311", "py312", "py313", "py314", "py315"]
+# wrapping a line would move its "# E:" marker away from the line that has the error
+extend-exclude = "^/tests/data/"
 
 [tool.ruff]
 target-version = "py311"
@@ -220,6 +222,8 @@ fixable = ["ALL"]
 [tool.ruff.lint.per-file-ignores]
 "src/numpydantic/testing/*" = ["D", "F722"]
 "tests/*" = ["D", "F403", "F722", "ANN", ]
+# a line with an error keeps its "# E:" marker, however long that makes it
+"tests/data/*" = ["E501"]
 
 [tool.mypy]
 plugins = [
