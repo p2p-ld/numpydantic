@@ -1,4 +1,4 @@
-from typing import Any, Literal, TypeVar, Unpack, get_args, get_origin
+from typing import Annotated, Any, Literal, TypeVar, Unpack, get_args, get_origin
 
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import _RangeDim
@@ -69,17 +69,37 @@ def _flatten(expression: tuple) -> tuple:
 
 
 def _check_positions(expression: tuple) -> None:
-    """``...`` and *tuple[X, ...] can only be the last item in a shape"""
+    """
+    ``...`` and *tuple[X, ...] can only be the last item in a shape,
+    and can only repeat a dimension
+    """
     *init, last = expression
-    if any(item is Ellipsis or _variadic_item(item) is not None for item in init):
+    if any(_repeats(item) for item in init):
         raise InvalidShapeExpressionError(
             "... and unpacked dimensions like *AnyDims must be the last item in a shape"
         )
     if last is Ellipsis and not init:
         raise InvalidShapeExpressionError("... must follow a dimension")
+    for item in expression:
+        if get_origin(item) is Annotated:
+            inner = get_args(item)[0]
+        else:
+            inner = _variadic_item(item)
+        if _repeats(inner):
+            raise InvalidShapeExpressionError(
+                f"... and unpacked dimensions like *AnyDims can't be nested: {item!r}"
+            )
+
+
+def _repeats(item: Any) -> bool:
+    """Whether an item repeats a dimension, like ... or *tuple[X, ...]"""
+    return item is Ellipsis or _variadic_item(item) is not None
 
 
 def _normalize_tuple_item(item: Any) -> Any:
+    if get_origin(item) is Unpack:
+        # Unpack[X] is *X
+        item = next(iter(get_args(item)[0]))
     if get_origin(item) is Literal:
         args = get_args(item)
         if len(args) > 1:
@@ -100,7 +120,11 @@ def _normalize_tuple_item(item: Any) -> Any:
     elif isinstance(item, TypeVar):
         check_typevar(item)
         return item
-    elif get_origin(item) is Unpack:
-        # Unpack[X] is *X
-        return next(iter(get_args(item)[0]))
-    return item
+    elif item is int or item is Any or item is Ellipsis:
+        return item
+    elif (repeated := _variadic_item(item)) is not None:
+        return next(iter(tuple[_normalize_tuple_item(repeated), ...]))
+    elif get_origin(item) is Annotated:
+        base, *metadata = get_args(item)
+        return Annotated[(_normalize_tuple_item(base), *metadata)]
+    raise InvalidShapeExpressionError(f"Invalid shape dimension: {item!r}")
