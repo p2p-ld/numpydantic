@@ -1,4 +1,13 @@
-from typing import Annotated, Any, Literal, TypeVar, Unpack, get_args, get_origin
+from typing import (
+    Annotated,
+    Any,
+    Literal,
+    TypeVar,
+    TypeVarTuple,
+    Unpack,
+    get_args,
+    get_origin,
+)
 
 from numpydantic.exceptions import InvalidShapeExpressionError
 from numpydantic.shape._range import _RangeDim
@@ -98,8 +107,12 @@ def _repeats(item: Any) -> bool:
 
 def _normalize_tuple_item(item: Any) -> Any:
     if get_origin(item) is Unpack:
+        unpacked = get_args(item)[0]
+        # TypeVarTuples aren't supported yet, so they're kept as they are
+        if isinstance(unpacked, TypeVarTuple):
+            return item
         # Unpack[X] is *X
-        item = next(iter(get_args(item)[0]))
+        item = next(iter(unpacked))
     if get_origin(item) is Literal:
         args = get_args(item)
         if len(args) > 1:
