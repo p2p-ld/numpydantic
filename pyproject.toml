@@ -176,6 +176,11 @@ extend-exclude = "^/tests/data/"
 target-version = "py311"
 include = ["src/numpydantic/**/*.py", "tests/**/*.py", "pyproject.toml"]
 
+[tool.ruff.per-file-target-version]
+# tests of python 3.12's generic syntax, which are skipped on older versions
+"tests/data/typevars/*/pep695.py" = "py312"
+"tests/test_shape_typevars_pep695.py" = "py312"
+
 [tool.ruff.lint]
 select = [
     # pycodestyle
