@@ -22,7 +22,7 @@ from numpydantic.mypy.plugin_ import CONFIGFILE_KEY, MypyPluginOptions
 from numpydantic.mypy.ranges import RangeValue
 from numpydantic.testing import ValidationCase
 from numpydantic.testing.cases import MYPY_CASES
-from tests.fixtures.typecheck import shared_params, typecheck_params
+from tests.fixtures.typecheck import check_errors, shared_params, typecheck_params
 
 DATA_DIR = Path(__file__).parent / "data"
 MYPY_DIR = DATA_DIR / "mypy"
@@ -74,7 +74,7 @@ def test_mypy_handwritten_correct(test_file: Path, mypy_cache_dir):
 
 @pytest.mark.parametrize("test_file", shared_params("incorrect", "mypy"))
 def test_mypy_handwritten_incorrect(test_file: Path, mypy_cache_dir):
-    """The mypy examples should pass static type checking with only the stub"""
+    """mypy refuses the lines we expect it to"""
     res = mypy.api.run(
         [
             str(test_file),
@@ -82,7 +82,7 @@ def test_mypy_handwritten_incorrect(test_file: Path, mypy_cache_dir):
             str(mypy_cache_dir),
         ]
     )
-    assert res[2] != 0, res[0] + res[1]
+    check_errors(test_file, "mypy", res[0], res[2])
     assert res[1] == ""
 
 
@@ -105,9 +105,8 @@ def test_mypy_incorrect(test_file: Path, mypy_cache_dir) -> None:
     stdout, stderr, returncode = mypy.api.run(
         [str(test_file), "--cache-dir", str(mypy_cache_dir)]
     )
-    assert (
-        returncode != 0
-    ), f"expected mypy to fail but it succeeded:\n{stdout}\nstderr:\n{stderr}"
+    check_errors(test_file, "mypy", stdout, returncode)
+    assert stderr == ""
 
 
 # ---------------------------------------------------------------------------
@@ -282,4 +281,42 @@ def test_range_cache(tmp_path: Path) -> None:
         stdout, stderr, returncode = mypy.api.run(args)
         assert returncode == 0, stdout + stderr
         # only change the user module, so the ranges module can come from the cache
+        user.write_text(user.read_text() + "# edited\n")
+
+
+def test_range_bound_cache(tmp_path: Path) -> None:
+    """
+    A range bound on a shape typevar is still checked
+    when mypy reuses its cache for a module that only declares the typevar
+    """
+    lib = tmp_path / "lib"
+    lib.mkdir()
+    (lib / "bounded.py").write_text(
+        "from typing import Literal as L, TypeVar\n"
+        "from numpydantic import Range\n"
+        'R = TypeVar("R", bound=Range[L[2], L[4]])\n'
+    )
+    (tmp_path / "mypy.ini").write_text(
+        f"[mypy]\nplugins = numpydantic.mypy\nmypy_path = {lib}\n"
+    )
+    user = tmp_path / "user.py"
+    user.write_text(
+        "import numpy as np\n"
+        "from numpydantic import NDArray, Shape\n"
+        "from bounded import R\n"
+        "def ranged(a: NDArray[Shape[R], np.float64]) -> None: ...\n"
+        "ranged(np.zeros((5,)))\n"
+    )
+    args = [
+        str(user),
+        "--config-file",
+        str(tmp_path / "mypy.ini"),
+        "--cache-dir",
+        str(tmp_path / ".mypy_cache"),
+    ]
+
+    for _ in range(2):
+        stdout, stderr, _ = mypy.api.run(args)
+        assert 'cannot be "Literal[5]"' in stdout, stdout + stderr
+        # only change the user module, so the bounded module can come from the cache
         user.write_text(user.read_text() + "# edited\n")

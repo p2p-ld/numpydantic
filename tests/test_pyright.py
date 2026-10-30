@@ -4,7 +4,7 @@ from pathlib import Path
 import pyright
 import pytest
 
-from tests.fixtures.typecheck import shared_params
+from tests.fixtures.typecheck import check_errors, shared_params
 
 pytestmark = [pytest.mark.typechecking, pytest.mark.pyright]
 
@@ -25,13 +25,11 @@ def test_pyright_correct(test_file: Path) -> None:
 
 @pytest.mark.parametrize("test_file", shared_params("incorrect", "pyright"))
 def test_pyright_incorrect(test_file: Path) -> None:
-    """Pyright fails when we expect it to"""
+    """Pyright refuses the lines we expect it to"""
     res = pyright.run(
         str(test_file),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
 
-    err = res.stderr.decode("utf-8")
-    out = res.stdout.decode("utf-8")
-    assert res.returncode != 0, f"stderr:\n{err}\n\nstdout:\n{out}"
+    check_errors(test_file, "pyright", res.stdout.decode("utf-8"), res.returncode)

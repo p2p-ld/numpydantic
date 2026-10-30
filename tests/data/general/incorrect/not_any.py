@@ -11,4 +11,4 @@ def func(x: NDArray[Shape[L[1], L[2]]]) -> None:
     print(x)
 
 
-func("hey")
+func("hey")  # E: incompatible type

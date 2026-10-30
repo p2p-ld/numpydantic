@@ -7,5 +7,5 @@ from numpydantic import NDArray, Shape, transposed
 
 
 def f(a: NDArray[Shape[L[3], L[4]], Any]) -> None:
-    b: NDArray[Shape[L[3], L[4]], Any] = transposed(a.T)
+    b: NDArray[Shape[L[3], L[4]], Any] = transposed(a.T)  # E: Incompatible types in assignment
     print(b)
