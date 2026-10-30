@@ -105,12 +105,33 @@ error: Argument 1 to "grayscale_mask" has incompatible type
 ```
 
 ```{version-added} 2.0.0
-(Experimental) Use a `TypeVar` as a shape variable when dimensions have to match,
-across the fields of a model or the arguments of a function.
+(Experimental) Use a `TypeVar` in a shape (a shape typevar, also referred to as a shape variable)
+when dimensions have to match: across the fields of a model when it's validated,
+and across the arguments of a function with the mypy plugin.
 
-See: [shape variables](shape-variables) and [](#shape-variables-checkers)
+See: [shape typevars](shape-typevars) and [](#shape-typevars-checkers)
 ```
 
+`````{tab-set}
+````{tab-item} Python >= 3.12
+```python
+class TrainingData[Samples: int, Features: int](BaseModel):
+    X: NDArray[Shape[Samples, Features], np.float64]
+    y: NDArray[Shape[Samples], np.float64]
+
+TrainingData(X=np.zeros((100, 4)), y=np.zeros(90))
+# ValidationError: ... Shape typevars already set: Samples=100
+
+def fit_predict[Samples: int, Features: int](
+    X: NDArray[Shape[Samples, Features], np.float64],
+    y: NDArray[Shape[Samples], np.float64],
+) -> NDArray[Shape[Samples], np.float64]: ...
+
+fit_predict(np.zeros((100, 4)), np.zeros((90,)))
+# error: Shape typevar "Samples" is 100 in "X" but 90 in "y"  [arg-type]
+```
+````
+````{tab-item} Python < 3.12
 ```python
 from typing import Generic, TypeVar
 
@@ -132,6 +153,8 @@ def fit_predict(
 fit_predict(np.zeros((100, 4)), np.zeros((90,)))
 # error: Shape typevar "Samples" is 100 in "X" but 90 in "y"  [arg-type]
 ```
+````
+`````
 
 `numpydantic` supports pydantic but none of its behavior is dependent on it!
 Use the `NDArray` type annotation like a regular type outside
