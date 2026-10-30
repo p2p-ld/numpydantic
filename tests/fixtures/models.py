@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from pydantic import BaseModel, Field
 
-from numpydantic import AnyDims, NDArray, Shape
+from numpydantic import NDArray, Repeat, Shape
 from numpydantic.dtype import Number
 
 
@@ -41,6 +41,6 @@ def model_blank() -> type[BaseModel]:
     """A model with any shape and dtype"""
 
     class BlankModel(BaseModel):
-        array: NDArray[Shape[*AnyDims], Any]
+        array: NDArray[Shape[*Repeat], Any]
 
     return BlankModel

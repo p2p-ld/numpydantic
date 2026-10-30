@@ -3,7 +3,7 @@
 The plugin enriches ``NDArray[Shape[...], dtype]`` annotations so that mypy
 can statically reject:
 
-- Invalid shape expressions (e.g. ``Shape[*AnyDims, L[3]]``).
+- Invalid shape expressions (e.g. ``Shape[*Repeat, L[3]]``).
 - Shapes that don't match, including ranges, which type checkers can't check
   on their own (e.g. ``Shape[Range[L[2], L[4]]]``).
 - Invalid dtype arguments
@@ -468,7 +468,7 @@ def _to_runtime(typ: Type, ctx: AnalyzeTypeContext) -> Any:
         if typ.type.fullname == "builtins.int":
             return int
         elif typ.type.fullname == "builtins.tuple" and len(typ.args) == 1:
-            # a variadic tuple, like AnyDims
+            # a variadic tuple, like Repeat
             return tuple[_to_runtime(typ.args[0], ctx), ...]
     elif isinstance(typ, TupleType):
         return tuple[tuple(_to_runtime(item, ctx) for item in typ.items)]
@@ -495,7 +495,7 @@ def _resolve_fullname(typ: UnboundType, ctx: AnalyzeTypeContext) -> str | None:
 
 
 def _to_mypy(canonical: Any, ctx: AnalyzeTypeContext) -> TupleType:
-    """Convert a canonical runtime shape like ``tuple[L[3], *AnyDims]`` to mypy"""
+    """Convert a canonical runtime shape like ``tuple[L[3], *Repeat]`` to mypy"""
     int_instance = ctx.api.named_type("builtins.int", [])
     fixed, tail = _split_variadic(get_args(canonical))
     items = [_dim_to_mypy(dim, ctx, int_instance) for dim in fixed]

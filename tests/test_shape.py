@@ -11,7 +11,7 @@ import pytest
 from annotated_types import Interval
 from pydantic import BaseModel, ValidationError
 
-from numpydantic import AnyDims, NDArray, Range, Shape, transposed, unshape
+from numpydantic import NDArray, Range, Repeat, Shape, transposed, unshape
 from numpydantic.exceptions import InvalidShapeExpressionError, ShapeError
 
 pytestmark = pytest.mark.shape
@@ -131,20 +131,20 @@ SHAPE_FEATURES = [
         valid=[(1, 2), (1, 2, 3), (1, 2, 3, 4)],
         invalid=[(4, 5), (1,), (2, 1, 3), ()],
         forms=[
-            Form("anydims", lambda: Shape[L[1], L[2], *AnyDims]),
+            Form("repeat", lambda: Shape[L[1], L[2], *Repeat]),
             Form(
-                "anydims-star",
-                lambda: Shape[(L[1], L[2], *AnyDims)],
+                "repeat-star",
+                lambda: Shape[(L[1], L[2], *Repeat)],
                 min_version=(3, 11),
             ),
-            Form("tuple-anydims", lambda: tuple[L[1], L[2], *AnyDims]),
+            Form("tuple-repeat", lambda: tuple[L[1], L[2], *Repeat]),
             Form(
-                "anydims-nested",
-                lambda: Shape[L[1], *tuple[L[2], *AnyDims]],
+                "repeat-nested",
+                lambda: Shape[L[1], *tuple[L[2], *Repeat]],
             ),
             Form(
-                "typing-unpack-anydims",
-                lambda: Shape[L[1], L[2], Unpack[AnyDims]],  # noqa: UP044
+                "typing-unpack-repeat",
+                lambda: Shape[L[1], L[2], Unpack[Repeat]],  # noqa: UP044
             ),
         ],
         # a repeated dimension is normalized to Unpack, which isn't equal to *
@@ -155,15 +155,15 @@ SHAPE_FEATURES = [
         valid=[(2,), (2, 3), (2, 3, 4)],
         invalid=[(), (3,), (3, 2)],
         forms=[
-            Form("anydims", lambda: Shape[L[2], *AnyDims]),
+            Form("repeat", lambda: Shape[L[2], *Repeat]),
             Form(
-                "anydims-star",
-                lambda: Shape[(L[2], *AnyDims)],
+                "repeat-star",
+                lambda: Shape[(L[2], *Repeat)],
                 min_version=(3, 11),
             ),
-            Form("tuple-anydims", lambda: tuple[L[2], *AnyDims]),
+            Form("tuple-repeat", lambda: tuple[L[2], *Repeat]),
         ],
-        canonical=tuple[L[2], Unpack[AnyDims]],  # noqa: UP044
+        canonical=tuple[L[2], Unpack[tuple[int, ...]]],  # noqa: UP044
     ),
     ShapeFeature(
         "repeat-last",
@@ -175,6 +175,7 @@ SHAPE_FEATURES = [
             Form("tuple", lambda: tuple[L[1], L[2], ...]),
             Form("unpack", lambda: Shape[L[1], L[2], *tuple[L[2], ...]]),
             Form("tuple-unpack", lambda: tuple[L[1], L[2], *tuple[L[2], ...]]),
+            Form("repeat", lambda: Shape[L[1], L[2], *Repeat[L[2]]]),
         ],
         canonical=tuple[L[1], L[2], Unpack[tuple[L[2], ...]]],  # noqa: UP044
     ),
@@ -186,6 +187,7 @@ SHAPE_FEATURES = [
             Form("args", lambda: Shape[2, ...]),
             Form("literal", lambda: Shape[L[2], ...]),
             Form("tuple", lambda: tuple[L[2], ...]),
+            Form("repeat", lambda: Shape[*Repeat[L[2]]]),
         ],
         canonical=tuple[L[2], ...],
     ),
@@ -196,6 +198,7 @@ SHAPE_FEATURES = [
         forms=[
             Form("range", lambda: Shape[Range[L[2], L[3]], ...]),
             Form("tuple", lambda: tuple[Range[L[2], L[3]], ...]),
+            Form("repeat", lambda: Shape[*Repeat[Range[L[2], L[3]]]]),
         ],
         canonical=tuple[A[int, Interval(ge=2, le=3)], ...],
     ),
@@ -207,8 +210,8 @@ SHAPE_FEATURES = [
             Form("bare", lambda: Shape),
             Form("int", lambda: Shape[int, ...]),
             Form("tuple", lambda: tuple[int, ...]),
-            Form("anydims", lambda: Shape[*AnyDims]),
-            Form("anydims-bare", lambda: AnyDims),
+            Form("repeat", lambda: Shape[*Repeat]),
+            Form("repeat-bare", lambda: Repeat),
         ],
         canonical=Any,
     ),
@@ -239,6 +242,7 @@ SHAPE_FEATURES = [
         forms=[
             Form("typevar", lambda: Shape[N, ...]),
             Form("tuple", lambda: tuple[N, ...]),
+            Form("repeat", lambda: Shape[*Repeat[N]]),
         ],
         canonical=tuple[N, ...],
     ),
@@ -441,7 +445,7 @@ def test_string_ellipsis_deprecation() -> None:
     Strings with '...' also warn about its changed meaning,
     pointing to the line where the shape was declared
     """
-    with pytest.warns(DeprecationWarning, match=r"now written as \*AnyDims") as caught:
+    with pytest.warns(DeprecationWarning, match=r"now written as \*Repeat") as caught:
         _ = NDArray[Literal["1, 2, ..."], Any]
     assert caught[0].filename == __file__
 
@@ -456,12 +460,17 @@ def test_string_ellipsis_deprecation() -> None:
         pytest.param(lambda: Range[L[-1], L[4]], id="range-negative-bound"),
         pytest.param(lambda: Range[L[2, 3], L[4]], id="range-multi-literal"),
         pytest.param(lambda: Shape[L[3, 4]], id="multi-literal"),
-        pytest.param(lambda: Shape[*AnyDims, L[3]], id="anydims-not-last"),
+        pytest.param(lambda: Shape[*Repeat, L[3]], id="repeat-not-last"),
+        pytest.param(lambda: Shape[L[3], Repeat], id="repeat-not-unpacked"),
+        pytest.param(
+            lambda: Shape[L[3], Repeat[L[2]]], id="repeat-dimension-not-unpacked"
+        ),
+        pytest.param(lambda: Repeat[L[2], L[3]], id="repeat-two-dimensions"),
         pytest.param(lambda: Shape[...], id="ellipsis-alone"),
         pytest.param(lambda: Shape[L[2], ..., L[3]], id="ellipsis-not-last"),
         pytest.param(
-            lambda: Shape[*tuple[*AnyDims, L[3]]],
-            id="anydims-not-last-after-flattening",
+            lambda: Shape[*tuple[*Repeat, L[3]]],
+            id="repeat-not-last-after-flattening",
         ),
         pytest.param(lambda: Shape["...", 3], id="string-ellipsis-not-last"),
         pytest.param(lambda: Shape["1, 2", 3], id="string-dimension-with-comma"),
@@ -488,7 +497,7 @@ def test_string_ellipsis_deprecation() -> None:
         pytest.param(lambda: Shape[*tuple[str, ...]], id="repeated-not-a-dimension"),
         pytest.param(lambda: Shape[A[str, "x"]], id="labelled-not-a-dimension"),
         pytest.param(lambda: Shape[*tuple[..., ...]], id="repeated-ellipsis"),
-        pytest.param(lambda: Shape[*tuple[*AnyDims, ...]], id="repeated-anydims"),
+        pytest.param(lambda: Shape[*tuple[*Repeat, ...]], id="repeated-repeat"),
         pytest.param(
             lambda: Shape[A[..., "x"]],
             id="labelled-ellipsis",
@@ -502,7 +511,7 @@ def test_string_ellipsis_deprecation() -> None:
 @pytest.mark.filterwarnings(f"ignore:{STRING_DEPRECATION}:DeprecationWarning")
 def test_shape_invalid_forms(build: Callable[[], Any]) -> None:
     """
-    Misused Range, AnyDims, and ..., and items that aren't dimensions,
+    Misused Range, Repeat, and ..., and items that aren't dimensions,
     raise a clear error when the shape is declared
     """
     with pytest.raises(InvalidShapeExpressionError):
