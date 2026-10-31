@@ -1,6 +1,7 @@
+import types
 from collections.abc import Mapping
 from functools import lru_cache
-from typing import Annotated, Any, Literal, TypeVar, get_args, get_origin
+from typing import Annotated, Any, Literal, TypeVar, Union, get_args, get_origin
 
 from annotated_types import Interval
 
@@ -65,6 +66,10 @@ def _validate_dim(
     origin = get_origin(dim)
     if origin is Literal:
         return size in get_args(dim)
+    if origin in (Union, types.UnionType):
+        return any(
+            _validate_dim(size, member, typevar_sizes) for member in get_args(dim)
+        )
     if origin is Annotated:
         base, *metadata = get_args(dim)
         return _validate_dim(size, base, typevar_sizes) and all(

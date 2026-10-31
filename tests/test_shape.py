@@ -3,7 +3,7 @@ import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Annotated as A
-from typing import Any, Literal, TypeVar, TypeVarTuple, Unpack
+from typing import Any, Literal, TypeVar, TypeVarTuple, Union, Unpack
 from typing import Literal as L
 
 import numpy as np
@@ -90,6 +90,70 @@ SHAPE_FEATURES = [
             ),
         ],
         canonical=tuple[L[3], L[4]],
+    ),
+    ShapeFeature(
+        "several-sizes",
+        valid=[(3, 2), (5, 2)],
+        invalid=[(4, 2), (2, 2), (6, 2)],
+        forms=[
+            Form("literal", lambda: Shape[L[3, 5], L[2]]),
+            Form("tuple", lambda: tuple[L[3, 5], L[2]]),
+        ],
+        canonical=tuple[L[3, 5], L[2]],
+    ),
+    ShapeFeature(
+        "union",
+        valid=[(3, 2), (5, 2)],
+        invalid=[(4, 2), (2, 2), (6, 2)],
+        forms=[
+            Form("union", lambda: Shape[L[3] | L[5], L[2]]),
+            Form("typing-union", lambda: Shape[Union[L[3], L[5]], L[2]]),  # noqa: UP007
+            Form("tuple", lambda: tuple[L[3] | L[5], L[2]]),
+        ],
+        canonical=tuple[L[3] | L[5], L[2]],
+    ),
+    ShapeFeature(
+        "union-of-ranges",
+        valid=[(1,), (2,), (6,), (7,)],
+        invalid=[(3,), (5,), (8,)],
+        forms=[
+            Form("union", lambda: Shape[Range[L[1], L[2]] | Range[L[6], L[7]]]),
+            Form(
+                "typing-union",
+                lambda: Shape[
+                    Union[Range[L[1], L[2]], Range[L[6], L[7]]]  # noqa: UP007
+                ],
+            ),
+        ],
+        canonical=tuple[A[int, Interval(ge=1, le=2)] | A[int, Interval(ge=6, le=7)]],
+    ),
+    ShapeFeature(
+        "union-of-size-and-range",
+        valid=[(3,), (6,), (7,)],
+        invalid=[(4,), (8,)],
+        forms=[
+            Form("size-first", lambda: Shape[L[3] | Range[L[6], L[7]]]),
+            Form("range-first", lambda: Shape[Range[L[6], L[7]] | L[3]]),
+        ],
+        canonical=tuple[L[3] | A[int, Interval(ge=6, le=7)]],
+    ),
+    ShapeFeature(
+        "union-with-int",
+        valid=[(3,), (4,)],
+        invalid=[(3, 3)],
+        forms=[
+            Form("union", lambda: Shape[L[3] | int]),
+        ],
+        canonical=tuple[L[3] | int],
+    ),
+    ShapeFeature(
+        "union-with-typevar",
+        valid=[(3,), (4,)],
+        invalid=[(3, 3)],
+        forms=[
+            Form("union", lambda: Shape[L[3] | N]),
+        ],
+        canonical=tuple[L[3] | N],
     ),
     ShapeFeature(
         "wildcard",
@@ -459,7 +523,10 @@ def test_string_ellipsis_deprecation() -> None:
         pytest.param(lambda: Range[L["2"], L[4]], id="range-str-bound"),
         pytest.param(lambda: Range[L[-1], L[4]], id="range-negative-bound"),
         pytest.param(lambda: Range[L[2, 3], L[4]], id="range-multi-literal"),
-        pytest.param(lambda: Shape[L[3, 4]], id="multi-literal"),
+        pytest.param(lambda: Shape[L[3, "a"]], id="multi-literal-str"),
+        pytest.param(lambda: Shape[L[1, int]], id="multi-literal-type"),
+        pytest.param(lambda: Shape[L[3] | None], id="union-with-none"),
+        pytest.param(lambda: Shape[L[3] | str], id="union-with-str"),
         pytest.param(lambda: Shape[*Repeat, L[3]], id="repeat-not-last"),
         pytest.param(lambda: Shape[L[3], Repeat], id="repeat-not-unpacked"),
         pytest.param(
