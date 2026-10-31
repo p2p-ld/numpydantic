@@ -495,11 +495,11 @@ is rendered to JSON-Schema like this:
 ```json
 {
   "$defs": {
-    "any-shape-array-9b5d89838a990d79": {
+    "any-shape-array-516e98db2b1efff8": {
       "anyOf": [
         {
           "items": {
-            "$ref": "#/$defs/any-shape-array-9b5d89838a990d79"
+            "$ref": "#/$defs/any-shape-array-516e98db2b1efff8"
           },
           "type": "array"
         },
@@ -510,7 +510,7 @@ is rendered to JSON-Schema like this:
   "properties": {
     "array": {
       "dtype": "numpy.uint8",
-      "items": {"$ref": "#/$defs/any-shape-array-9b5d89838a990d79"},
+      "items": {"$ref": "#/$defs/any-shape-array-516e98db2b1efff8"},
       "title": "Array",
       "type": "array"
     }
@@ -521,9 +521,9 @@ is rendered to JSON-Schema like this:
 }
 ```
 
-where the key `"any-shape-array-9b5d89838a990d79"` uses a (blake2b) hash of the
-inner dtype specification so that having multiple any-shaped arrays in a single 
-model schema are deduplicated without conflicts.
+where the key `"any-shape-array-516e98db2b1efff8"` uses a (blake2b) hash of the
+repeated list's schema, including its dtype, so that having multiple any-shaped arrays
+in a single model schema are deduplicated without conflicts.
 
 ### Dumping
 

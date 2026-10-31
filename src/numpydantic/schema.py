@@ -143,19 +143,23 @@ def list_of_lists_schema(shape: "Shape", array_type: CoreSchema) -> ListSchema:
 
     # if we have a tail, that's the inner schema
     if tail is not None:
-        inner_schema = _recursive_shape(array_type, _list_schema_kwargs(tail))
+        inner_schema = _recursive_shape(array_type, tail)
     else:
         inner_schema = array_type
 
     for arg in reversed(fixed):
         # which handler to use? for the first we use the actual type
         # handler, everywhere else we use the prior list handler
-        inner_schema = core_schema.list_schema(inner_schema, **_list_schema_kwargs(arg))
+        inner_schema = _list_schema(inner_schema, arg)
 
     return inner_schema
 
 
-def _list_schema_kwargs(arg: Any) -> dict:
+def _list_schema(items: CoreSchema, arg: Any) -> CoreSchema:
+    """
+    The list schema for one dimension, or a union of list schemas
+    for a dimension with several sizes, like ``L[3, 5]`` or ``L[3] | L[5]``
+    """
     kwargs = {}
     if get_origin(arg) is Annotated:
         typ, *annotations = get_args(arg)
@@ -166,10 +170,15 @@ def _list_schema_kwargs(arg: Any) -> dict:
     if labels:
         kwargs["metadata"] = {"name": labels[0]}
 
-    if get_origin(typ) is Literal:
-        # TODO: support multiple exact lengths as unions
-        kwargs["min_length"] = kwargs["max_length"] = get_args(typ)[0]
-
+    if is_union(typ):
+        members = [_list_schema(items, member) for member in get_args(typ)]
+        return core_schema.union_schema(members, **kwargs)
+    elif get_origin(typ) is Literal:
+        sizes = get_args(typ)
+        if len(sizes) > 1:
+            members = [_list_schema(items, Literal[size]) for size in sizes]
+            return core_schema.union_schema(members, **kwargs)
+        kwargs["min_length"] = kwargs["max_length"] = sizes[0]
     elif interval := next(
         (annotation for annotation in annotations if isinstance(annotation, Interval)),
         None,
@@ -184,10 +193,10 @@ def _list_schema_kwargs(arg: Any) -> dict:
         elif interval.lt is not None:
             kwargs["max_length"] = interval.lt - 1
 
-    return kwargs
+    return core_schema.list_schema(items, **kwargs)
 
 
-def _hash_schema(schema: CoreSchema, list_kwargs: dict | None = None) -> str:
+def _hash_schema(schema: CoreSchema) -> str:
     """
     Make a hex-encoded 8-byte blake2b hash from a pydantic core schema.
     Collisions are really not important or likely here, but we do want the same schema
@@ -200,46 +209,27 @@ def _hash_schema(schema: CoreSchema, list_kwargs: dict | None = None) -> str:
         separators=(",", ":"),
         default=lambda x: None,
     ).encode("utf-8")
-    if list_kwargs:
-        schema_str += json.dumps(
-            list_kwargs,
-            sort_keys=True,
-            indent=None,
-            separators=(",", ":"),
-            default=lambda x: None,
-        ).encode("utf-8")
     hasher = hashlib.blake2b(digest_size=8)
     hasher.update(schema_str)
     return hasher.hexdigest()
 
 
 def _recursive_shape(
-    inner_type: CoreSchema, list_kwargs: dict | None = None
+    inner_type: CoreSchema, dim: Any = int
 ) -> core_schema.DefinitionsSchema:
     """
-    Make a recursive schema that refers to itself using a hashed version of the inner
-    type
+    Make a recursive schema that is either the inner type or a list of itself
+    matching ``dim``, which refers to itself using a hashed version of its list schema
     """
-    schema_hash = _hash_schema(inner_type, list_kwargs)
-    if list_kwargs is None:
-        list_kwargs = {}
-
+    schema_hash = _hash_schema(_list_schema(inner_type, dim))
     array_ref = f"any-shape-array-{schema_hash}"
+    reference = core_schema.definition_reference_schema(array_ref)
 
     schema = core_schema.definitions_schema(
-        core_schema.list_schema(
-            core_schema.definition_reference_schema(array_ref), **list_kwargs
-        ),
+        reference,
         [
             core_schema.union_schema(
-                [
-                    core_schema.list_schema(
-                        core_schema.definition_reference_schema(array_ref),
-                        **list_kwargs,
-                    ),
-                    inner_type,
-                ],
-                ref=array_ref,
+                [_list_schema(reference, dim), inner_type], ref=array_ref
             )
         ],
     )
@@ -272,7 +262,7 @@ def make_json_schema(
 
     # get the names of the shape constraints, if any
     if shape is Any:
-        list_schema = _recursive_shape(dtype_schema)
+        list_schema = core_schema.list_schema(_recursive_shape(dtype_schema))
         # list_schema = core_schema.list_schema(core_schema.any_schema())
     else:
         list_schema = list_of_lists_schema(shape, dtype_schema)

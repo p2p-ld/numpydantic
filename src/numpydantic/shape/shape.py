@@ -2,6 +2,8 @@
 The shape of an array, written like a tuple type, one item per dimension:
 
 - ``L[3]`` (a ``typing.Literal``) - a dimension of exactly length 3
+- ``L[3, 5]`` - a dimension of length 3 or 5
+- ``X | Y`` - a dimension that matches either ``X`` or ``Y``
 - ``int`` - a dimension of any length
 - ``Range[L[2], L[4]]`` - a dimension of length 2 to 4, inclusive.
   ``int`` leaves that side open, e.g. ``Range[L[2], int]`` is at least 2.

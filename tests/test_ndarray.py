@@ -10,10 +10,13 @@ from pydantic import (
     Field,
     ValidationError,
 )
+from pydantic_core import SchemaValidator, core_schema
+from pydantic_core import ValidationError as PydanticCoreValidationError
 
-from numpydantic import NDArray, NDArraySchema, Repeat, Shape, dtype
+from numpydantic import NDArray, NDArraySchema, Range, Repeat, Shape, dtype
 from numpydantic.dtype import Number
 from numpydantic.exceptions import DtypeError, InvalidShapeExpressionError
+from numpydantic.schema import list_of_lists_schema
 
 
 @pytest.mark.json_schema
@@ -372,6 +375,72 @@ def test_json_schema_repeat():
 
     schema = ConstrainedAnyShape.model_json_schema()
     _recursive_array(schema)
+
+
+@pytest.mark.shape
+@pytest.mark.json_schema
+def test_json_schema_several_sizes():
+    """
+    A dimension with several sizes is a union of lists, one for each size:
+    each value of a Literal, and each member of a union
+    """
+
+    class SeveralSizes(BaseModel):
+        literal: NDArray[Shape[L[1, 3, 5]], np.uint8]
+        union: NDArray[Shape[L[3] | Range[L[6], int]], np.uint8]
+
+    schema = SeveralSizes.model_json_schema()["properties"]
+    lengths = [
+        (s.get("minItems"), s.get("maxItems")) for s in schema["literal"]["anyOf"]
+    ]
+    assert lengths == [(1, 1), (3, 3), (5, 5)]
+    lengths = [(s.get("minItems"), s.get("maxItems")) for s in schema["union"]["anyOf"]]
+    assert lengths == [(3, 3), (6, None)]
+
+
+@pytest.mark.shape
+@pytest.mark.json_schema
+@pytest.mark.parametrize(
+    "shape,valid,invalid",
+    [
+        pytest.param(
+            Shape[L[2], *tuple[int, ...]],
+            [(2,), (2, 4), (2, 4, 1)],
+            [(3,), (3, 4)],
+            id="any-size",
+        ),
+        pytest.param(
+            Shape[L[2], *tuple[Range[L[1], L[2]], ...]],
+            [(2,), (2, 1), (2, 1, 2)],
+            [(2, 3), (2, 1, 3)],
+            id="range",
+        ),
+        pytest.param(
+            Shape[L[2], *tuple[Range[L[1], L[2]] | Range[L[6], L[7]], ...]],
+            [(2,), (2, 6), (2, 1, 7)],
+            [(2, 3), (2, 6, 4)],
+            id="union-of-ranges",
+        ),
+        pytest.param(
+            Shape[*tuple[L[3, 5], ...]],
+            [(), (3,), (5, 3)],
+            [(4,), (3, 4)],
+            id="literal",
+        ),
+    ],
+)
+def test_json_schema_repeated(shape, valid, invalid):
+    """
+    The JSON schema of a repeated dimension allows any number of repeats,
+    including none, and constrains every repeated dimension
+    """
+    shape = NDArray[shape, int].__args__[0]
+    validator = SchemaValidator(list_of_lists_schema(shape, core_schema.int_schema()))
+    for dims in valid:
+        validator.validate_python(np.zeros(dims, dtype=int).tolist())
+    for dims in invalid:
+        with pytest.raises(PydanticCoreValidationError):
+            validator.validate_python(np.zeros(dims, dtype=int).tolist())
 
 
 def test_instancecheck():

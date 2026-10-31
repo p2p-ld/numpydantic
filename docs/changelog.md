@@ -59,6 +59,8 @@
 - [`#85`](https://github.com/p2p-ld/numpydantic/issues/85), [`#102`](https://github.com/p2p-ld/numpydantic/pull/102) - 
   support mypy configuration via a `mypy.ini` file 
 - `Range[low, high]` for dimensions whose size is within an inclusive range
+- Dimensions with several sizes, like `Shape[L[3, 5]]`, and unions of dimensions,
+  like `Shape[L[3] | Range[L[6], L[7]]]`
 - `Repeat`, used like `Shape[L[3], *Repeat]` for any number of trailing dimensions,
   `Shape[L[3], *Repeat[L[2]]]` for any number of 2s, or `Shape[L[3], *Repeat[N]]`
   for any number of dimensions that are all the same size
