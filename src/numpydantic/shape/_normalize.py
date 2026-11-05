@@ -1,9 +1,11 @@
+import types
 from typing import (
     Annotated,
     Any,
     Literal,
     TypeVar,
     TypeVarTuple,
+    Union,
     Unpack,
     get_args,
     get_origin,
@@ -131,13 +133,13 @@ def _normalize_tuple_item(item: Any) -> Any:
         item = next(iter(unpacked))
     if get_origin(item) is Literal:
         args = get_args(item)
+        if all(isinstance(arg, int) for arg in args):
+            return item
         if len(args) > 1:
             raise InvalidShapeExpressionError(
-                f"A dimension can only have one exact size, got {item!r}"
+                f"A dimension with several exact sizes can only have ints, got {item!r}"
             )
-        if isinstance(args[0], int):
-            return item
-        # TODO: just support multivalued literals as unions
+        # a string dimension, like L["2-4"]
         item = args[0]
 
     if isinstance(item, str):
@@ -156,6 +158,10 @@ def _normalize_tuple_item(item: Any) -> Any:
     elif get_origin(item) is Annotated:
         base, *metadata = get_args(item)
         return Annotated[(_normalize_tuple_item(base), *metadata)]
+    elif get_origin(item) in (Union, types.UnionType):
+        return Union[  # noqa: UP007
+            tuple(_normalize_tuple_item(member) for member in get_args(item))
+        ]
     elif item is Repeat or get_origin(item) is tuple:
         raise InvalidShapeExpressionError(
             f"Repeated dimensions have to be unpacked, like *Repeat, got {item!r}"

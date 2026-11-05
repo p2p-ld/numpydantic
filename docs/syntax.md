@@ -83,6 +83,13 @@ A single dimension is just one item:
 Shape[L[3]]
 ```
 
+A `Literal` with several values is a dimension that can be any one of those sizes:
+
+```python
+# 3 or 5, then 2
+Shape[L[3, 5], L[2]]
+```
+
 ### Any size
 
 `int` is a dimension of any size.
@@ -112,6 +119,19 @@ Shape[Range[L[2], L[4]], Range[L[2], int], Range[int, L[4]]]
 Type checkers can't check ranges on their own, so to them a range is just an `int`.
 The [mypy plugin](mypy-plugin) checks ranges, including that a range
 fits within the range it is assigned to.
+
+### Unions
+
+A union of dimensions is a dimension that matches any one of them:
+
+```python
+# 3 or 5, the same as L[3, 5]
+Shape[L[3] | L[5]]
+# 1 to 2, or 6 to 7
+Shape[Range[L[1], L[2]] | Range[L[6], L[7]]]
+# exactly 3, or 6 to 7
+Shape[L[3] | Range[L[6], L[7]]]
+```
 
 (shape-repeat)=
 ### Repeated Dimensions

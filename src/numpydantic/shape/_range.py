@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Annotated, Any, Literal, get_args, get_origin
+from typing import Annotated, Any, Literal, Union, get_args, get_origin
 
 from annotated_types import Interval
 
@@ -45,6 +45,12 @@ class _RangeDim:
     @property
     def annotation(self) -> type:
         return Annotated[int, Interval(ge=self.low, le=self.high)]
+
+    def __or__(self, other: Any) -> Any:
+        return Union[self, other]  # noqa: UP007
+
+    def __ror__(self, other: Any) -> Any:
+        return Union[other, self]  # noqa: UP007
 
 
 def _range_bound(bound: Any) -> int | None:

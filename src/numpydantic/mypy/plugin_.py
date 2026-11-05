@@ -36,6 +36,7 @@ using the ``name`` attribute of the interface to enable.
 
 from __future__ import annotations
 
+import types
 import warnings
 from collections.abc import Callable
 from configparser import ConfigParser
@@ -519,8 +520,14 @@ def _dim_to_mypy(dim: Any, ctx: AnalyzeTypeContext, int_instance: Instance) -> T
         return ctx.api.analyze_type(UnboundType(dim.__name__))
 
     origin = get_origin(dim)
-    if origin is Literal and len(get_args(dim)) == 1:
-        return LiteralType(get_args(dim)[0], fallback=int_instance)
+    if origin is Literal:
+        return UnionType.make_union(
+            [LiteralType(size, fallback=int_instance) for size in get_args(dim)]
+        )
+    elif origin in (Union, types.UnionType):
+        return UnionType.make_union(
+            [_dim_to_mypy(member, ctx, int_instance) for member in get_args(dim)]
+        )
     elif origin is Annotated:
         base, *metadata = get_args(dim)
         for meta in metadata:
