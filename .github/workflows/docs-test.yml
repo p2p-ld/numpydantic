@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pdm
+          pip install "pdm[locked]"
           pdm install --with docs
 
       - name: Build docs
