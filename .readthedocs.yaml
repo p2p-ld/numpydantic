@@ -15,6 +15,6 @@ build:
     python: "3.13"
   jobs:
     pre_install:
-      - python -m pip install pdm
+      - python -m pip install pdm[locked]
     install:
       - VIRTUAL_ENV=$(dirname $(dirname $(which python))) pdm install --with docs --with arrays

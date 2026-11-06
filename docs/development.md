@@ -33,13 +33,12 @@ but there is still a decent amount of jostling things around to be expected.
 
 #### Public API
 
-**Only the {class}`.NDArray` and {class}`.Shape` classes should be considered
-part of the stable public API.**
+**Only the members of the top-level {mod}`numpydantic` namespace should be considered part of the stable public API.**
 
 All associated functionality for validation should also be considered
 a stable part of the `NDArray` and `Shape` classes - functionality
 will only be added here, and the departure for the string-form of the 
-shape specifications (and its removal) will take place in `v3.*.*`
+shape specifications will take place in `v2.*.*` (and removal in `v3.*.*`)
 
 End-users of numpydantic should pin an upper bound for the `MAJOR` version
 until after `v2.*.*`, after which time it is up to your discretion - 
@@ -81,29 +80,6 @@ on Linux (ubuntu), and the latest patch version for the oldest and most recent m
 versions on mac and windows (i.e. if python 3.9, 3.10, 3.11, and 3.12 are active,
 tests for mac and windows run against 3.9 and 3.12)
 
-### Numpy Version Support
-
-Numpydantic is currently tested against
-- The latest numpy version
-- The last numpy version <2.0.0
-
 ## Release Schedule
 
 There is no release schedule. Versions are released according to need and available labor.
-
-## Contributing
-
-### Dev environment
-
-```{todo}
-Document dev environment
-
-Really it's very simple, you just clone a fork and install
-the `dev` environment like `pip install '.[dev]'`
-```
-
-### Pull Requests
-
-```{todo}
-Document pull requests if we ever receive one
-```

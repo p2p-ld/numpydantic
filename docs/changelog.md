@@ -1,6 +1,14 @@
 # Changelog
 
-## Upcoming
+## 2.*
+
+### 2.0.0
+
+2.0 is here baby! 
+The string microsyntax is officially deprecated,
+and numpydantic now uses *real actual python types* consistent with numpy's type annotations everywhere.
+String syntax will be supported until 3.0 and then removed.
+There are a number of large changes, so check the readme before updating!!!
 
 **Breaking**
 
