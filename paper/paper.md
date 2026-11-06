@@ -71,7 +71,8 @@ with steady improvements over time[^numtype].
 NumPy's types allow specifying shape and dtype,
 but not extended expressions like explicit dimension sizes, size ranges, etc. 
 Numpydantic extends previous work on runtime-checkable types,
-vendoring `nptyping` [@hagenaarsNptyping2019][^unmaintained] and extending and updating its syntax. 
+initially vendoring `nptyping` [@hagenaarsNptyping2019][^unmaintained] and extending and updating its syntax,
+and later replacing it with correct contemporary type annotations in v2.0.0. 
 
 Other array frameworks like Dask [@daskdevelopmentteamDaskLibraryDynamic2016]
 and Zarr [@milesZarrdevelopersZarrpythonV2402020]
@@ -120,10 +121,10 @@ At its simplest, numpydantic does this:
 ```python
 import numpy as np
 from pydantic import BaseModel
-from numpydantic import NDArray, Shape
+from numpydantic import NDArray, Range, Shape, L
 
 class MyModel(BaseModel):
-    array: NDArray[Shape["* t, * x, * y, 3 rgb"], np.uint8]
+    array: NDArray[Shape[int, int, int, L[3]], np.uint8]
     
 # numpy
 MyModel(array=np.zeros((100, 1080, 1920, 3), dtype=np.uint8))
@@ -157,7 +158,7 @@ This simple example:
 
 ```python
 class MyModel(BaseModel):
-    array: NDArray[Shape[2, "2-5"], np.float16]
+    array: NDArray[Shape[L[2], Range[L[2], L[5]]], np.float16]
 MyModel.model_json_schema()
 ```
 
@@ -211,8 +212,7 @@ A lightweight metadata descriptor can be dumped to JSON and reloaded later:
     "type": "zarr",      "dtype": "float64",
     "file": "data.zarr", "path": "/dataset",
     "info": {
-      "Shape": "(2000, 2000)",
-      "hexdigest": "86c96d94e76c3b0f210f5a0bf2d8811d1ffd883d"
+      "shape": [2000, 2000], "chunk_grid": "..."
     }
   },
   "video": { "type": "video", "file": "video.mp4" }
@@ -226,7 +226,7 @@ A lightweight metadata descriptor can be dumped to JSON and reloaded later:
 Numpydantic can be used without Pydantic to annotate normal functions and classes!
 
 ```python
-def some_analysis(array: NDArray[Shape[1, 2, 3]]) -> NDArray[Shape[2, 4, 6]]:
+def some_analysis(array: NDArray[Shape[L[1], L[2], L[3]]]) -> NDArray[Shape[L[2], L[4], L[6]]]:
     ...
 ```
 
@@ -235,14 +235,14 @@ These annotations can also be validated at runtime without Pydantic using a tool
 `NDArray` can also be used as a runtime type for instance checking and ad-hoc validation
 
 ```python
->>> Grayscale = NDArray[Shape["*", "*"], np.uint8]
+>>> Grayscale = NDArray[Shape[int, int], np.uint8]
 >>> array = np.zeros((100, 100), np.uint8)
 >>> isinstance(np.zeros((100, 100), np.uint8), Grayscale)
 True
 >>> isinstance(np.zeros((100,)), Grayscale)
 False
 >>> Grayscale(np.zeros((100,), np.uint8))
-ShapeError: Invalid shape! expected shape ['*', '*'], got shape (100,)
+ShapeError: Invalid shape! expected shape [int, int], got shape (100,)
 >>> Grayscale(np.zeros((100, 100), np.float64))
 DtypeError: Invalid dtype! expected <class 'numpy.uint8'>, got float64
 ```
@@ -277,7 +277,7 @@ researchers can avoid tedious bugs from misshaped or mistyped arrays,
 and use the runtime types for reusable, minimal boilerplate validation.
 
 ```python
-def analyze_grayscale(frame: NDArray[Shape[1080, 1920], np.uint8]):
+def analyze_grayscale(frame: NDArray[Shape[L[1080], L[1920]], np.uint8]):
     # ...
 
 analyze_grayscale(np.zeros((1080, 1920, 3), dtype=np.uint8))
@@ -320,22 +320,19 @@ where data standards only need to define the schema layer and get the rest for f
 
 # Limitations & Future Directions
 
-- We are working on [v2.0 of numpydantic](https://numpydantic.readthedocs.io/en/latest/development.html#versioning),
-  where we will replace the string-based syntax borrowed from `nptyping`
-  with modern Python typing features.
-- Until then,
-  non-mypy static type checkers have trouble checking some forms of `NDArray` types.
+- The python typing spec, and standard array typing recommendations are always evolving and still in flux.
+  Non-mypy static type checkers have trouble checking some forms of `NDArray` types.
   There are [several intermediate solutions](https://numpydantic.readthedocs.io/en/v1.10.0/syntax.html#shape-forms),
-  like specifying shape arguments as literals,
-  and the `NDArraySchema` class.
+  like the `NDArraySchema` class,
+  available as workarounds until it stabilizes.
 - We will be extending the specification syntax to include more advanced array features,
   like chunking and memory order.
 - Support for TypeVars that can indicate that a given axis can be any size,
   but all axes within a given scope must be the same size is important
   for many scientific applications 
   (e.g. a timestamps array must be the same length as a video).
-  We are [actively working on this](https://github.com/p2p-ld/numpydantic/issues/70)
-  in our mypy plugin and [upstream in mypy itself](https://github.com/python/mypy/issues/3345#issuecomment-4664544812).
+  Version 2.0.0 has experimental support for TypeVars at runtime and statically,
+  and we will be refining this both within numpydantic itself and [upstream in mypy](https://github.com/python/mypy/issues/3345#issuecomment-4664544812).
 
 # AI usage disclosure
 
