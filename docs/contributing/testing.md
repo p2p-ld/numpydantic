@@ -35,7 +35,7 @@ console = Console(theme=theme)
 
 ```{note}
 Also see the [`numpydantic.testing` API docs](../api/testing/index.md)
-and the [Writing an Interface](../interfaces.md) guide
+and the [Writing an Interface](./interface.md) guide
 ```
 
 Numpydantic exposes a system for combinatoric testing across dtypes, shapes,
