@@ -25,7 +25,7 @@ The changelog will always reflect the author of a PR, as will the commit history
 
 Specifications tend to attract people with um precise and orderly minds,
 with lots of very specific and esoteric opinions,
-and often the negotiations betwen people with this set of traits are less than civil.
+and often the negotiations between people with this set of traits are less than civil.
 The python typing spec has a lot of quirks, strange behaviors, 
 and reasonable disagreements can be had in the way things should be done - 
 this package attempts to balance adherence to the specifications with usability,
@@ -39,11 +39,11 @@ is used to exclude, demean, degrade, or put down another participant.
 ## No Bad Questions
 
 We accept all feature requests, even those made naively,
-and will do our best to accomodate them against the background limitations of the python spec.
+and will do our best to accommodate them against the background limitations of the python spec.
 We will never close an issue raised in good faith without discussion unless it is spam,
 and when a feature request is impossible,
 we will do our best to explain that rather than dismissing it out of hand.
 
-Someone should never feel shy or embarassed to raise an issue,
+Someone should never feel shy or embarrassed to raise an issue,
 all good-faith questions and requests are welcome,
 and the maintainers will do all they can to avoid ever making someone feel unwelcome or lesser-than. 
