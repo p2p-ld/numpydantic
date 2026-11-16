@@ -81,7 +81,7 @@ currently allow typing only for dtype or a custom metadata object.
 Dataclasses [@smithPEP557Data2017] use type annotations to create intelligible data structures,
 but the annotations are unvalidated and used solely in static analysis.
 Pydantic [@colvinPydanticValidation2026] is the most widely used library in Python for declaring runtime-validating dataclass-like models,
-but it lacks builtin support for arrays.
+but it lacks built-in support for arrays.
 
 The closest sibling to numpydantic is likely [pandera](https://pandera.readthedocs.io) [@bantilanPanderaStatisticalData2020],
 which provides schemas for dataframes across multiple backends and, recently, complex multi-arrays from [xarray](https://docs.xarray.dev) [@hoyerXarrayNDLabeled2017].
