@@ -88,7 +88,7 @@ which provides schemas for dataframes across multiple backends and, recently, co
 Second would be [jaxtyping](https://github.com/patrick-kidger/jaxtyping) [@kidgerJaxtyping2022],
 which provides custom string-based constraints on shapes (including cross-array constraints) enforceable at runtime with [`typeguard`](https://github.com/agronholm/typeguard) [@gronholmTypeguard2015]
 for JAX, PyTorch, NumPy, MLX, and TensorFlow arrays and tensors.
-Third is [pydantic-numpy](https://github.com/caniko/pydantic-numpy) [@tartanogluPydanticNumpy2022]
+Third is [pydantic-numpy](https://github.com/caniko/pydantic-numpy) [@tartanogluPydanticNumpy2022],
 which more narrowly supports NumPy arrays for Pydantic.
 We are not aware of other projects that provide array specifications and validation across multiple array backends
 with a single annotation consistent with the emerging consensus on array typing[^contactus].
