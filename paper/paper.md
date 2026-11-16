@@ -99,7 +99,7 @@ with a single annotation consistent with the emerging consensus on array typing[
 
 # Software design
 
-Numpydantic is designed to be a dependency you don't have to think about -
+Numpydantic is designed to be a dependency you don't have to think about --
 it has two required dependencies, NumPy and Pydantic, which are already likely present in any package that wants to use it.
 It can be used with or without Pydantic[^withoutpydantic]:
 its annotations can be used in the typing layer without modifying existing runtime code.
