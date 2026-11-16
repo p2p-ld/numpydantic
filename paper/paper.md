@@ -332,7 +332,7 @@ where data standards only need to define the schema layer and get the rest for f
 
 # AI usage disclosure
 
-No "AI" or LLMs were used at any time during development, nor to produce any part of this submission.
+No AI or LLMs were used at any time during development, nor to produce any part of this submission.
 
 # Acknowledgements
 
