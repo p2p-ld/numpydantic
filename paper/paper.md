@@ -112,7 +112,7 @@ among other features.
 
 [^withoutpydantic]: Pydantic is a required dependency, but the annotations can be used outside of Pydantic models
 
-## Pydantic Models
+## Pydantic models
 
 At its simplest, numpydantic does this:
 
@@ -217,7 +217,7 @@ A lightweight metadata descriptor can be dumped to JSON and reloaded later:
 
 [^abbreviated]: All examples are abbreviated and formatted for clarity.
 
-## Standalone Use
+## Standalone use
 
 Numpydantic can be used without Pydantic to annotate normal functions and classes!
 
@@ -316,7 +316,7 @@ where data standards only need to define the schema layer and get the rest for f
 [^lindi]: See also [LINDI](https://github.com/NeurodataWithoutBorders/lindi) [@neurodatawithoutbordersLindi2024],
   an overlay for addressing streaming data needs with HTTP range requests.
 
-# Limitations & Future Directions
+# Limitations & future directions
 
 - The Python typing spec and standard array typing recommendations are always evolving and still in flux.
   Non-mypy static type checkers have trouble checking some forms of `NDArray` types.
