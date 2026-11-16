@@ -316,7 +316,7 @@ where data standards only need to define the schema layer and get the rest for f
 
 # Limitations & Future Directions
 
-- The python typing spec, and standard array typing recommendations are always evolving and still in flux.
+- The Python typing spec, and standard array typing recommendations are always evolving and still in flux.
   Non-mypy static type checkers have trouble checking some forms of `NDArray` types.
   There are [several intermediate solutions](https://numpydantic.readthedocs.io/en/v2.0.0/typecheckers.html),
   like the `NDArraySchema` class,
