@@ -295,7 +295,7 @@ Support for n-dimensional arrays is a critical part of using LinkML for scientif
 and numpydantic is the core array implementation for LinkML in Python.
 
 Numpydantic was also developed as part of an effort to rearchitect Neurodata Without Borders (NWB) [@rubelNeurodataBordersEcosystem2022],
-the de-facto data standard for systems neuroscience ([`nwb-linkml`](https://github.com/p2p-ld/nwb-linkml)).
+the de facto data standard for systems neuroscience ([`nwb-linkml`](https://github.com/p2p-ld/nwb-linkml)).
 NWB uses HDMF [@trittHDMFHierarchicalData2019] as its schema language,
 which was developed out of necessity
 as most schema languages do not support arrays.
