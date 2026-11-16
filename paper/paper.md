@@ -36,7 +36,7 @@ and providing simple tools responsive to the needs of everyday research programm
 
 # Statement of need
 
-Arrays are rarely formless bundles of numbers, 
+Arrays are rarely formless bundles of numbers;
 they are "videos," "time series," "training and testing data," etc.
 where attributes like orientation, shape, and dtype are an intrinsic part of their definition as a type.
 Accordingly, outside of array frameworks themselves,
