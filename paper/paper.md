@@ -301,7 +301,7 @@ the de-facto data standard for systems neuroscience ([`nwb-linkml`](https://gith
 NWB uses HDMF [@trittHDMFHierarchicalData2019] as its schema language,
 which was developed out of necessity
 as most schema languages do not support arrays.
-HDMF and NWB are both tightly coupled to HDF5,
+HDMF and NWB are both tightly coupled to HDF5 [@hdfgroupHierarchicalDataFormat2026],
 which makes indexing and partial use of datasets extraordinarily costly - 
 to read a scalar metadata attribute,
 one needs to download the entire dataset,
