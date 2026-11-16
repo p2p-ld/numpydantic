@@ -222,7 +222,9 @@ A lightweight metadata descriptor can be dumped to JSON and reloaded later:
 Numpydantic can be used without Pydantic to annotate normal functions and classes!
 
 ```python
-def some_analysis(array: NDArray[Shape[L[1], L[2], L[3]]]) -> NDArray[Shape[L[2], L[4], L[6]]]:
+def some_analysis(
+    array: NDArray[Shape[L[1], L[2], L[3]]],
+) -> NDArray[Shape[L[2], L[4], L[6]]]:
     ...
 ```
 
