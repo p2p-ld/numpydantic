@@ -112,8 +112,6 @@ among other features.
 
 [^withoutpydantic]: Pydantic is a required dependency, but the annotations can be used outside of Pydantic models
 
-\pagebreak
-
 ## Pydantic Models
 
 At its simplest, numpydantic does this:
