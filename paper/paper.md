@@ -141,7 +141,7 @@ When used in Pydantic models, numpydantic provides runtime validation for array 
 as well as access to on-disk arrays by reference.
 
 By default, an array from any supported array backend can be used (as long as it matches the specification),
-but an explicit array backend can be specified using an annotated type
+but an explicit array backend can be specified using an annotated type:
 
 ```python
 class MyModel(BaseModel):
