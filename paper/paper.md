@@ -54,7 +54,7 @@ but still struggle with the hundreds of intermediate arrays that flow through th
 This tension creates two unhappy local minima:
 on one side, data standards are often brittle and difficult to integrate into the code used for real-world analysis, 
 relegated to a conversion stage after the work is done that can be lossy and labor-intensive.
-On the other, labs run on ad-hoc, local data structures that make even intra-lab collaboration difficult.
+On the other, labs run on ad hoc, local data structures that make even intra-lab collaboration difficult.
 
 In the middle is a gap in tooling that responds to both categories of needs:
 
@@ -228,7 +228,7 @@ def some_analysis(array: NDArray[Shape[L[1], L[2], L[3]]]) -> NDArray[Shape[L[2]
 
 These annotations can also be validated at runtime without Pydantic using a tool like [beartype](https://beartype.readthedocs.io/) [@curryBeartype2020].
 
-`NDArray` can also be used as a runtime type for instance checking and ad-hoc validation
+`NDArray` can also be used as a runtime type for instance checking and ad hoc validation
 
 ```python
 >>> Grayscale = NDArray[Shape[int, int], np.uint8]
