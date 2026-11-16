@@ -23,7 +23,7 @@ Numpydantic is a minimalistic Python package that provides abstract types and a 
 Its constraints can be validated both dynamically at runtime and statically using mypy.
 Rather than being bound to a single array framework,
 numpydantic is a generic array specification with an extensible interface system
-that currently supports NumPy, HDF5, zarr, and video files.
+that currently supports NumPy, HDF5, Zarr, and video files.
 Designed to expose arrays to `Pydantic`'s validation framework, 
 its `NDArray` type allows researchers to compose multiple arrays into validating data models,
 including generation of JSON schema,
