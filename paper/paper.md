@@ -178,8 +178,6 @@ produces JSON Schema[^abbreviated]:
 }}}
 ```
 
-\pagebreak
-
 Numpydantic supports roundtripping array data to and from JSON,
 including any metadata needed to reconstruct an array,
 with on-disk arrays optionally dumped as a reference rather than loading and serializing the whole array.
