@@ -338,7 +338,7 @@ No AI or LLMs were used at any time during development, nor to produce any part 
 
 Thanks to Ryan Ly, Chris Mungall, Oliver Rübel, Wouter-Michiel Vierdag, Ben Dichter, and John-Marc Chandonia for co-designing the LinkML Arrays specification
 which gave shape to the initial spec; 
-to Antônio Camargo for setting up the conda forge feedstock;
+to Antônio Camargo for setting up the conda-forge feedstock;
 to all collaborators past and present;
 and to Rumbly Tumbly Lawnmower for being the light of my life and keeping my lap warm as I worked.
 
