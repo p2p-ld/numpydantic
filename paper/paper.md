@@ -184,7 +184,7 @@ Numpydantic supports roundtripping array data to and from JSON,
 including any metadata needed to reconstruct an array,
 with on-disk arrays optionally dumped as a reference rather than loading and serializing the whole array.
 
-e.g. for a dataset with scalar metadata alongside array data split between in-memory and on-disk arrays,
+For example, consider a dataset with scalar metadata alongside array data split between in-memory and on-disk arrays,
 as would be common in both data standards and unstructured lab code:
 
 ```python
