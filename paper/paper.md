@@ -268,7 +268,7 @@ Revealed type is "numpy.ndarray[tuple[Literal[3], Literal[4]], numpy.uint8]"
 Revealed type is "numpy.ndarray[tuple[Literal[3], Literal[4]], numpy.uint8]"
 ```
 
-By annotating analysis and i/o functions with type information,
+By annotating analysis and I/O functions with type information,
 researchers can avoid tedious bugs from misshaped or mistyped arrays,
 and use the runtime types for reusable, minimal boilerplate validation.
 
