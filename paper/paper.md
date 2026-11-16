@@ -160,7 +160,7 @@ class MyModel(BaseModel):
 MyModel.model_json_schema()
 ```
 
-produces JSON Schema[^abbreviated]:
+produces this JSON Schema[^abbreviated]:
 
 ```json
 { "properties": { "array": {
