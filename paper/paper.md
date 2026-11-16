@@ -150,7 +150,7 @@ class MyModel(BaseModel):
 
 Numpydantic constructs a valid JSON schema for its annotations,
 making them portable across languages,
-and usable to accept array data via web APIs via, e.g. [FastAPI](https://fastapi.tiangolo.com/).
+and usable to accept array data via web APIs, e.g. [FastAPI](https://fastapi.tiangolo.com/).
 
 This simple example:
 
