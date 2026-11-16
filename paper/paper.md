@@ -247,7 +247,7 @@ DtypeError: Invalid dtype! expected <class 'numpy.uint8'>, got float64
 
 ### Mypy plugin
 
-A mypy plugin supports static analysis of numpydantic's specification syntax,
+A plugin for mypy [@lehtosaloMypyOptionalStatic2012] supports static analysis of numpydantic's specification syntax,
 enriching array constructors with shape and dtype information
 for any supported array backend.
 
