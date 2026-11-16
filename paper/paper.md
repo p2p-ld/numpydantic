@@ -59,7 +59,7 @@ On the other, labs run on ad-hoc, local data structures that make even intra-lab
 In the middle is a gap in tooling that responds to both categories of needs:
 
 - Strict, validating, metadata enriched schemas with loose coupling to storage formats and programming interfaces
-- Simple, low-overhead structure that can embed in existing code and support researcher-developer experience.
+- Simple, low-overhead structure that can be embedded in existing code and support researcher-developer experience.
 
 # State of the field
 
