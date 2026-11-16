@@ -84,7 +84,7 @@ Pydantic [@colvinPydanticValidation2026] is the most widely used library in Pyth
 but it lacks builtin support for arrays.
 
 The closest sibling to numpydantic is likely [pandera](https://pandera.readthedocs.io) [@bantilanPanderaStatisticalData2020],
-which provides schemas for dataframes across multiple backends (and, recently, complex multi-arrays from [xarray](https://docs.xarray.dev)).
+which provides schemas for dataframes across multiple backends and, recently, complex multi-arrays from [xarray](https://docs.xarray.dev) [@hoyerXarrayNDLabeled2017].
 Second would be [jaxtyping](https://github.com/patrick-kidger/jaxtyping) [@kidgerJaxtyping2022],
 which provides custom string-based constraints on shapes (including cross-array constraints) enforceable with [`typeguard`](https://github.com/agronholm/typeguard) [@gronholmTypeguard2015] and at runtime
 for JAX, PyTorch, NumPy, MLX, and TensorFlow arrays and tensors.
