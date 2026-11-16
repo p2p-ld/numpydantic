@@ -66,12 +66,12 @@ In the middle is a gap in tooling that responds to both categories of needs:
 Python's type annotation system has evolved dramatically since its introduction in 2014 [@vanrossumPEP484Type2014; @pythonsoftwarefoundationTypingPEPs].
 Typing arrays is an ongoing challenge, 
 motivating type system features like variadic generics for shape specification [@mendozaPEP646Variadic2020].
-NumPy [@harrisArrayProgrammingNumPy2020] introduced type annotations for its arrays in 2021 [@NumPy1200Release2021], 
+NumPy [@harrisArrayProgrammingNumPy2020] introduced type annotations for its arrays in 2021\ [@NumPy1200Release2021], 
 with steady improvements over time[^numtype]. 
 NumPy's types allow specifying shape and dtype,
 but not extended expressions like explicit dimension sizes, size ranges, etc. 
 Numpydantic extends previous work on runtime-checkable types,
-initially vendoring `nptyping` [@hagenaarsNptyping2019][^unmaintained] and extending and updating its syntax,
+initially vendoring `nptyping`\ [@hagenaarsNptyping2019][^unmaintained] and extending and updating its syntax,
 and later replacing it with correct contemporary type annotations in v2.0.0. 
 
 Other array frameworks like Dask [@daskdevelopmentteamDaskLibraryDynamic2016]
@@ -228,7 +228,7 @@ def some_analysis(
     ...
 ```
 
-These annotations can also be validated at runtime without Pydantic using a tool like [beartype](https://beartype.readthedocs.io/) [@curryBeartype2020].
+These annotations can also be validated at runtime without Pydantic using a tool like [beartype](https://beartype.readthedocs.io/)\ [@curryBeartype2020].
 
 `NDArray` can also be used as a runtime type for instance checking and ad hoc validation
 
