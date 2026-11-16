@@ -24,7 +24,7 @@ Its constraints can be validated both dynamically at runtime and statically usin
 Rather than being bound to a single array framework,
 numpydantic is a generic array specification with an extensible interface system
 that currently supports NumPy, HDF5, Zarr, and video files.
-Designed to expose arrays to `Pydantic`'s validation framework, 
+Designed to expose arrays to Pydantic's validation framework, 
 its `NDArray` type allows researchers to compose multiple arrays into validating data models,
 including generation of JSON schema,
 roundtrip serialization,
