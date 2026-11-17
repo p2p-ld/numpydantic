@@ -13,7 +13,7 @@ affiliations:
     name: University of California, Los Angeles. Department of Neurology.
     ror: "046rm7j60"
   - index: 2
-    name: Peertech Global Cyberindustrial Concern, LLC.
+    name: Peertech Global Cyberindustrial Concern LLC, LLC.
 bibliography: paper.bib
 ---
 
