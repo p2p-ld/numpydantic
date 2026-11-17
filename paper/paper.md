@@ -112,6 +112,8 @@ among other features.
 
 [^withoutpydantic]: Pydantic is a required dependency, but the annotations can be used outside of Pydantic models
 
+\pagebreak
+
 ## Pydantic models
 
 At its simplest, numpydantic does this:
@@ -177,6 +179,8 @@ produces this JSON Schema[^abbreviated]:
   "type": "array"
 }}}
 ```
+
+\pagebreak
 
 Numpydantic supports roundtripping array data to and from JSON,
 including any metadata needed to reconstruct an array,
