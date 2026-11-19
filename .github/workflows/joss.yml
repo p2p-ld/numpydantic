@@ -4,6 +4,12 @@ on:
     paths:
       - paper/**
       - .github/workflows/joss.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - paper/**
+      - .github/workflows/joss.yml
 
 jobs:
   paper:

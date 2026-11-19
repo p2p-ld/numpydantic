@@ -23,8 +23,8 @@ Numpydantic is a minimalistic Python package that provides abstract types and a 
 Its constraints can be validated both dynamically at runtime and statically using mypy.
 Rather than being bound to a single array framework,
 numpydantic is a generic array specification with an extensible interface system
-that currently supports NumPy, HDF5, zarr, and video files.
-Designed to expose arrays to `Pydantic`'s validation framework, 
+that currently supports NumPy, HDF5, Zarr, and video files.
+Designed to expose arrays to Pydantic's validation framework, 
 its `NDArray` type allows researchers to compose multiple arrays into validating data models,
 including generation of JSON schema,
 roundtrip serialization,
@@ -36,7 +36,7 @@ and providing simple tools responsive to the needs of everyday research programm
 
 # Statement of need
 
-Arrays are rarely formless bundles of numbers, 
+Arrays are rarely formless bundles of numbers;
 they are "videos," "time series," "training and testing data," etc.
 where attributes like orientation, shape, and dtype are an intrinsic part of their definition as a type.
 Accordingly, outside of array frameworks themselves,
@@ -54,24 +54,24 @@ but still struggle with the hundreds of intermediate arrays that flow through th
 This tension creates two unhappy local minima:
 on one side, data standards are often brittle and difficult to integrate into the code used for real-world analysis, 
 relegated to a conversion stage after the work is done that can be lossy and labor-intensive.
-On the other, labs run on ad-hoc, local data structures that make even intra-lab collaboration difficult.
+On the other, labs run on ad hoc, local data structures that make even intra-lab collaboration difficult.
 
 In the middle is a gap in tooling that responds to both categories of needs:
 
-- Strict, validating, metadata enriched schemas with loose coupling to storage formats and programming interfaces
-- Simple, low-overhead structure that can embed in existing code and support researcher-developer experience.
+- Strict, validating, metadata-enriched schemas with loose coupling to storage formats and programming interfaces
+- Simple, low-overhead structure that can be embedded in existing code and support researcher-developer experience.
 
 # State of the field
 
 Python's type annotation system has evolved dramatically since its introduction in 2014 [@vanrossumPEP484Type2014; @pythonsoftwarefoundationTypingPEPs].
 Typing arrays is an ongoing challenge, 
 motivating type system features like variadic generics for shape specification [@mendozaPEP646Variadic2020].
-NumPy [@harrisArrayProgrammingNumPy2020] introduced type annotations for its arrays in 2021 [@NumPy1200Release2021], 
+NumPy [@harrisArrayProgrammingNumPy2020] introduced type annotations for its arrays in 2021\ [@NumPy1200Release2021], 
 with steady improvements over time[^numtype]. 
 NumPy's types allow specifying shape and dtype,
 but not extended expressions like explicit dimension sizes, size ranges, etc. 
 Numpydantic extends previous work on runtime-checkable types,
-initially vendoring `nptyping` [@hagenaarsNptyping2019][^unmaintained] and extending and updating its syntax,
+initially vendoring `nptyping`\ [@hagenaarsNptyping2019][^unmaintained] and extending and updating its syntax,
 and later replacing it with correct contemporary type annotations in v2.0.0. 
 
 Other array frameworks like Dask [@daskdevelopmentteamDaskLibraryDynamic2016]
@@ -81,14 +81,14 @@ currently allow typing only for dtype or a custom metadata object.
 Dataclasses [@smithPEP557Data2017] use type annotations to create intelligible data structures,
 but the annotations are unvalidated and used solely in static analysis.
 Pydantic [@colvinPydanticValidation2026] is the most widely used library in Python for declaring runtime-validating dataclass-like models,
-but it lacks builtin support for arrays.
+but it lacks built-in support for arrays.
 
 The closest sibling to numpydantic is likely [pandera](https://pandera.readthedocs.io) [@bantilanPanderaStatisticalData2020],
-which provides schemas for dataframes across multiple backends (and, recently, complex multi-arrays from [xarray](https://docs.xarray.dev)).
+which provides schemas for dataframes across multiple backends and, recently, complex multi-arrays from [xarray](https://docs.xarray.dev) [@hoyerXarrayNDLabeled2017].
 Second would be [jaxtyping](https://github.com/patrick-kidger/jaxtyping) [@kidgerJaxtyping2022],
-which provides custom string-based constraints on shapes (including cross-array constraints) enforceable with [`typeguard`](https://github.com/agronholm/typeguard) [@gronholmTypeguard2015] and at runtime
+which provides custom string-based constraints on shapes (including cross-array constraints) enforceable at runtime with [`typeguard`](https://github.com/agronholm/typeguard) [@gronholmTypeguard2015]
 for JAX, PyTorch, NumPy, MLX, and TensorFlow arrays and tensors.
-Third is [pydantic-numpy](https://github.com/caniko/pydantic-numpy) [@tartanogluPydanticNumpy2022]
+Third is [pydantic-numpy](https://github.com/caniko/pydantic-numpy) [@tartanogluPydanticNumpy2022],
 which more narrowly supports NumPy arrays for Pydantic.
 We are not aware of other projects that provide array specifications and validation across multiple array backends
 with a single annotation consistent with the emerging consensus on array typing[^contactus].
@@ -99,7 +99,7 @@ with a single annotation consistent with the emerging consensus on array typing[
 
 # Software design
 
-Numpydantic is designed to be a dependency you don't have to think about -
+Numpydantic is designed to be a dependency you don't have to think about --
 it has two required dependencies, NumPy and Pydantic, which are already likely present in any package that wants to use it.
 It can be used with or without Pydantic[^withoutpydantic]:
 its annotations can be used in the typing layer without modifying existing runtime code.
@@ -114,7 +114,7 @@ among other features.
 
 \pagebreak
 
-## Pydantic Models
+## Pydantic models
 
 At its simplest, numpydantic does this:
 
@@ -143,7 +143,7 @@ When used in Pydantic models, numpydantic provides runtime validation for array 
 as well as access to on-disk arrays by reference.
 
 By default, an array from any supported array backend can be used (as long as it matches the specification),
-but an explicit array backend can be specified using an annotated type
+but an explicit array backend can be specified using an annotated type:
 
 ```python
 class MyModel(BaseModel):
@@ -152,7 +152,7 @@ class MyModel(BaseModel):
 
 Numpydantic constructs a valid JSON schema for its annotations,
 making them portable across languages,
-and usable to accept array data via web APIs via, e.g. [FastAPI](https://fastapi.tiangolo.com/).
+and usable to accept array data via web APIs, e.g. [FastAPI](https://fastapi.tiangolo.com/).
 
 This simple example:
 
@@ -162,7 +162,7 @@ class MyModel(BaseModel):
 MyModel.model_json_schema()
 ```
 
-produces JSON Schema[^abbreviated]:
+produces this JSON Schema[^abbreviated]:
 
 ```json
 { "properties": { "array": {
@@ -186,7 +186,7 @@ Numpydantic supports roundtripping array data to and from JSON,
 including any metadata needed to reconstruct an array,
 with on-disk arrays optionally dumped as a reference rather than loading and serializing the whole array.
 
-e.g. for a dataset with scalar metadata alongside array data split between in-memory and on-disk arrays,
+For example, consider a dataset with scalar metadata alongside array data split between in-memory and on-disk arrays,
 as would be common in both data standards and unstructured lab code:
 
 ```python
@@ -221,18 +221,20 @@ A lightweight metadata descriptor can be dumped to JSON and reloaded later:
 
 [^abbreviated]: All examples are abbreviated and formatted for clarity.
 
-## Standalone Use
+## Standalone use
 
 Numpydantic can be used without Pydantic to annotate normal functions and classes!
 
 ```python
-def some_analysis(array: NDArray[Shape[L[1], L[2], L[3]]]) -> NDArray[Shape[L[2], L[4], L[6]]]:
+def some_analysis(
+    array: NDArray[Shape[L[1], L[2], L[3]]],
+) -> NDArray[Shape[L[2], L[4], L[6]]]:
     ...
 ```
 
-These annotations can also be validated at runtime without Pydantic using a tool like [beartype](https://beartype.readthedocs.io/) [@curryBeartype2020].
+These annotations can also be validated at runtime without Pydantic using a tool like [beartype](https://beartype.readthedocs.io/)\ [@curryBeartype2020].
 
-`NDArray` can also be used as a runtime type for instance checking and ad-hoc validation
+`NDArray` can also be used as a runtime type for instance checking and ad hoc validation
 
 ```python
 >>> Grayscale = NDArray[Shape[int, int], np.uint8]
@@ -249,7 +251,7 @@ DtypeError: Invalid dtype! expected <class 'numpy.uint8'>, got float64
 
 ### Mypy plugin
 
-A mypy plugin supports static analysis of numpydantic's specification syntax,
+A plugin for mypy [@lehtosaloMypyOptionalStatic2012] supports static analysis of numpydantic's specification syntax,
 enriching array constructors with shape and dtype information
 for any supported array backend.
 
@@ -272,7 +274,7 @@ Revealed type is "numpy.ndarray[tuple[Literal[3], Literal[4]], numpy.uint8]"
 Revealed type is "numpy.ndarray[tuple[Literal[3], Literal[4]], numpy.uint8]"
 ```
 
-By annotating analysis and i/o functions with type information,
+By annotating analysis and I/O functions with type information,
 researchers can avoid tedious bugs from misshaped or mistyped arrays,
 and use the runtime types for reusable, minimal boilerplate validation.
 
@@ -299,11 +301,11 @@ Support for n-dimensional arrays is a critical part of using LinkML for scientif
 and numpydantic is the core array implementation for LinkML in Python.
 
 Numpydantic was also developed as part of an effort to rearchitect Neurodata Without Borders (NWB) [@rubelNeurodataBordersEcosystem2022],
-the de-facto data standard for systems neuroscience ([`nwb-linkml`](https://github.com/p2p-ld/nwb-linkml)).
+the de facto data standard for systems neuroscience ([`nwb-linkml`](https://github.com/p2p-ld/nwb-linkml)).
 NWB uses HDMF [@trittHDMFHierarchicalData2019] as its schema language,
 which was developed out of necessity
 as most schema languages do not support arrays.
-HDMF and NWB are both tightly coupled to HDF5,
+HDMF and NWB are both tightly coupled to HDF5 [@hdfgroupHierarchicalDataFormat2026],
 which makes indexing and partial use of datasets extraordinarily costly - 
 to read a scalar metadata attribute,
 one needs to download the entire dataset,
@@ -318,9 +320,9 @@ where data standards only need to define the schema layer and get the rest for f
 [^lindi]: See also [LINDI](https://github.com/NeurodataWithoutBorders/lindi) [@neurodatawithoutbordersLindi2024],
   an overlay for addressing streaming data needs with HTTP range requests.
 
-# Limitations & Future Directions
+# Limitations & future directions
 
-- The python typing spec, and standard array typing recommendations are always evolving and still in flux.
+- The Python typing spec and standard array typing recommendations are always evolving and still in flux.
   Non-mypy static type checkers have trouble checking some forms of `NDArray` types.
   There are [several intermediate solutions](https://numpydantic.readthedocs.io/en/v2.0.0/typecheckers.html),
   like the `NDArraySchema` class,
@@ -336,13 +338,13 @@ where data standards only need to define the schema layer and get the rest for f
 
 # AI usage disclosure
 
-No "AI" or LLMs were used at any time during development, nor to produce any part of this submission.
+No AI or LLMs were used at any time during development, nor to produce any part of this submission.
 
 # Acknowledgements
 
 Thanks to Ryan Ly, Chris Mungall, Oliver Rübel, Wouter-Michiel Vierdag, Ben Dichter, and John-Marc Chandonia for co-designing the LinkML Arrays specification
 which gave shape to the initial spec; 
-to Antônio Camargo for setting up the conda forge feedstock;
+to Antônio Camargo for setting up the conda-forge feedstock;
 to all collaborators past and present;
 and to Rumbly Tumbly Lawnmower for being the light of my life and keeping my lap warm as I worked.
 
